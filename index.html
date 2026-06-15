@@ -232,6 +232,20 @@
       gap: 5px;
     }
 
+    /* Map chips: fixed uniform size, 5 per row */
+    #mapChips {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+    }
+
+    #mapChips .chip {
+      text-align: center;
+      justify-content: center;
+      padding: 5px 4px;
+      font-size: 12px;
+    }
+
     .chip {
       padding: 4px 10px;
       border-radius: 20px;
@@ -423,7 +437,7 @@
       background: var(--bg-panel);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      overflow: hidden;
+      overflow: auto; /* 'auto' allows sticky children, unlike 'hidden' */
     }
 
     table {
@@ -435,7 +449,7 @@
     thead {
       background: var(--bg-surface);
       position: sticky;
-      top: 56px;
+      top: 0;  /* sticky relative to the scrolling .table-wrap, not viewport */
       z-index: 10;
     }
 
@@ -626,30 +640,25 @@
     }
 
     /* ── Tooltip for map chips ──────────────────────────────────────────────── */
-    .chip[data-tooltip] {
-      position: relative;
-    }
-
-    .chip[data-tooltip]:hover::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      bottom: calc(100% + 6px);
-      left: 50%;
-      transform: translateX(-50%);
+    #map-tooltip {
+      position: fixed;
       background: #0a120b;
       border: 1px solid var(--border);
       color: var(--text);
       font-size: 11px;
-      padding: 4px 8px;
+      font-family: 'Inter', sans-serif;
+      padding: 4px 9px;
       border-radius: var(--radius);
       white-space: nowrap;
       pointer-events: none;
-      z-index: 200;
+      z-index: 9999;
+      display: none;
+      box-shadow: var(--shadow);
     }
 
     /* ── Mobile ─────────────────────────────────────────────────────────────── */
     .mobile-filter-btn {
-      display: none;
+      display: flex;
       align-items: center;
       gap: 6px;
       padding: 7px 14px;
@@ -660,6 +669,42 @@
       font-family: 'Inter', sans-serif;
       font-size: 13px;
       cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .mobile-filter-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* Sidebar close button (X) */
+    .sidebar-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: var(--radius);
+      transition: color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-close-btn:hover {
+      color: var(--text);
+      background: var(--bg-hover);
+    }
+
+    /* Sidebar collapsed state on desktop */
+    .sidebar-collapsed .sidebar {
+      display: none;
+    }
+
+    .sidebar-collapsed .layout {
+      grid-template-columns: 1fr;
     }
 
     @media (max-width: 768px) {
@@ -678,8 +723,6 @@
 
       .sidebar.open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.5); }
 
-      .mobile-filter-btn { display: flex; }
-
       .topbar { padding: 0 16px; }
 
       .topbar-logo { font-size: 15px; }
@@ -690,6 +733,10 @@
       .search-input:focus { width: 180px; }
 
       th, td { padding: 8px 10px; }
+
+      /* On mobile, sidebar-collapsed class has no effect — mobile uses slide-in */
+      .sidebar-collapsed .sidebar { display: block; }
+      .sidebar-collapsed .layout { grid-template-columns: 1fr; }
     }
 
     /* Overlay for mobile sidebar */
@@ -705,10 +752,11 @@
   </style>
 </head>
 <body>
+<div id="map-tooltip"></div>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <header class="topbar">
-  <button class="mobile-filter-btn" onclick="toggleSidebar()">
+  <button class="mobile-filter-btn" onclick="toggleSidebar()" id="filterToggleBtn">
     ☰ Filters
   </button>
   <div class="topbar-logo">Ark Nova <span>Statistics</span></div>
@@ -727,7 +775,10 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <span class="sidebar-title">Filters</span>
-      <button class="reset-btn" onclick="resetFilters()">Reset</button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="reset-btn" onclick="resetFilters()">Reset</button>
+        <button class="sidebar-close-btn" onclick="toggleSidebar()" title="Close filters">✕</button>
+      </div>
     </div>
 
     <!-- Card type -->
@@ -822,8 +873,8 @@
           <tr>
             <th onclick="sortBy('card_type')">Type <span class="sort-arrow" id="sort-card_type">↕</span></th>
             <th onclick="sortBy('card_name')">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
-            <th onclick="sortBy('delta_in_hand')" style="text-align:right">Δ (In Hand) <span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
-            <th onclick="sortBy('delta_played')" style="text-align:right">Δ (Played) <span class="sort-arrow" id="sort-delta_played">↕</span></th>
+            <th onclick="sortBy('delta_in_hand')" style="text-align:right">Elo Gain (In Hand) <span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
+            <th onclick="sortBy('delta_played')" style="text-align:right">Elo Gain (Played) <span class="sort-arrow" id="sort-delta_played">↕</span></th>
             <th onclick="sortBy('playrate_pct')">Playrate <span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
             <th onclick="sortBy('n_played')" style="text-align:right">n (played) <span class="sort-arrow" id="sort-n_played">↕</span></th>
             <th onclick="sortBy('n_seen')" style="text-align:right">n (seen) <span class="sort-arrow" id="sort-n_seen">↕</span></th>
@@ -893,6 +944,41 @@ function buildMapChips() {
     btn.onclick = () => toggleChip(btn, 'map');
     container.appendChild(btn);
   });
+}
+
+// ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
+const _tooltip = document.getElementById('map-tooltip');
+
+document.addEventListener('mouseover', e => {
+  const chip = e.target.closest('[data-tooltip]');
+  if (!chip) return;
+  _tooltip.textContent = chip.dataset.tooltip;
+  _tooltip.style.display = 'block';
+  positionTooltip(e);
+});
+
+document.addEventListener('mousemove', e => {
+  if (_tooltip.style.display === 'none') return;
+  if (!e.target.closest('[data-tooltip]')) { _tooltip.style.display = 'none'; return; }
+  positionTooltip(e);
+});
+
+document.addEventListener('mouseout', e => {
+  if (!e.target.closest('[data-tooltip]')) _tooltip.style.display = 'none';
+});
+
+function positionTooltip(e) {
+  const tw = _tooltip.offsetWidth;
+  const th = _tooltip.offsetHeight;
+  const margin = 8;
+  let x = e.clientX - tw / 2;
+  let y = e.clientY - th - 10;
+  // Clamp horizontally
+  x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
+  // Flip below cursor if too close to top
+  if (y < margin) y = e.clientY + 18;
+  _tooltip.style.left = x + 'px';
+  _tooltip.style.top = y + 'px';
 }
 
 // ── Toggle chip ────────────────────────────────────────────────────────────────
@@ -1206,8 +1292,13 @@ function prColor(val) {
 
 // ── Mobile sidebar ─────────────────────────────────────────────────────────────
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('active');
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('active');
+  } else {
+    document.body.classList.toggle('sidebar-collapsed');
+  }
 }
 </script>
 </body>
