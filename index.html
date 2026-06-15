@@ -432,24 +432,85 @@
       cursor: pointer;
     }
 
+    /* ── Column header tooltips ─────────────────────────────────────────────── */
+    .col-tip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 13px;
+      height: 13px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      cursor: help;
+      margin-left: 3px;
+      border-radius: 50%;
+      vertical-align: middle;
+      transition: color 0.15s;
+      font-style: normal;
+      line-height: 1;
+      position: relative;
+      top: -1px;
+    }
+
+    th:hover .col-tip { color: var(--text-muted); }
+
+    #col-tooltip {
+      position: fixed;
+      background: #0a120b;
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      padding: 7px 11px;
+      border-radius: var(--radius);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      box-shadow: var(--shadow);
+      max-width: 260px;
+      white-space: normal;
+      line-height: 1.5;
+    }
+
+    #col-tooltip .tip-fraction {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    #col-tooltip .tip-fraction .tip-num {
+      border-bottom: 1px solid var(--text-muted);
+      padding-bottom: 2px;
+      margin-bottom: 2px;
+    }
+
     /* ── Table ─────────────────────────────────────────────────────────────── */
     .table-wrap {
       background: var(--bg-panel);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border);
       border-radius: var(--radius-lg);
-      overflow: auto; /* 'auto' allows sticky children, unlike 'hidden' */
+      overflow: auto;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      table-layout: fixed;
     }
 
     thead {
       background: var(--bg-surface);
       position: sticky;
-      top: 0;  /* sticky relative to the scrolling .table-wrap, not viewport */
+      top: 0;
       z-index: 10;
     }
 
@@ -462,11 +523,14 @@
       text-transform: uppercase;
       letter-spacing: 0.07em;
       border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
       transition: color 0.15s;
     }
+
+    th:last-child { border-right: none; }
 
     th:hover { color: var(--text); }
 
@@ -484,8 +548,13 @@
     td {
       padding: 9px 14px;
       border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
       vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+
+    td:last-child { border-right: none; }
 
     tr:last-child td { border-bottom: none; }
 
@@ -753,6 +822,7 @@
 </head>
 <body>
 <div id="map-tooltip"></div>
+<div id="col-tooltip"></div>
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <header class="topbar">
@@ -871,13 +941,13 @@
       <table id="statsTable">
         <thead>
           <tr>
-            <th onclick="sortBy('card_type')">Type <span class="sort-arrow" id="sort-card_type">↕</span></th>
-            <th onclick="sortBy('card_name')">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
-            <th onclick="sortBy('delta_in_hand')" style="text-align:right">Elo Gain (In Hand) <span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
-            <th onclick="sortBy('delta_played')" style="text-align:right">Elo Gain (Played) <span class="sort-arrow" id="sort-delta_played">↕</span></th>
-            <th onclick="sortBy('playrate_pct')">Playrate <span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
-            <th onclick="sortBy('n_played')" style="text-align:right">n (played) <span class="sort-arrow" id="sort-n_played">↕</span></th>
-            <th onclick="sortBy('n_seen')" style="text-align:right">n (seen) <span class="sort-arrow" id="sort-n_seen">↕</span></th>
+            <th onclick="sortBy('card_type')" style="width:10%">Type <span class="sort-arrow" id="sort-card_type">↕</span></th>
+            <th onclick="sortBy('card_name')" style="width:26%">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
+            <th onclick="sortBy('delta_in_hand')" style="text-align:right;width:13%">Δ (In Hand) <span class="col-tip" data-tip="Average elo gain in games where the card was in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
+            <th onclick="sortBy('delta_played')" style="text-align:right;width:13%">Δ (Played) <span class="col-tip" data-tip="Average elo gain in games where the card was played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
+            <th onclick="sortBy('playrate_pct')" style="width:20%">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
+            <th onclick="sortBy('n_played')" style="text-align:right;width:9%">n (played) <span class="col-tip" data-tip="Number of games the card was played by either player">?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
+            <th onclick="sortBy('n_seen')" style="text-align:right;width:9%">n (seen) <span class="col-tip" data-tip="Number of games the card appeared in the display or hand of either player">?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -1266,7 +1336,7 @@ function fmtDelta(val) {
 
 function fmtN(val) {
   if (val == null) return '—';
-  return val.toLocaleString();
+  return val.toLocaleString('en-US');
 }
 
 function capitalize(s) {
@@ -1288,6 +1358,48 @@ function prColor(val) {
   if (val >= 50) return 'var(--pr-high)';
   if (val >= 30) return 'var(--pr-mid)';
   return 'var(--pr-low)';
+}
+
+// ── Column header tooltips ─────────────────────────────────────────────────────
+const _colTip = document.getElementById('col-tooltip');
+
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('.col-tip');
+  if (!el) return;
+
+  if (el.hasAttribute('data-tip-fraction')) {
+    _colTip.innerHTML = `<div class="tip-fraction">
+      <span class="tip-num">n (played)</span>
+      <span class="tip-den">n (seen)</span>
+    </div>`;
+  } else {
+    _colTip.textContent = el.dataset.tip;
+  }
+
+  _colTip.style.display = 'block';
+  positionColTip(e);
+});
+
+document.addEventListener('mousemove', e => {
+  if (_colTip.style.display === 'none') return;
+  if (!e.target.closest('.col-tip')) { _colTip.style.display = 'none'; return; }
+  positionColTip(e);
+});
+
+document.addEventListener('mouseout', e => {
+  if (!e.target.closest('.col-tip')) _colTip.style.display = 'none';
+});
+
+function positionColTip(e) {
+  const tw = _colTip.offsetWidth;
+  const th = _colTip.offsetHeight;
+  const margin = 8;
+  let x = e.clientX - tw / 2;
+  let y = e.clientY + 18; // show below cursor for header tooltips
+  x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
+  if (y + th > window.innerHeight - margin) y = e.clientY - th - 10;
+  _colTip.style.left = x + 'px';
+  _colTip.style.top = y + 'px';
 }
 
 // ── Mobile sidebar ─────────────────────────────────────────────────────────────
