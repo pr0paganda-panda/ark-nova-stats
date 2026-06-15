@@ -80,6 +80,10 @@
       color: var(--accent);
       letter-spacing: 0.01em;
       white-space: nowrap;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
     }
 
     .topbar-logo span {
@@ -108,10 +112,19 @@
     }
 
     .tab-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
+      border-color: currentColor;
       color: #0f1a10;
       font-weight: 600;
+    }
+
+    .tab-btn.active.tab-mw {
+      background: #3aab8a;   /* teal-green for Marine Worlds */
+      border-color: #3aab8a;
+    }
+
+    .tab-btn.active.tab-base {
+      background: #7abf55;   /* yellow-green / olive for Base */
+      border-color: #7abf55;
     }
 
     .tab-btn:hover:not(.active) {
@@ -825,8 +838,8 @@
   </button>
   <div class="topbar-logo">Ark Nova <span>Statistics</span></div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="setTab(1, this)">Marine Worlds</button>
-    <button class="tab-btn" onclick="setTab(0, this)">Base</button>
+    <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
+    <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
   </div>
 </header>
 
@@ -1235,8 +1248,8 @@ function renderTable(data) {
     const barColor = prColor(prVal);
 
     return `<tr>
-      <td><span class="type-badge type-${row.card_type}">${capitalize(row.card_type)}</span></td>
-      <td class="card-name">${row.card_name}</td>
+      <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
+      <td class="card-name">${titleCase(row.card_name)}</td>
       <td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>
       <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
       <td>
@@ -1333,8 +1346,17 @@ function fmtN(val) {
   return val.toLocaleString('en-US');
 }
 
-function capitalize(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function titleCase(str) {
+  const lower = new Set(['on', 'in', 'of', 'the', 'a']);
+  return str
+    .split(' ')
+    .map((word, i) => {
+      const w = word.toLowerCase();
+      // Always capitalise the first word; lowercase the small words otherwise
+      if (i > 0 && lower.has(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
+    .join(' ');
 }
 
 function deltaColor(val) {
