@@ -445,6 +445,46 @@
       cursor: pointer;
     }
 
+    /* ── Type column filter ─────────────────────────────────────────────────── */
+    .type-filter-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 10px;
+      cursor: pointer;
+      padding: 0 2px;
+      margin-left: 3px;
+      vertical-align: middle;
+      transition: color 0.15s;
+      font-family: 'Inter', sans-serif;
+      line-height: 1;
+    }
+
+    .type-filter-btn:hover,
+    .type-filter-btn.active { color: var(--accent); }
+
+    .type-filter-popup {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0a120b;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 10px;
+      box-shadow: var(--shadow);
+      z-index: 500;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 110px;
+    }
+
+    .type-filter-popup.open { display: flex; }
+
+    /* The th that contains the popup needs relative positioning */
+    #statsTable thead th:first-child { position: relative; }
+
     /* ── Column header tooltips ─────────────────────────────────────────────── */
     .col-tip {
       display: inline;
@@ -858,16 +898,6 @@
       </div>
     </div>
 
-    <!-- Card type -->
-    <div class="filter-group">
-      <span class="filter-label">Card Type</span>
-      <div class="chip-grid" id="typeChips">
-        <button class="chip active" data-value="animal" onclick="toggleChip(this, 'type')">Animal</button>
-        <button class="chip active" data-value="sponsor" onclick="toggleChip(this, 'type')">Sponsor</button>
-        <button class="chip active" data-value="project" onclick="toggleChip(this, 'type')">Project</button>
-      </div>
-    </div>
-
     <hr class="divider" />
 
     <!-- Player ELO -->
@@ -948,7 +978,15 @@
       <table id="statsTable">
         <thead>
           <tr>
-            <th onclick="sortBy('card_type')" style="width:10%;text-align:center">Type <span class="sort-arrow" id="sort-card_type">↕</span></th>
+            <th style="width:10%;text-align:center">
+              Type
+              <button class="type-filter-btn" id="typeFilterBtn" onclick="toggleTypeFilterPopup(event)" title="Filter by type">▼</button>
+              <div class="type-filter-popup" id="typeFilterPopup">
+                <button class="chip active" data-value="animal" onclick="toggleTypeChip(this)">Animal</button>
+                <button class="chip active" data-value="sponsor" onclick="toggleTypeChip(this)">Sponsor</button>
+                <button class="chip active" data-value="project" onclick="toggleTypeChip(this)">Project</button>
+              </div>
+            </th>
             <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
             <th onclick="sortBy('delta_in_hand')" style="width:13%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when the card was in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
             <th onclick="sortBy('delta_played')" style="width:13%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when the card was played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
@@ -1086,8 +1124,11 @@ function resetFilters() {
   document.getElementById('dateTo').value = '';
   document.getElementById('endGameToggle').checked = true;
 
-  document.querySelectorAll('#typeChips .chip').forEach(c => c.classList.add('active'));
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
+
+  // Reset type filter chips and button
+  document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
+  document.getElementById('typeFilterBtn').classList.remove('active');
 
   applyFilters();
 }
@@ -1096,12 +1137,9 @@ function resetFilters() {
 function getParams() {
   const selectedMaps = [...document.querySelectorAll('#mapChips .chip.active')]
     .map(c => c.dataset.value);
-  const selectedTypes = [...document.querySelectorAll('#typeChips .chip.active')]
-    .map(c => c.dataset.value);
 
   const params = {
     is_mw: isMW,
-    card_types: selectedTypes,
     maps: selectedMaps,
     end_game_triggered: document.getElementById('endGameToggle').checked ? true : null,
   };
@@ -1119,6 +1157,8 @@ function getParams() {
   if (oMax) params.opponent_elo_max = parseInt(oMax);
   if (dFrom) params.date_from = dFrom;
   if (dTo) params.date_to = dTo;
+
+  // card_types now handled client-side — not sent to API
 
   return params;
 }
@@ -1162,9 +1202,13 @@ function onSearch() {
 }
 
 function applySearch() {
+  const activeTypes = new Set(
+    [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
+  );
   filteredData = allData.filter(row =>
-    row.card_name.toLowerCase().includes(searchQuery) ||
-    row.card_type.toLowerCase().includes(searchQuery)
+    activeTypes.has(row.card_type) &&
+    (row.card_name.toLowerCase().includes(searchQuery) ||
+     row.card_type.toLowerCase().includes(searchQuery))
   );
   currentPage = 1;
   applySortAndRender();
@@ -1417,6 +1461,40 @@ function positionColTip(e) {
   _colTip.style.left = x + 'px';
   _colTip.style.top = y + 'px';
 }
+
+// ── Type column filter ─────────────────────────────────────────────────────────
+function toggleTypeFilterPopup(e) {
+  e.stopPropagation();
+  const popup = document.getElementById('typeFilterPopup');
+  const btn = document.getElementById('typeFilterBtn');
+  const isOpen = popup.classList.toggle('open');
+  btn.classList.toggle('active', isOpen);
+}
+
+function toggleTypeChip(btn) {
+  // Don't allow deselecting all chips
+  const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
+  const activeChips = allChips.filter(c => c.classList.contains('active'));
+  if (activeChips.length === 1 && btn.classList.contains('active')) return;
+
+  btn.classList.toggle('active');
+
+  // Update filter button colour to indicate partial selection
+  const anyDeselected = allChips.some(c => !c.classList.contains('active'));
+  document.getElementById('typeFilterBtn').classList.toggle('active', anyDeselected);
+
+  applySearch();
+}
+
+// Close type popup when clicking outside
+document.addEventListener('click', e => {
+  const popup = document.getElementById('typeFilterPopup');
+  if (popup && popup.classList.contains('open') && !popup.contains(e.target)) {
+    popup.classList.remove('open');
+    const anyDeselected = [...document.querySelectorAll('#typeFilterPopup .chip')].some(c => !c.classList.contains('active'));
+    document.getElementById('typeFilterBtn').classList.toggle('active', anyDeselected);
+  }
+});
 
 // ── Mobile sidebar ─────────────────────────────────────────────────────────────
 function toggleSidebar() {
