@@ -927,7 +927,7 @@
       <table id="statsTable">
         <thead>
           <tr>
-            <th style="width:10%;text-align:center">
+            <th style="width:8%;text-align:center">
               Type
               <button class="type-filter-btn" id="typeFilterBtn" onclick="toggleTypeFilterPopup(event)" title="Filter by type">▼</button>
               <div class="type-filter-popup" id="typeFilterPopup">
@@ -937,15 +937,16 @@
               </div>
             </th>
             <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
-            <th onclick="sortBy('delta_in_hand')" style="width:13%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
-            <th onclick="sortBy('delta_played')" style="width:13%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
-            <th onclick="sortBy('playrate_pct')" style="width:18%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
-            <th onclick="sortBy('n_played')" style="width:13%;text-align:center">n (played)<span class="col-tip" data-tip="Played by either player">?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
-            <th onclick="sortBy('n_seen')" style="width:13%;text-align:center">n (seen)<span class="col-tip" data-tip="On display or in hand of either player">?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
+            <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
+            <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
+            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average elo of the player when the card was played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
+            <th onclick="sortBy('playrate_pct')" style="width:16%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
+            <th onclick="sortBy('n_played')" style="width:12%;text-align:center">n (played)<span class="col-tip" data-tip="Played by either player">?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
+            <th onclick="sortBy('n_seen')" style="width:12%;text-align:center">n (seen)<span class="col-tip" data-tip="On display or in hand of either player">?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          <tr><td colspan="7">
+          <tr><td colspan="8">
             <div class="state-overlay">
               <div class="spinner"></div>
               <div class="state-title">Set your filters and click Load Stats</div>
@@ -1276,7 +1277,7 @@ function renderTable(data) {
   const meta = document.getElementById('tableMeta');
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="7">
+    tbody.innerHTML = `<tr><td colspan="8">
       <div class="state-overlay">
         <div class="error-icon">🔍</div>
         <div class="state-title">No cards found</div>
@@ -1311,6 +1312,7 @@ function renderTable(data) {
       <td class="card-name">${titleCase(row.card_name)}</td>
       <td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>
       <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
+      <td class="n-cell">${row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—'}</td>
       <td>
         <div class="playrate-cell">
           <div class="playrate-bar-wrap">
@@ -1372,7 +1374,7 @@ function goPage(p) {
 
 // ── States ─────────────────────────────────────────────────────────────────────
 function showLoading() {
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="7">
+  document.getElementById('tableBody').innerHTML = `<tr><td colspan="8">
     <div class="state-overlay">
       <div class="spinner"></div>
       <div class="state-title">Fetching data…</div>
@@ -1384,7 +1386,7 @@ function showLoading() {
 }
 
 function showError(msg) {
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="7">
+  document.getElementById('tableBody').innerHTML = `<tr><td colspan="8">
     <div class="state-overlay">
       <div class="error-icon">⚠️</div>
       <div class="state-title">Something went wrong</div>
