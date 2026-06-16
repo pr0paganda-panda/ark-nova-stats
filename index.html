@@ -1629,7 +1629,8 @@ function buildRoundChips() {
 function toggleRoundChip(btn) {
   // Unlike the Type popup, the round filter intentionally allows zero selected
   // chips because the sidebar offers a "none" shortcut just like Maps. If the
-  // user loads with no rounds selected, the backend returns an empty result.
+  // user loads with no rounds selected, the frontend renders an empty table locally
+  // and does not call the backend API.
   btn.classList.toggle('active');
 }
 
@@ -1782,6 +1783,29 @@ function getParams() {
 async function applyFilters() {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Load Stats.
+  // If no Maps or no Rounds are selected, there is nothing to query: the frontend
+  // renders an empty result immediately and skips the Cloud Function call entirely.
+  const params = getParams();
+  const selectedMaps = params.maps || [];
+  const selectedRounds = getSelectedRoundTokens();
+
+  if (!selectedMaps.length || !selectedRounds.length) {
+    roundFilterActive = selectedRounds.length < ROUND_FILTERS.length;
+
+    // In round-filter mode, these columns are intentionally unavailable. If the
+    // table was previously sorted by one of them, switch to Δ (Played), which
+    // remains meaningful for played-round analysis.
+    if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
+      currentSort = { col: 'delta_played', dir: 'desc' };
+    }
+
+    allData = [];
+    filteredData = [];
+    searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+    applySearch();
+    return;
+  }
+
   const btn = document.getElementById('applyBtn');
   btn.disabled = true;
   btn.textContent = 'Loading…';
@@ -1789,7 +1813,6 @@ async function applyFilters() {
   showLoading();
 
   try {
-    const params = getParams();
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
