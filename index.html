@@ -1309,6 +1309,7 @@
 <script>
 // ── Config ─────────────────────────────────────────────────────────────────────
 const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
+const CARD_ALIASES_URL = 'cards_altnames.csv';
 
 const VALID_MAPS = [
   { code: '1a',  full: 'Map 1a: Observation Tower' },
@@ -1335,11 +1336,13 @@ let currentSort = { col: 'delta_in_hand', dir: 'desc' };
 let currentPage = 1;
 let rowsPerPage = 50;
 let searchQuery = '';
+let cardAliases = new Map();
 let isMW = 1;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   buildMapChips();
+  await loadCardAliases();
   applyFilters(); // auto-load on page open with defaults
 });
 
@@ -1487,7 +1490,7 @@ async function applyFilters() {
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
     allData = json.data;
-    searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
     applySearch();
 
   } catch (err) {
@@ -1498,9 +1501,91 @@ async function applyFilters() {
   }
 }
 
+
+// ── Card aliases / nicknames for search ───────────────────────────────────────
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+async function loadCardAliases() {
+  try {
+    const res = await fetch(CARD_ALIASES_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`Could not load ${CARD_ALIASES_URL}`);
+
+    const csv = await res.text();
+    const rows = parseCsv(csv);
+    const aliases = new Map();
+
+    rows.slice(1).forEach(row => {
+      const cardName = (row[0] || '').trim();
+      const aliasText = (row[1] || '').trim();
+      if (!cardName || !aliasText) return;
+
+      const aliasList = aliasText
+        .split(';')
+        .map(a => normalizeSearchText(a))
+        .filter(Boolean);
+
+      if (aliasList.length) aliases.set(normalizeSearchText(cardName), aliasList);
+    });
+
+    cardAliases = aliases;
+  } catch (err) {
+    console.warn('Card aliases were not loaded. Search will use card names only.', err);
+    cardAliases = new Map();
+  }
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        field += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(field);
+      field = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
+      row.push(field);
+      if (row.some(cell => cell.trim() !== '')) rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += char;
+    }
+  }
+
+  row.push(field);
+  if (row.some(cell => cell.trim() !== '')) rows.push(row);
+
+  // Remove possible BOM from the first header cell.
+  if (rows.length && rows[0].length) rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
+  return rows;
+}
+
+function aliasesForCard(cardName) {
+  return cardAliases.get(normalizeSearchText(cardName)) || [];
+}
+
 // ── Search ─────────────────────────────────────────────────────────────────────
 function onSearch() {
-  searchQuery = document.getElementById('searchInput').value.toLowerCase();
+  searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
   applySearch();
 }
 
@@ -1508,11 +1593,19 @@ function applySearch() {
   const activeTypes = new Set(
     [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
   );
-  filteredData = allData.filter(row =>
-    activeTypes.has(row.card_type) &&
-    (row.card_name.toLowerCase().includes(searchQuery) ||
-     row.card_type.toLowerCase().includes(searchQuery))
-  );
+
+  filteredData = allData.filter(row => {
+    if (!activeTypes.has(row.card_type)) return false;
+
+    const cardName = normalizeSearchText(row.card_name);
+    const cardType = normalizeSearchText(row.card_type);
+    const aliases = aliasesForCard(row.card_name);
+
+    return cardName.includes(searchQuery) ||
+      cardType.includes(searchQuery) ||
+      aliases.some(alias => alias.includes(searchQuery));
+  });
+
   currentPage = 1;
   applySortAndRender();
 }
