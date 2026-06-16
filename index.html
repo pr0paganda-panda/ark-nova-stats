@@ -339,6 +339,14 @@
       font-size: 12px;
     }
 
+    .round-min-plays-row {
+      margin-top: 10px;
+    }
+
+    #minPlaysToggleText {
+      line-height: 1.35;
+    }
+
     .chip {
       padding: 4px 10px;
       border-radius: 20px;
@@ -833,7 +841,7 @@
        are not meaningful because the log does not say in which round a card
        was drawn or appeared on display. Keep the columns in place, but dim them. */
     .unavailable-cell {
-      color: var(--text-dim);
+      color: #646d67; /* almost grey, with only a faint green tint */
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       text-align: center;
@@ -842,14 +850,14 @@
     #statsTable.round-filter-active thead th:nth-child(3),
     #statsTable.round-filter-active thead th:nth-child(6),
     #statsTable.round-filter-active thead th:nth-child(8) {
-      color: var(--text-dim);
+      color: #4f5a53;
       cursor: not-allowed;
     }
 
     #statsTable.round-filter-active thead th:nth-child(3):hover,
     #statsTable.round-filter-active thead th:nth-child(6):hover,
     #statsTable.round-filter-active thead th:nth-child(8):hover {
-      color: var(--text-dim);
+      color: #4f5a53;
     }
 
     #statsTable.round-filter-active thead th:nth-child(3) .sort-arrow,
@@ -858,7 +866,7 @@
     #statsTable.round-filter-active thead th:nth-child(3) .col-tip,
     #statsTable.round-filter-active thead th:nth-child(6) .col-tip,
     #statsTable.round-filter-active thead th:nth-child(8) .col-tip {
-      opacity: 0.35;
+      opacity: 0.22;
     }
 
     /* ── Loading & error states ─────────────────────────────────────────────── */
@@ -1480,10 +1488,23 @@
 
     <!-- Round filter
          All six chips active = default/no round filter.
-         Selecting only some chips re-queries the backend for cards played in those rounds. -->
+         Selecting only some chips re-queries the backend for cards played in those rounds.
+         The 1000+ plays switch below is client-side only and updates immediately. -->
     <div class="filter-group">
-      <span class="filter-label">Round</span>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
+        <span class="filter-label" style="margin-bottom:0">Round</span>
+        <span class="map-select-all-none">
+          (<span class="map-toggle-link" onclick="selectAllRounds()">all</span> / <span class="map-toggle-link" onclick="selectNoneRounds()">none</span>)
+        </span>
+      </div>
       <div class="chip-grid" id="roundChips"></div>
+      <div class="toggle-row round-min-plays-row">
+        <span class="toggle-label" id="minPlaysToggleText">Only show cards with 1000+ plays</span>
+        <label class="toggle">
+          <input type="checkbox" id="minPlaysToggle" checked onchange="onMinPlaysToggleChange()" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
     </div>
 
     <hr class="divider" />
@@ -1564,7 +1585,8 @@ let rowsPerPage = 50;
 let searchQuery = '';
 let cardAliases = new Map();
 let isMW = 1;
-let roundFilterActive = false; // Last loaded backend state: true when only some round chips are selected.
+let roundFilterActive = false; // Last loaded backend state: true when fewer than all round chips are selected.
+let minPlaysOnly = true;       // Client-side threshold: when true, only show cards with n_played >= 1000.
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1572,6 +1594,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildMapChips();
   buildRoundChips();
   updateTypeFilterIndicator();
+  updateMinPlaysToggleText();
   await loadCardAliases();
   applyFilters(); // auto-load on page open with defaults
 });
@@ -1604,13 +1627,18 @@ function buildRoundChips() {
 }
 
 function toggleRoundChip(btn) {
-  // Keep at least one round selected. An empty round filter would only produce
-  // an empty table and is almost certainly accidental.
-  const allChips = [...document.querySelectorAll('#roundChips .chip')];
-  const activeChips = allChips.filter(c => c.classList.contains('active'));
-  if (activeChips.length === 1 && btn.classList.contains('active')) return;
-
+  // Unlike the Type popup, the round filter intentionally allows zero selected
+  // chips because the sidebar offers a "none" shortcut just like Maps. If the
+  // user loads with no rounds selected, the backend returns an empty result.
   btn.classList.toggle('active');
+}
+
+function selectAllRounds() {
+  document.querySelectorAll('#roundChips .chip').forEach(c => c.classList.add('active'));
+}
+
+function selectNoneRounds() {
+  document.querySelectorAll('#roundChips .chip').forEach(c => c.classList.remove('active'));
 }
 
 function getSelectedRoundTokens() {
@@ -1620,7 +1648,7 @@ function getSelectedRoundTokens() {
 
 function isRoundFilterActiveFromChips() {
   const selectedRounds = getSelectedRoundTokens();
-  return selectedRounds.length > 0 && selectedRounds.length < ROUND_FILTERS.length;
+  return selectedRounds.length < ROUND_FILTERS.length;
 }
 
 function isRoundUnavailableColumn(col) {
@@ -1700,6 +1728,10 @@ function resetFilters() {
 
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
   document.querySelectorAll('#roundChips .chip').forEach(c => c.classList.add('active'));
+  const minPlaysToggle = document.getElementById('minPlaysToggle');
+  if (minPlaysToggle) minPlaysToggle.checked = true;
+  minPlaysOnly = true;
+  updateMinPlaysToggleText();
 
   // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
@@ -1723,7 +1755,7 @@ function getParams() {
     end_game_triggered: document.getElementById('endGameToggle').checked ? true : null,
   };
 
-  if (selectedRounds.length > 0 && selectedRounds.length < ROUND_FILTERS.length) {
+  if (selectedRounds.length < ROUND_FILTERS.length) {
     params.rounds = selectedRounds;
   }
 
@@ -1768,7 +1800,7 @@ async function applyFilters() {
 
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
-    roundFilterActive = Boolean(json.round_filter_active ?? params.rounds);
+    roundFilterActive = Boolean(json.round_filter_active ?? (params.rounds !== undefined));
 
     // In round-filter mode, these columns are intentionally unavailable. If the
     // table was previously sorted by one of them, switch to Δ (Played), which
@@ -1881,18 +1913,33 @@ function onSearch() {
   applySearch();
 }
 
+function updateMinPlaysToggleText() {
+  const label = document.getElementById('minPlaysToggleText');
+  if (label) {
+    label.textContent = minPlaysOnly ? 'Only show cards with 1000+ plays' : 'Show all cards';
+  }
+}
+
+function onMinPlaysToggleChange() {
+  const toggle = document.getElementById('minPlaysToggle');
+  minPlaysOnly = Boolean(toggle && toggle.checked);
+  updateMinPlaysToggleText();
+  applySearch();
+}
+
 function applySearch() {
-  // Search checks three fields:
-  // 1. real card name from the backend,
-  // 2. card type (animal/sponsor/project),
-  // 3. aliases from cards_altnames.csv.
-  // This preserves original backend names and only changes frontend search behaviour.
+  // Client-side filters are applied here:
+  // 1. Type popup (animal/sponsor/project),
+  // 2. optional minimum of 1000 played games,
+  // 3. search over card name, card type, and aliases from cards_altnames.csv.
+  // This preserves original backend names and only changes frontend display behaviour.
   const activeTypes = new Set(
     [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
   );
 
   filteredData = allData.filter(row => {
     if (!activeTypes.has(row.card_type)) return false;
+    if (minPlaysOnly && Number(row.n_played || 0) < 1000) return false;
 
     const cardName = normalizeSearchText(row.card_name);
     const cardType = normalizeSearchText(row.card_type);
