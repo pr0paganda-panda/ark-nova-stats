@@ -462,6 +462,22 @@
       cursor: pointer;
     }
 
+    .map-select-all-none {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .map-toggle-link {
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .map-toggle-link:hover {
+      color: var(--text);
+    }
+
     /* ── Type column filter ─────────────────────────────────────────────────── */
     .type-filter-btn {
       background: none;
@@ -930,9 +946,8 @@
       <table id="statsTable">
         <thead>
           <tr>
-            <th style="width:10%;text-align:center">
-              Type
-              <button class="type-filter-btn" id="typeFilterBtn" onclick="toggleTypeFilterPopup(event)" title="Filter by type">▼</button>
+            <th style="width:10%;text-align:center;cursor:pointer;" onclick="toggleTypeFilterPopup(event)">
+              Type ▼
               <div class="type-filter-popup" id="typeFilterPopup">
                 <button class="chip active" data-value="animal" onclick="toggleTypeChip(this)">Animal</button>
                 <button class="chip active" data-value="sponsor" onclick="toggleTypeChip(this)">Sponsor</button>
@@ -994,6 +1009,19 @@
 
     <hr class="divider" />
 
+    <!-- Maps -->
+    <div class="filter-group">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
+        <span class="filter-label" style="margin-bottom:0">Maps</span>
+        <span class="map-select-all-none">
+          (<span class="map-toggle-link" onclick="selectAllMaps()">all</span> / <span class="map-toggle-link" onclick="selectNoneMaps()">none</span>)
+        </span>
+      </div>
+      <div class="chip-grid" id="mapChips"></div>
+    </div>
+
+    <hr class="divider" />
+
     <!-- Date range -->
     <div class="filter-group">
       <span class="filter-label">Date Range</span>
@@ -1012,14 +1040,6 @@
           <span class="toggle-track"></span>
         </label>
       </div>
-    </div>
-
-    <hr class="divider" />
-
-    <!-- Maps -->
-    <div class="filter-group">
-      <span class="filter-label">Maps</span>
-      <div class="chip-grid" id="mapChips"></div>
     </div>
 
     <hr class="divider" />
@@ -1115,6 +1135,14 @@ function positionTooltip(e) {
   _tooltip.style.top = y + 'px';
 }
 
+function selectAllMaps() {
+  document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
+}
+
+function selectNoneMaps() {
+  document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.remove('active'));
+}
+
 // ── Toggle chip ────────────────────────────────────────────────────────────────
 function toggleChip(btn, group) {
   btn.classList.toggle('active');
@@ -1145,9 +1173,8 @@ function resetFilters() {
 
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
 
-  // Reset type filter chips and button
+  // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
-  document.getElementById('typeFilterBtn').classList.remove('active');
 
   applyFilters();
 }
@@ -1509,10 +1536,10 @@ function positionColTip(e) {
 // ── Type column filter ─────────────────────────────────────────────────────────
 function toggleTypeFilterPopup(e) {
   e.stopPropagation();
+  // Don't open if the click was on a chip inside the popup
+  if (e.target.closest('.type-filter-popup')) return;
   const popup = document.getElementById('typeFilterPopup');
-  const btn = document.getElementById('typeFilterBtn');
-  const isOpen = popup.classList.toggle('open');
-  btn.classList.toggle('active', isOpen);
+  popup.classList.toggle('open');
 }
 
 function toggleTypeChip(btn) {
@@ -1522,21 +1549,14 @@ function toggleTypeChip(btn) {
   if (activeChips.length === 1 && btn.classList.contains('active')) return;
 
   btn.classList.toggle('active');
-
-  // Update filter button colour to indicate partial selection
-  const anyDeselected = allChips.some(c => !c.classList.contains('active'));
-  document.getElementById('typeFilterBtn').classList.toggle('active', anyDeselected);
-
   applySearch();
 }
 
 // Close type popup when clicking outside
 document.addEventListener('click', e => {
   const popup = document.getElementById('typeFilterPopup');
-  if (popup && popup.classList.contains('open') && !popup.contains(e.target)) {
+  if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th:first-child')) {
     popup.classList.remove('open');
-    const anyDeselected = [...document.querySelectorAll('#typeFilterPopup .chip')].some(c => !c.classList.contains('active'));
-    document.getElementById('typeFilterBtn').classList.toggle('active', anyDeselected);
   }
 });
 
