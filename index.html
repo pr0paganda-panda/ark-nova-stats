@@ -1054,49 +1054,97 @@
         padding-top: 20px;
       }
 
-      /* Phone horizontal scrolling: keep rank, type, and card visible. */
+      /* Phone horizontal scrolling: keep #, Type, and Card fixed.
+         This uses sticky cells on both axes, because sticky <thead> + sticky
+         columns can otherwise fight each other in mobile Chrome. */
       #statsTable {
         border-collapse: separate;
         border-spacing: 0;
+        --phone-rank-left: 0px;
+        --phone-type-left: 30px;
+        --phone-card-left: 100px;
       }
 
+      /* Force the first three mobile column widths to the exact same values
+         that are used for the sticky left offsets. */
+      #statsTable th:nth-child(1),
+      #statsTable td:nth-child(1) {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+      }
+
+      #statsTable th:nth-child(2),
+      #statsTable td:nth-child(2) {
+        width: 70px !important;
+        min-width: 70px !important;
+        max-width: 70px !important;
+      }
+
+      #statsTable th:nth-child(3),
+      #statsTable td:nth-child(3) {
+        width: 125px !important;
+        min-width: 125px !important;
+        max-width: 125px !important;
+      }
+
+      /* Sticky header row. Putting sticky on the th itself is more reliable
+         than sticky on the whole thead when the table also scrolls sideways. */
+      #statsTable thead {
+        position: static;
+      }
+
+      #statsTable thead th {
+        position: sticky;
+        top: 0;
+        background: var(--bg-surface);
+        z-index: 40;
+      }
+
+      /* Sticky first three columns. The !important is needed because the Type
+         header also has a desktop rule for popup positioning. */
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1),
       #statsTable th:nth-child(2),
       #statsTable td:nth-child(2),
       #statsTable th:nth-child(3),
       #statsTable td:nth-child(3) {
-        position: sticky;
+        position: sticky !important;
         background: var(--bg-panel);
       }
 
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1) {
-        left: 0;
+        left: var(--phone-rank-left);
       }
 
       #statsTable th:nth-child(2),
       #statsTable td:nth-child(2) {
-        left: 30px;
+        left: var(--phone-type-left);
       }
 
       #statsTable th:nth-child(3),
       #statsTable td:nth-child(3) {
-        left: 100px;
-        box-shadow: 2px 0 0 var(--border);
+        left: var(--phone-card-left);
+        box-shadow: 3px 0 0 var(--border);
       }
 
+      /* Top-left sticky cells need to sit above both the horizontal-scrolling
+         header cells and the vertical body cells, otherwise header text can
+         appear to slide through them while scrolling. */
       #statsTable thead th:nth-child(1),
       #statsTable thead th:nth-child(2),
       #statsTable thead th:nth-child(3) {
+        top: 0;
         background: var(--bg-surface);
-        z-index: 45;
+        z-index: 80;
       }
 
       #statsTable tbody td:nth-child(1),
       #statsTable tbody td:nth-child(2),
       #statsTable tbody td:nth-child(3) {
-        z-index: 25;
+        background: var(--bg-panel);
+        z-index: 30;
       }
 
       #statsTable tbody tr:hover td:nth-child(1),
