@@ -323,6 +323,22 @@
       font-size: 12px;
     }
 
+    /* Round chips: fixed uniform size, 6 per row.
+       All active is the default/no-filter state. Any smaller subset triggers
+       a backend round filter and makes in-hand/seen/playrate unavailable. */
+    #roundChips {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
+    }
+
+    #roundChips .chip {
+      text-align: center;
+      justify-content: center;
+      padding: 5px 4px;
+      font-size: 12px;
+    }
+
     .chip {
       padding: 4px 10px;
       border-radius: 20px;
@@ -558,9 +574,9 @@
 
     /* Active Type filter indicator.
        Default = all three card types selected, so the header shows normal "Type ▼".
-       Filtered = only one or two card types selected, so the header turns amber/gold
-       and the arrow is replaced by one/two dots. This is deliberately not the same
-       green used by the sorted-column state. */
+       Filtered = only one or two card types selected, so the header turns warm moss green
+       and the arrow is replaced by one/two dots. This is deliberately warmer/more muted
+       than the brighter green used by the sorted-column state. */
     .type-filter-label {
       display: inline-flex;
       align-items: center;
@@ -579,12 +595,12 @@
     }
 
     #statsTable thead th.type-filter-header.type-filter-active .type-filter-label {
-      color: #d8b75a;
-      text-shadow: 0 0 8px rgba(216,183,90,0.35);
+      color: #9cab63;
+      text-shadow: 0 0 8px rgba(156,171,99,0.35);
     }
 
     #statsTable thead th.type-filter-header.type-filter-active {
-      box-shadow: inset 0 -2px 0 rgba(216,183,90,0.55);
+      box-shadow: inset 0 -2px 0 rgba(156,171,99,0.55);
     }
 
     .type-filter-popup {
@@ -810,6 +826,39 @@
     .n-cell {
       font-variant-numeric: tabular-nums;
       color: var(--text-muted);
+    }
+
+    /* Round-filter-only unavailable stats.
+       When filtering by played round, in-hand delta, playrate, and seen count
+       are not meaningful because the log does not say in which round a card
+       was drawn or appeared on display. Keep the columns in place, but dim them. */
+    .unavailable-cell {
+      color: var(--text-dim);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    #statsTable.round-filter-active thead th:nth-child(3),
+    #statsTable.round-filter-active thead th:nth-child(6),
+    #statsTable.round-filter-active thead th:nth-child(8) {
+      color: var(--text-dim);
+      cursor: not-allowed;
+    }
+
+    #statsTable.round-filter-active thead th:nth-child(3):hover,
+    #statsTable.round-filter-active thead th:nth-child(6):hover,
+    #statsTable.round-filter-active thead th:nth-child(8):hover {
+      color: var(--text-dim);
+    }
+
+    #statsTable.round-filter-active thead th:nth-child(3) .sort-arrow,
+    #statsTable.round-filter-active thead th:nth-child(6) .sort-arrow,
+    #statsTable.round-filter-active thead th:nth-child(8) .sort-arrow,
+    #statsTable.round-filter-active thead th:nth-child(3) .col-tip,
+    #statsTable.round-filter-active thead th:nth-child(6) .col-tip,
+    #statsTable.round-filter-active thead th:nth-child(8) .col-tip {
+      opacity: 0.35;
     }
 
     /* ── Loading & error states ─────────────────────────────────────────────── */
@@ -1429,6 +1478,16 @@
 
     <hr class="divider" />
 
+    <!-- Round filter
+         All six chips active = default/no round filter.
+         Selecting only some chips re-queries the backend for cards played in those rounds. -->
+    <div class="filter-group">
+      <span class="filter-label">Round</span>
+      <div class="chip-grid" id="roundChips"></div>
+    </div>
+
+    <hr class="divider" />
+
     <!-- Date range -->
     <div class="filter-group">
       <span class="filter-label">Date Range</span>
@@ -1484,6 +1543,17 @@ const VALID_MAPS = [
   { code: 'T1',  full: 'Map T1: Tournament 1' },
 ];
 
+// Round filter choices. The backend treats "6+" as round >= 6.
+// All six active means the default/no-filter state.
+const ROUND_FILTERS = [
+  { label: '1',  value: '1' },
+  { label: '2',  value: '2' },
+  { label: '3',  value: '3' },
+  { label: '4',  value: '4' },
+  { label: '5',  value: '5' },
+  { label: '6+', value: '6+' },
+];
+
 // ── State ──────────────────────────────────────────────────────────────────────
 let allData = [];      // Full API result for current backend filters.
 let filteredData = []; // allData after client-side search + Type chip filtering.
@@ -1494,11 +1564,13 @@ let rowsPerPage = 50;
 let searchQuery = '';
 let cardAliases = new Map();
 let isMW = 1;
+let roundFilterActive = false; // Last loaded backend state: true when only some round chips are selected.
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Build dynamic map chips, load alias file, then immediately fetch default stats.
+  // Build dynamic map/round chips, load alias file, then immediately fetch default stats.
   buildMapChips();
+  buildRoundChips();
   updateTypeFilterIndicator();
   await loadCardAliases();
   applyFilters(); // auto-load on page open with defaults
@@ -1516,6 +1588,43 @@ function buildMapChips() {
     btn.onclick = () => toggleChip(btn, 'map');
     container.appendChild(btn);
   });
+}
+
+// ── Round chips ────────────────────────────────────────────────────────────────
+function buildRoundChips() {
+  const container = document.getElementById('roundChips');
+  ROUND_FILTERS.forEach(round => {
+    const btn = document.createElement('button');
+    btn.className = 'chip active';
+    btn.dataset.value = round.value;
+    btn.textContent = round.label;
+    btn.onclick = () => toggleRoundChip(btn);
+    container.appendChild(btn);
+  });
+}
+
+function toggleRoundChip(btn) {
+  // Keep at least one round selected. An empty round filter would only produce
+  // an empty table and is almost certainly accidental.
+  const allChips = [...document.querySelectorAll('#roundChips .chip')];
+  const activeChips = allChips.filter(c => c.classList.contains('active'));
+  if (activeChips.length === 1 && btn.classList.contains('active')) return;
+
+  btn.classList.toggle('active');
+}
+
+function getSelectedRoundTokens() {
+  return [...document.querySelectorAll('#roundChips .chip.active')]
+    .map(c => c.dataset.value);
+}
+
+function isRoundFilterActiveFromChips() {
+  const selectedRounds = getSelectedRoundTokens();
+  return selectedRounds.length > 0 && selectedRounds.length < ROUND_FILTERS.length;
+}
+
+function isRoundUnavailableColumn(col) {
+  return ['delta_in_hand', 'playrate_pct', 'n_seen'].includes(col);
 }
 
 // ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
@@ -1590,6 +1699,7 @@ function resetFilters() {
   document.getElementById('endGameToggle').checked = true;
 
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
+  document.querySelectorAll('#roundChips .chip').forEach(c => c.classList.add('active'));
 
   // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
@@ -1600,16 +1710,22 @@ function resetFilters() {
 
 // ── Collect filter params ──────────────────────────────────────────────────────
 function getParams() {
-  // Collect only backend filters here. Search text and Type chips are intentionally not sent;
-  // they are applied client-side after data has loaded.
+  // Collect backend filters here. Search text and Type chips are intentionally not sent;
+  // they are applied client-side after data has loaded. The Round chips are sent because
+  // round filtering changes the BigQuery aggregation itself.
   const selectedMaps = [...document.querySelectorAll('#mapChips .chip.active')]
     .map(c => c.dataset.value);
+  const selectedRounds = getSelectedRoundTokens();
 
   const params = {
     is_mw: isMW,
     maps: selectedMaps,
     end_game_triggered: document.getElementById('endGameToggle').checked ? true : null,
   };
+
+  if (selectedRounds.length > 0 && selectedRounds.length < ROUND_FILTERS.length) {
+    params.rounds = selectedRounds;
+  }
 
   const pMin = document.getElementById('playerEloMin').value;
   const pMax = document.getElementById('playerEloMax').value;
@@ -1651,6 +1767,15 @@ async function applyFilters() {
     const json = await res.json();
 
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
+
+    roundFilterActive = Boolean(json.round_filter_active ?? params.rounds);
+
+    // In round-filter mode, these columns are intentionally unavailable. If the
+    // table was previously sorted by one of them, switch to Δ (Played), which
+    // remains meaningful for played-round analysis.
+    if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
+      currentSort = { col: 'delta_played', dir: 'desc' };
+    }
 
     allData = json.data;
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
@@ -1784,6 +1909,9 @@ function applySearch() {
 
 // ── Sort ───────────────────────────────────────────────────────────────────────
 function sortBy(col) {
+  // Round-filtered data cannot meaningfully sort by stats that are hidden as unavailable.
+  if (roundFilterActive && isRoundUnavailableColumn(col)) return;
+
   if (currentSort.col === col) {
     currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
   } else {
@@ -1830,6 +1958,8 @@ function assignGlobalRanks() {
 
 function applySortAndRender() {
   assignGlobalRanks();
+  const table = document.getElementById('statsTable');
+  if (table) table.classList.toggle('round-filter-active', roundFilterActive);
   const { col, dir } = currentSort;
   const sorted = [...filteredData].sort(compareRowsForCurrentSort);
 
@@ -1896,22 +2026,34 @@ function renderTable(data) {
     const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
     const eloCol = eloColor(row.avg_elo, minElo, maxElo);
 
-    return `<tr>
-      <td class="rank-cell">${row.global_rank ?? '—'}</td>
-      <td class="card-name">${titleCase(row.card_name)}</td>
-      <td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>
-      <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
-      <td class="n-cell" style="color:${eloCol}">${eloDisplay}</td>
-      <td>
+    const inHandCell = roundFilterActive
+      ? '<td class="unavailable-cell">—</td>'
+      : `<td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>`;
+
+    const playrateCell = roundFilterActive
+      ? '<td class="unavailable-cell">—</td>'
+      : `<td>
         <div class="playrate-cell">
           <div class="playrate-bar-wrap">
             <div class="playrate-bar" style="width:${barWidth}%;background:${barColor}"></div>
           </div>
           <span class="playrate-val" style="color:${barColor}">${pr}</span>
         </div>
-      </td>
+      </td>`;
+
+    const seenCell = roundFilterActive
+      ? '<td class="unavailable-cell">—</td>'
+      : `<td class="n-cell">${fmtN(row.n_seen)}</td>`;
+
+    return `<tr>
+      <td class="rank-cell">${row.global_rank ?? '—'}</td>
+      <td class="card-name">${titleCase(row.card_name)}</td>
+      ${inHandCell}
+      <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
+      <td class="n-cell" style="color:${eloCol}">${eloDisplay}</td>
+      ${playrateCell}
       <td class="n-cell">${fmtN(row.n_played)}</td>
-      <td class="n-cell">${fmtN(row.n_seen)}</td>
+      ${seenCell}
       <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
     </tr>`;
   }).join('');
@@ -2106,7 +2248,7 @@ function toggleTypeFilterPopup(e) {
 function updateTypeFilterIndicator() {
   // Visual reminder for the client-side Type filter after the popup is closed.
   // All three selected = default state with arrow.
-  // Two selected = two amber dots. One selected = one amber dot.
+  // Two selected = two warm-green dots. One selected = one warm-green dot.
   const header = document.getElementById('typeFilterHeader');
   const indicator = document.getElementById('typeFilterIndicator');
   const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
