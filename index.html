@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ark Nova Statistics</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -87,6 +88,16 @@
       left: 50%;
       transform: translateX(-50%);
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar-logo-img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
 
     .topbar-logo span {
@@ -468,14 +479,14 @@
     }
 
     .map-toggle-link {
-      color: var(--accent);
+      color: #4f9f61;
       cursor: pointer;
       text-decoration: underline;
       text-underline-offset: 2px;
     }
 
     .map-toggle-link:hover {
-      color: var(--text);
+      color: #6fbf7f;
     }
 
     /* ── Type column filter ─────────────────────────────────────────────────── */
@@ -516,7 +527,7 @@
     .type-filter-popup.open { display: flex; }
 
     /* The th that contains the popup needs relative positioning */
-    #statsTable thead th:first-child { position: relative; }
+    #statsTable thead th:nth-child(2) { position: relative; }
 
     /* ── Column header tooltips ─────────────────────────────────────────────── */
     .col-tip {
@@ -578,7 +589,9 @@
       background: var(--bg-panel);
       border: 2px solid var(--border);
       border-radius: var(--radius-lg);
-      overflow: auto;
+      overflow-x: auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     table {
@@ -703,7 +716,13 @@
       text-align: right;
     }
 
-    /* n columns */
+    /* rank + n columns */
+    .rank-cell {
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      font-weight: 600;
+    }
+
     .n-cell {
       font-variant-numeric: tabular-nums;
       color: var(--text-muted);
@@ -881,11 +900,18 @@
       .sidebar-hidden .sidebar { display: block; }
 
       .topbar { padding: 0 16px; }
-      .topbar-logo { font-size: 15px; }
-      .main { padding: 16px; }
+      .topbar-logo { font-size: 15px; gap: 6px; }
+      .topbar-logo-img { width: 24px; height: 24px; }
+      .main { padding: 12px; overflow-x: hidden; }
       .search-input { width: 160px; }
       .search-input:focus { width: 180px; }
-      th, td { padding: 8px 10px; }
+      th, td { padding: 8px 6px; font-size: 12px; }
+      #statsTable { min-width: 650px; }
+      #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 26px !important; }
+      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 56px !important; }
+      #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 108px !important; }
+      #statsTable th:nth-child(4), #statsTable td:nth-child(4) { width: 70px !important; }
+      #statsTable th:nth-child(5), #statsTable td:nth-child(5) { width: 70px !important; }
     }
 
     /* Overlay for mobile sidebar */
@@ -910,7 +936,7 @@
     <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
     <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
   </div>
-  <div class="topbar-logo">Ark Nova <span>Statistics</span></div>
+  <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" />Ark Nova <span>Statistics</span></div>
   <button class="mobile-filter-btn filter-toggle-highlight" onclick="toggleSidebar()" id="filterToggleBtn">
     ☰ Filters
   </button>
@@ -934,7 +960,7 @@
           Rows
           <select class="rpp-select" id="rppSelect" onchange="onRppChange()">
             <option value="25">25</option>
-            <option value="50">50</option>
+            <option value="50" selected>50</option>
             <option value="100">100</option>
             <option value="9999">All</option>
           </select>
@@ -946,6 +972,7 @@
       <table id="statsTable">
         <thead>
           <tr>
+            <th style="width:5%;text-align:center;cursor:default;">#</th>
             <th style="width:10%;text-align:center;cursor:pointer;" onclick="toggleTypeFilterPopup(event)">
               Type ▼
               <div class="type-filter-popup" id="typeFilterPopup">
@@ -957,14 +984,14 @@
             <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
             <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
             <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
-            <th onclick="sortBy('avg_elo')" style="width:10%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
-            <th onclick="sortBy('playrate_pct')" style="width:16%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
+            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
+            <th onclick="sortBy('playrate_pct')" style="width:13%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
             <th onclick="sortBy('n_played')" style="width:10%;text-align:center">Played<span class="col-tip" data-tip-played>?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
             <th onclick="sortBy('n_seen')" style="width:10%;text-align:center">Seen<span class="col-tip" data-tip-seen>?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          <tr><td colspan="8">
+          <tr><td colspan="9">
             <div class="state-overlay">
               <div class="spinner"></div>
               <div class="state-title">Set your filters and click Load Stats</div>
@@ -1074,9 +1101,9 @@ const VALID_MAPS = [
 // ── State ──────────────────────────────────────────────────────────────────────
 let allData = [];
 let filteredData = [];
-let currentSort = { col: 'playrate_pct', dir: 'desc' };
+let currentSort = { col: 'delta_in_hand', dir: 'desc' };
 let currentPage = 1;
-let rowsPerPage = 25;
+let rowsPerPage = 50;
 let searchQuery = '';
 let isMW = 1;
 
@@ -1272,14 +1299,39 @@ function sortBy(col) {
   applySortAndRender();
 }
 
-function applySortAndRender() {
+function compareRowsForCurrentSort(a, b) {
   const { col, dir } = currentSort;
-  const sorted = [...filteredData].sort((a, b) => {
-    const av = a[col] ?? (col === 'card_name' ? '' : -Infinity);
-    const bv = b[col] ?? (col === 'card_name' ? '' : -Infinity);
-    if (typeof av === 'string') return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-    return dir === 'asc' ? av - bv : bv - av;
+  const av = a[col] ?? (col === 'card_name' ? '' : -Infinity);
+  const bv = b[col] ?? (col === 'card_name' ? '' : -Infinity);
+
+  let result;
+  if (typeof av === 'string' || typeof bv === 'string') {
+    result = String(av).localeCompare(String(bv));
+  } else {
+    result = av - bv;
+  }
+
+  if (result === 0) {
+    result = String(a.card_name || '').localeCompare(String(b.card_name || ''));
+  }
+  if (result === 0) {
+    result = String(a.card_type || '').localeCompare(String(b.card_type || ''));
+  }
+
+  return dir === 'asc' ? result : -result;
+}
+
+function assignGlobalRanks() {
+  const globallySorted = [...allData].sort(compareRowsForCurrentSort);
+  globallySorted.forEach((row, index) => {
+    row.global_rank = index + 1;
   });
+}
+
+function applySortAndRender() {
+  assignGlobalRanks();
+  const { col, dir } = currentSort;
+  const sorted = [...filteredData].sort(compareRowsForCurrentSort);
 
   // Update sort arrows
   document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '↕');
@@ -1307,7 +1359,7 @@ function renderTable(data) {
   const meta = document.getElementById('tableMeta');
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="8">
+    tbody.innerHTML = `<tr><td colspan="9">
       <div class="state-overlay">
         <div class="error-icon">🔍</div>
         <div class="state-title">No cards found</div>
@@ -1343,6 +1395,7 @@ function renderTable(data) {
     const eloCol = eloColor(row.avg_elo, minElo, maxElo);
 
     return `<tr>
+      <td class="rank-cell">${row.global_rank ?? '—'}</td>
       <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
       <td class="card-name">${titleCase(row.card_name)}</td>
       <td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>
@@ -1409,7 +1462,7 @@ function goPage(p) {
 
 // ── States ─────────────────────────────────────────────────────────────────────
 function showLoading() {
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="8">
+  document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
       <div class="spinner"></div>
       <div class="state-title">Fetching data…</div>
@@ -1421,7 +1474,7 @@ function showLoading() {
 }
 
 function showError(msg) {
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="8">
+  document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
       <div class="error-icon">⚠️</div>
       <div class="state-title">Something went wrong</div>
@@ -1450,7 +1503,8 @@ function titleCase(str) {
       const w = word.toLowerCase();
       // Always capitalise the first word; lowercase the small words otherwise
       if (i > 0 && lower.has(w)) return w;
-      return w.charAt(0).toUpperCase() + w.slice(1);
+      // Capitalise the first actual letter, so "(domestic)" becomes "(Domestic)".
+      return w.replace(/[A-Za-zÀ-ÖØ-öø-ÿ]/, ch => ch.toUpperCase());
     })
     .join(' ');
 }
@@ -1555,7 +1609,7 @@ function toggleTypeChip(btn) {
 // Close type popup when clicking outside
 document.addEventListener('click', e => {
   const popup = document.getElementById('typeFilterPopup');
-  if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th:first-child')) {
+  if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th:nth-child(2)')) {
     popup.classList.remove('open');
   }
 });
