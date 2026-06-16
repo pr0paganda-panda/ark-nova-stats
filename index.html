@@ -341,10 +341,16 @@
 
     .round-min-plays-row {
       margin-top: 10px;
+      gap: 8px;
     }
 
     #minPlaysToggleText {
-      line-height: 1.35;
+      color: #8ea789;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.25;
+      letter-spacing: 0.005em;
+      white-space: nowrap;
     }
 
     .chip {
@@ -1499,7 +1505,7 @@
       </div>
       <div class="chip-grid" id="roundChips"></div>
       <div class="toggle-row round-min-plays-row">
-        <span class="toggle-label" id="minPlaysToggleText">Only show cards with 1000+ plays</span>
+        <span class="toggle-label" id="minPlaysToggleText">Only cards with 1000+ plays</span>
         <label class="toggle">
           <input type="checkbox" id="minPlaysToggle" checked onchange="onMinPlaysToggleChange()" />
           <span class="toggle-track"></span>
@@ -1939,7 +1945,7 @@ function onSearch() {
 function updateMinPlaysToggleText() {
   const label = document.getElementById('minPlaysToggleText');
   if (label) {
-    label.textContent = minPlaysOnly ? 'Only show cards with 1000+ plays' : 'Show all cards';
+    label.textContent = 'Only cards with 1000+ plays';
   }
 }
 
