@@ -95,6 +95,10 @@
     .tabs {
       display: flex;
       gap: 4px;
+    }
+
+    /* push filter button to the far right */
+    .mobile-filter-btn {
       margin-left: auto;
     }
 
@@ -933,8 +937,8 @@
               </div>
             </th>
             <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
-            <th onclick="sortBy('delta_in_hand')" style="width:13%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when the card was in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
-            <th onclick="sortBy('delta_played')" style="width:13%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when the card was played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
+            <th onclick="sortBy('delta_in_hand')" style="width:13%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
+            <th onclick="sortBy('delta_played')" style="width:13%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
             <th onclick="sortBy('playrate_pct')" style="width:18%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
             <th onclick="sortBy('n_played')" style="width:13%;text-align:center">n (played)<span class="col-tip" data-tip="Played by either player">?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
             <th onclick="sortBy('n_seen')" style="width:13%;text-align:center">n (seen)<span class="col-tip" data-tip="On display or in hand of either player">?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
