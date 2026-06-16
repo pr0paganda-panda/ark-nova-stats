@@ -407,6 +407,13 @@
       gap: 12px;
     }
 
+    .main-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     .table-meta {
       font-size: 12px;
       color: var(--text-muted);
@@ -908,7 +915,6 @@
       .search-input { width: 160px; }
       .search-input:focus { width: 180px; }
       th, td { padding: 8px 6px; font-size: 12px; }
-      /* Tablets keep the same percentage-based column widths as desktop. */
     }
 
     /* Phone-only refinements: keep tablet/desktop layout unchanged. */
@@ -974,28 +980,23 @@
 
       .main { padding: 12px 10px; }
 
-      /* Phone-only main controls: first row = result count + rows selector,
-         second row = full-width search bar. */
       .main-header {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: 1fr auto;
         align-items: center;
-        gap: 10px 12px;
-        margin-bottom: 14px;
+        gap: 10px;
+        margin-bottom: 12px;
       }
 
-      .main-header > .table-meta {
+      .main-controls {
+        display: contents;
+      }
+
+      .main-header .table-meta {
         grid-column: 1;
         grid-row: 1;
-        min-width: 0;
+        align-self: center;
         font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .main-header > .main-controls {
-        display: contents !important;
       }
 
       .main-header .rpp-wrap {
@@ -1003,13 +1004,6 @@
         grid-row: 1;
         justify-self: end;
         gap: 6px;
-        font-size: 12px;
-        white-space: nowrap;
-      }
-
-      .main-header .rpp-select {
-        font-size: 12px;
-        padding: 5px 8px;
       }
 
       .main-header .search-wrap {
@@ -1031,8 +1025,8 @@
       }
 
       #statsTable {
-        width: 805px;
-        min-width: 805px;
+        width: 765px;
+        min-width: 765px;
       }
 
       #statsTable th,
@@ -1064,8 +1058,8 @@
         font-size: 11.5px;
       }
 
-      #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 50px !important; }
-      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 150px !important; }
+      #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 40px !important; }
+      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 120px !important; }
       #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 100px !important; }
       #statsTable th:nth-child(4), #statsTable td:nth-child(4) { width: 100px !important; }
       #statsTable th:nth-child(5), #statsTable td:nth-child(5) { width: 60px !important; }
@@ -1106,23 +1100,23 @@
         border-collapse: separate;
         border-spacing: 0;
         --phone-rank-left: 0px;
-        --phone-card-left: 50px;
+        --phone-card-left: 40px;
       }
 
       /* Force the sticky mobile column widths to the exact same values
          that are used for the sticky left offsets. */
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1) {
-        width: 50px !important;
-        min-width: 50px !important;
-        max-width: 50px !important;
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
       }
 
       #statsTable th:nth-child(2),
       #statsTable td:nth-child(2) {
-        width: 150px !important;
-        min-width: 150px !important;
-        max-width: 150px !important;
+        width: 120px !important;
+        min-width: 120px !important;
+        max-width: 120px !important;
       }
 
       /* Sticky header row. Putting sticky on the th itself is more reliable
@@ -1221,7 +1215,7 @@
   <main class="main">
     <div class="main-header">
       <div class="table-meta" id="tableMeta">—</div>
-      <div class="main-controls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="main-controls">
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input class="search-input" type="text" id="searchInput" placeholder="Search cards…" oninput="onSearch()" />
