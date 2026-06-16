@@ -37,7 +37,10 @@
       --neg-strong:  #c0432a;
       --neutral:     #7a9e80;
 
-      /* playrate colour scale (blue) */
+      /* elo colour scale (teal/blue-green) */
+      --elo-low:   #2a5a5a;
+      --elo-mid:   #2a8a7a;
+      --elo-high:  #4acfb0;
       --pr-low:      #2a4a6a;
       --pr-mid:      #3a7abf;
       --pr-high:     #6bb5f0;
@@ -927,7 +930,7 @@
       <table id="statsTable">
         <thead>
           <tr>
-            <th style="width:8%;text-align:center">
+            <th style="width:10%;text-align:center">
               Type
               <button class="type-filter-btn" id="typeFilterBtn" onclick="toggleTypeFilterPopup(event)" title="Filter by type">▼</button>
               <div class="type-filter-popup" id="typeFilterPopup">
@@ -939,10 +942,10 @@
             <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
             <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
             <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
-            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average elo of the player when the card was played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
+            <th onclick="sortBy('avg_elo')" style="width:10%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
             <th onclick="sortBy('playrate_pct')" style="width:16%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
-            <th onclick="sortBy('n_played')" style="width:12%;text-align:center">n (played)<span class="col-tip" data-tip="Played by either player">?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
-            <th onclick="sortBy('n_seen')" style="width:12%;text-align:center">n (seen)<span class="col-tip" data-tip="On display or in hand of either player">?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
+            <th onclick="sortBy('n_played')" style="width:10%;text-align:center">Played<span class="col-tip" data-tip-played>?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
+            <th onclick="sortBy('n_seen')" style="width:10%;text-align:center">Seen<span class="col-tip" data-tip-seen>?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -1296,23 +1299,28 @@ function renderTable(data) {
   const start = (currentPage - 1) * rpp;
   const pageData = data.slice(start, start + rpp);
 
-  // Find max playrate for bar scaling
+  // Find max playrate for bar scaling, and elo range for colour scale
   const maxPR = Math.max(...data.map(r => r.playrate_pct || 0), 1);
+  const eloVals = data.map(r => r.avg_elo).filter(v => v != null);
+  const minElo = Math.min(...eloVals);
+  const maxElo = Math.max(...eloVals);
 
   tbody.innerHTML = pageData.map(row => {
     const dp = fmtDelta(row.delta_played);
     const dh = fmtDelta(row.delta_in_hand);
     const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '—';
     const prVal = row.playrate_pct || 0;
-    const barWidth = Math.round((prVal / maxPR) * 100);
+    const barWidth = prVal; // absolute: playrate % = bar width %
     const barColor = prColor(prVal);
+    const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
+    const eloCol = eloColor(row.avg_elo, minElo, maxElo);
 
     return `<tr>
       <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
       <td class="card-name">${titleCase(row.card_name)}</td>
       <td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>
       <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
-      <td class="n-cell">${row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—'}</td>
+      <td class="n-cell" style="color:${eloCol}">${eloDisplay}</td>
       <td>
         <div class="playrate-cell">
           <div class="playrate-bar-wrap">
@@ -1437,11 +1445,19 @@ function prColor(val) {
   return 'var(--pr-low)';
 }
 
+function eloColor(val, minElo, maxElo) {
+  if (val == null) return 'var(--text-muted)';
+  if (maxElo === minElo) return 'var(--elo-mid)';
+  const t = (val - minElo) / (maxElo - minElo); // 0 = lowest, 1 = highest
+  if (t >= 0.66) return 'var(--elo-high)';
+  if (t >= 0.33) return 'var(--elo-mid)';
+  return 'var(--elo-low)';
+}
+
 // ── Column header tooltips ─────────────────────────────────────────────────────
 const _colTip = document.getElementById('col-tooltip');
 
 document.addEventListener('mouseover', e => {
-  // Trigger on the th that contains a col-tip, or on the col-tip itself
   const th = e.target.closest('th');
   if (!th) return;
   const tipEl = th.querySelector('.col-tip');
@@ -1449,9 +1465,13 @@ document.addEventListener('mouseover', e => {
 
   if (tipEl.hasAttribute('data-tip-fraction')) {
     _colTip.innerHTML = `<div class="tip-fraction">
-      <span class="tip-num">n (played)</span>
-      <span class="tip-den">n (seen)</span>
+      <span class="tip-num">played</span>
+      <span class="tip-den">seen</span>
     </div>`;
+  } else if (tipEl.hasAttribute('data-tip-played')) {
+    _colTip.innerHTML = `<div class="tip-plain">n (played by either player)</div>`;
+  } else if (tipEl.hasAttribute('data-tip-seen')) {
+    _colTip.innerHTML = `<div class="tip-plain">n (on display or in hand of either player)</div>`;
   } else {
     _colTip.textContent = tipEl.dataset.tip;
   }
