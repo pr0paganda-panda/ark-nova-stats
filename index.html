@@ -339,20 +339,6 @@
       font-size: 12px;
     }
 
-    .round-min-plays-row {
-      margin-top: 10px;
-      gap: 8px;
-    }
-
-    #minPlaysToggleText {
-      color: #8ea789;
-      font-size: 12px;
-      font-weight: 500;
-      line-height: 1.25;
-      letter-spacing: 0.005em;
-      white-space: nowrap;
-    }
-
     .chip {
       padding: 4px 10px;
       border-radius: 20px;
@@ -464,8 +450,8 @@
       overflow-x: auto;
     }
 
-    /* Header above the table: result count on the left, search/rows controls on the right.
-       On phones this is overridden into two rows: meta+Rows first, full-width search second. */
+    /* Header above the table: result count on the left, minimum-play and row controls on the right.
+       Card search now lives in the Card table header instead of this control row. */
     .main-header {
       display: flex;
       align-items: center;
@@ -478,10 +464,51 @@
 
     .main-controls {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
       flex-wrap: wrap;
     }
+
+    .min-plays-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #8aa386;
+      white-space: nowrap;
+    }
+
+    .min-plays-label {
+      font-size: 12px;
+      color: #8aa386;
+      font-weight: 500;
+    }
+
+    .min-plays-label-short { display: none; }
+
+    .min-plays-input {
+      width: 74px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      padding: 4px 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .min-plays-input:focus { border-color: var(--accent-dim); }
+    .min-plays-input::placeholder { color: var(--text-dim); }
+
+    .min-plays-input::-webkit-outer-spin-button,
+    .min-plays-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .min-plays-input[type=number] { -moz-appearance: textfield; }
 
     .table-meta {
       font-size: 12px;
@@ -493,39 +520,101 @@
       font-weight: 600;
     }
 
-    /* Search */
-    .search-wrap {
-      position: relative;
+    /* Card-header search.
+       The search input is hidden inside the Card header until the search icon is clicked.
+       Closing it with X also clears the card search so users are not left with a hidden active filter. */
+    .card-search-header { position: relative; }
+
+    .card-header-content {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      width: 100%;
     }
 
-    .search-input {
+    .card-search-btn {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s, text-shadow 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .card-search-btn:hover,
+    .card-search-btn.search-active {
+      color: var(--accent);
+      text-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .card-header-search {
+      display: none;
+      position: absolute;
+      inset: 5px 6px;
+      align-items: center;
+      gap: 5px;
       background: var(--bg-surface);
-      border: 1px solid var(--border);
+      border: 1px solid var(--accent-dim);
       border-radius: var(--radius);
+      padding: 0 5px;
+      z-index: 120;
+      box-shadow: 0 0 0 2px rgba(45,107,60,0.18);
+    }
+
+    .card-header-search.open { display: flex; }
+
+    .card-header-search-icon {
+      color: var(--text-dim);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .card-header-search-input {
+      min-width: 0;
+      width: 100%;
+      background: transparent;
+      border: none;
       color: var(--text);
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      padding: 7px 12px 7px 32px;
+      font-size: 12px;
       outline: none;
-      width: 200px;
-      transition: border-color 0.15s, width 0.2s;
+      padding: 3px 0;
+      text-transform: none;
+      letter-spacing: 0;
     }
 
-    .search-input:focus {
-      border-color: var(--accent-dim);
-      width: 240px;
-    }
+    .card-header-search-input::placeholder { color: var(--text-dim); }
 
-    .search-input::placeholder { color: var(--text-dim); }
-
-    .search-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
+    .card-search-close {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
       color: var(--text-dim);
-      pointer-events: none;
-      font-size: 13px;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      border-radius: var(--radius);
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .card-search-close:hover {
+      color: var(--text);
+      background: var(--bg-hover);
     }
 
     /* Rows per page */
@@ -1050,8 +1139,6 @@
       .topbar-logo { font-size: 15px; gap: 6px; }
       .topbar-logo-img { width: 24px; height: 24px; }
       .main { padding: 12px; overflow-x: hidden; }
-      .search-input { width: 160px; }
-      .search-input:focus { width: 180px; }
       th, td { padding: 8px 6px; font-size: 12px; }
       /* Tablets keep the same percentage-based column widths as desktop. */
     }
@@ -1121,58 +1208,58 @@
 
       .main { padding: 12px 10px; }
 
-      /* Phone-only main controls: first row = result count + rows selector,
-         second row = full-width search bar. */
+      /* Phone-only main controls: compact single row with result count, minimum plays, and rows selector.
+         Search stays in the Card table header on all screen sizes. */
       .main-header {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        display: flex;
         align-items: center;
-        gap: 10px 12px;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 8px;
         margin-bottom: 14px;
         padding: 0;
       }
 
       .main-header > .table-meta {
-        grid-column: 1;
-        grid-row: 1;
         min-width: 0;
+        flex: 1 1 auto;
         font-size: 12px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      .main-header .meta-prefix {
-        display: none;
-      }
+      .main-header .meta-prefix { display: none; }
 
       .main-header > .main-controls {
-        display: contents !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+        gap: 7px;
+        flex-wrap: nowrap;
+      }
+
+      .main-header .min-plays-wrap { gap: 5px; }
+      .main-header .min-plays-label { font-size: 11px; }
+      .min-plays-label-full { display: none; }
+      .min-plays-label-short { display: inline; }
+
+      .main-header .min-plays-input {
+        width: 50px;
+        padding: 5px 6px;
+        font-size: 12px;
       }
 
       .main-header .rpp-wrap {
-        grid-column: 2;
-        grid-row: 1;
-        justify-self: end;
-        gap: 6px;
-        font-size: 12px;
+        gap: 5px;
+        font-size: 11px;
         white-space: nowrap;
       }
 
       .main-header .rpp-select {
         font-size: 12px;
-        padding: 5px 8px;
-      }
-
-      .main-header .search-wrap {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        width: 100%;
-      }
-
-      .main-header .search-input,
-      .main-header .search-input:focus {
-        width: 100% !important;
+        padding: 5px 6px;
       }
 
       .table-wrap {
@@ -1379,15 +1466,15 @@
   <main class="main">
     <!--
       Main table controls.
-      Desktop/tablet: meta left, search + rows right.
-      Phone: CSS display: contents / grid moves Rows into row 1 and search into row 2.
+      Desktop/tablet: meta left, Minimum plays + Rows controls right.
+      Phone: compact single row. Card search lives inside the Card table header.
     -->
     <div class="main-header">
       <div class="table-meta" id="tableMeta">—</div>
       <div class="main-controls">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input class="search-input" type="text" id="searchInput" placeholder="Search cards…" oninput="onSearch()" />
+        <div class="min-plays-wrap">
+          <label class="min-plays-label" for="minPlayedInput"><span class="min-plays-label-full">Minimum plays</span><span class="min-plays-label-short">Min plays</span></label>
+          <input class="min-plays-input" type="number" id="minPlayedInput" placeholder="—" min="0" inputmode="numeric" oninput="onMinPlaysInput()" />
         </div>
         <div class="rpp-wrap">
           Rows
@@ -1414,7 +1501,18 @@
           -->
           <tr>
             <th style="width:5%;text-align:center;cursor:default;">#</th>
-            <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
+            <th class="card-search-header" onclick="sortBy('card_name')" style="width:20%;text-align:center">
+              <div class="card-header-content" id="cardHeaderContent">
+                <button class="card-search-btn" id="cardSearchBtn" onclick="openCardSearch(event)" title="Search cards" aria-label="Search cards">🔍</button>
+                <span class="card-header-title">Card</span>
+                <span class="sort-arrow" id="sort-card_name">↕</span>
+              </div>
+              <div class="card-header-search" id="cardHeaderSearch" onclick="event.stopPropagation()">
+                <span class="card-header-search-icon">🔍</span>
+                <input class="card-header-search-input" type="text" id="searchInput" placeholder="Search…" oninput="onSearch()" />
+                <button class="card-search-close" onclick="closeCardSearch(event)" title="Clear search" aria-label="Clear search">×</button>
+              </div>
+            </th>
             <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
             <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
             <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
@@ -1494,8 +1592,7 @@
 
     <!-- Round filter
          All six chips active = default/no round filter.
-         Selecting only some chips re-queries the backend for cards played in those rounds.
-         The 1000+ plays switch below is client-side only and updates immediately. -->
+         Selecting only some chips re-queries the backend for cards played in those rounds. -->
     <div class="filter-group">
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
         <span class="filter-label" style="margin-bottom:0">Round</span>
@@ -1504,13 +1601,6 @@
         </span>
       </div>
       <div class="chip-grid" id="roundChips"></div>
-      <div class="toggle-row round-min-plays-row">
-        <span class="toggle-label" id="minPlaysToggleText">Only cards with 1000+ plays</span>
-        <label class="toggle">
-          <input type="checkbox" id="minPlaysToggle" checked onchange="onMinPlaysToggleChange()" />
-          <span class="toggle-track"></span>
-        </label>
-      </div>
     </div>
 
     <hr class="divider" />
@@ -1592,7 +1682,7 @@ let searchQuery = '';
 let cardAliases = new Map();
 let isMW = 1;
 let roundFilterActive = false; // Last loaded backend state: true when fewer than all round chips are selected.
-let minPlaysOnly = true;       // Client-side threshold: when true, only show cards with n_played >= 1000.
+let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blank means no minimum.
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1600,7 +1690,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildMapChips();
   buildRoundChips();
   updateTypeFilterIndicator();
-  updateMinPlaysToggleText();
   await loadCardAliases();
   applyFilters(); // auto-load on page open with defaults
 });
@@ -1735,10 +1824,9 @@ function resetFilters() {
 
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
   document.querySelectorAll('#roundChips .chip').forEach(c => c.classList.add('active'));
-  const minPlaysToggle = document.getElementById('minPlaysToggle');
-  if (minPlaysToggle) minPlaysToggle.checked = true;
-  minPlaysOnly = true;
-  updateMinPlaysToggleText();
+  const minPlayedInput = document.getElementById('minPlayedInput');
+  if (minPlayedInput) minPlayedInput.value = '';
+  minPlayedThreshold = null;
 
   // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
@@ -1808,6 +1896,7 @@ async function applyFilters() {
     allData = [];
     filteredData = [];
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+    updateCardSearchIndicator();
     applySearch();
     return;
   }
@@ -1840,6 +1929,7 @@ async function applyFilters() {
 
     allData = json.data;
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+    updateCardSearchIndicator();
     applySearch();
 
   } catch (err) {
@@ -1939,27 +2029,50 @@ function aliasesForCard(cardName) {
 // ── Search ─────────────────────────────────────────────────────────────────────
 function onSearch() {
   searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+  updateCardSearchIndicator();
   applySearch();
 }
 
-function updateMinPlaysToggleText() {
-  const label = document.getElementById('minPlaysToggleText');
-  if (label) {
-    label.textContent = 'Only cards with 1000+ plays';
-  }
+function openCardSearch(event) {
+  if (event) event.stopPropagation();
+  const searchBox = document.getElementById('cardHeaderSearch');
+  const input = document.getElementById('searchInput');
+  if (searchBox) searchBox.classList.add('open');
+  if (input) input.focus();
 }
 
-function onMinPlaysToggleChange() {
-  const toggle = document.getElementById('minPlaysToggle');
-  minPlaysOnly = Boolean(toggle && toggle.checked);
-  updateMinPlaysToggleText();
+function closeCardSearch(event) {
+  if (event) event.stopPropagation();
+  const searchBox = document.getElementById('cardHeaderSearch');
+  const input = document.getElementById('searchInput');
+  if (input) input.value = '';
+  searchQuery = '';
+  if (searchBox) searchBox.classList.remove('open');
+  updateCardSearchIndicator();
+  applySearch();
+}
+
+function updateCardSearchIndicator() {
+  const btn = document.getElementById('cardSearchBtn');
+  if (btn) btn.classList.toggle('search-active', Boolean(searchQuery));
+}
+
+function onMinPlaysInput() {
+  const input = document.getElementById('minPlayedInput');
+  const raw = input ? input.value.trim() : '';
+  if (!raw) {
+    minPlayedThreshold = null;
+  } else {
+    const parsed = parseInt(raw, 10);
+    minPlayedThreshold = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  }
   applySearch();
 }
 
 function applySearch() {
   // Client-side filters are applied here:
   // 1. Type popup (animal/sponsor/project),
-  // 2. optional minimum of 1000 played games,
+  // 2. optional Minimum plays input using n_played,
   // 3. search over card name, card type, and aliases from cards_altnames.csv.
   // This preserves original backend names and only changes frontend display behaviour.
   const activeTypes = new Set(
@@ -1968,7 +2081,7 @@ function applySearch() {
 
   filteredData = allData.filter(row => {
     if (!activeTypes.has(row.card_type)) return false;
-    if (minPlaysOnly && Number(row.n_played || 0) < 1000) return false;
+    if (minPlayedThreshold != null && Number(row.n_played || 0) < minPlayedThreshold) return false;
 
     const cardName = normalizeSearchText(row.card_name);
     const cardType = normalizeSearchText(row.card_type);
