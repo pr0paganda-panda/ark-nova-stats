@@ -407,6 +407,13 @@
       gap: 12px;
     }
 
+    .main-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     .table-meta {
       font-size: 12px;
       color: var(--text-muted);
@@ -526,10 +533,8 @@
 
     .type-filter-popup.open { display: flex; }
 
-    /* The th that contains the popup needs relative positioning on desktop.
-       On phones it is overridden back to sticky, because all header cells must
-       stay aligned during horizontal table scrolling. */
-    #statsTable thead th.type-filter-header { position: relative; }
+    /* The th that contains the popup needs relative positioning */
+    #statsTable thead th:nth-child(2) { position: relative; }
 
     /* ── Column header tooltips ─────────────────────────────────────────────── */
     .col-tip {
@@ -910,14 +915,10 @@
       th, td { padding: 8px 6px; font-size: 12px; }
       #statsTable { min-width: 650px; }
       #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 26px !important; }
-      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 108px !important; }
-      #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 70px !important; }
+      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 56px !important; }
+      #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 108px !important; }
       #statsTable th:nth-child(4), #statsTable td:nth-child(4) { width: 70px !important; }
-      #statsTable th:nth-child(5), #statsTable td:nth-child(5) { width: 56px !important; }
-      #statsTable th:nth-child(6), #statsTable td:nth-child(6) { width: 96px !important; }
-      #statsTable th:nth-child(7), #statsTable td:nth-child(7) { width: 76px !important; }
-      #statsTable th:nth-child(8), #statsTable td:nth-child(8) { width: 76px !important; }
-      #statsTable th:nth-child(9), #statsTable td:nth-child(9) { width: 72px !important; }
+      #statsTable th:nth-child(5), #statsTable td:nth-child(5) { width: 70px !important; }
     }
 
     /* Phone-only refinements: keep tablet/desktop layout unchanged. */
@@ -983,6 +984,54 @@
 
       .main { padding: 12px 10px; }
 
+      .main-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px 12px;
+        margin-bottom: 14px;
+      }
+
+      .main-controls {
+        display: contents;
+      }
+
+      .table-meta {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: 12px;
+        min-width: 0;
+      }
+
+      .table-meta .meta-prefix {
+        display: none;
+      }
+
+      .rpp-wrap {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        gap: 7px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .rpp-select {
+        padding: 5px 24px 5px 10px;
+        font-size: 12px;
+      }
+
+      .search-wrap {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
+      }
+
+      .search-input,
+      .search-input:focus {
+        width: 100%;
+      }
+
       .table-wrap {
         width: 100%;
         overflow-x: auto;
@@ -1025,14 +1074,14 @@
       }
 
       #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 30px !important; }
-      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 150px !important; }
-      #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 14% !important; }
-      #statsTable th:nth-child(4), #statsTable td:nth-child(4) { width: 14% !important; }
-      #statsTable th:nth-child(5), #statsTable td:nth-child(5) { width: 60px !important; }
-      #statsTable th:nth-child(6), #statsTable td:nth-child(6) { width: 115px !important; }
-      #statsTable th:nth-child(7), #statsTable td:nth-child(7) { width: 8% !important; }
-      #statsTable th:nth-child(8), #statsTable td:nth-child(8) { width: 8% !important; }
-      #statsTable th:nth-child(9), #statsTable td:nth-child(9) { width: 70px !important; }
+      #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 70px !important; }
+      #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 125px !important; }
+      #statsTable th:nth-child(4), #statsTable td:nth-child(4) { width: 80px !important; }
+      #statsTable th:nth-child(5), #statsTable td:nth-child(5) { width: 80px !important; }
+      #statsTable th:nth-child(6), #statsTable td:nth-child(6) { width: 60px !important; }
+      #statsTable th:nth-child(7), #statsTable td:nth-child(7) { width: 115px !important; }
+      #statsTable th:nth-child(8), #statsTable td:nth-child(8) { width: 100px !important; }
+      #statsTable th:nth-child(9), #statsTable td:nth-child(9) { width: 100px !important; }
 
       .sort-arrow {
         margin-left: 2px;
@@ -1053,94 +1102,6 @@
       .playrate-val {
         font-size: 10px;
         min-width: 34px;
-      }
-
-      /* Remove the extra top gap in the slide-in filter panel on phones. */
-      .sidebar {
-        padding-top: 20px;
-      }
-
-      /* Phone horizontal scrolling: keep only # and Card fixed.
-         Type now sits to the right of Card and scrolls with the other stats. */
-      #statsTable {
-        border-collapse: separate;
-        border-spacing: 0;
-        --phone-rank-left: 0px;
-        --phone-card-left: 30px;
-      }
-
-      /* Force the sticky mobile column widths to the exact same values
-         that are used for the sticky left offsets. */
-      #statsTable th:nth-child(1),
-      #statsTable td:nth-child(1) {
-        width: 30px !important;
-        min-width: 30px !important;
-        max-width: 30px !important;
-      }
-
-      #statsTable th:nth-child(2),
-      #statsTable td:nth-child(2) {
-        width: 150px !important;
-        min-width: 150px !important;
-        max-width: 150px !important;
-      }
-
-      /* Sticky header row. Putting sticky on the th itself is more reliable
-         than sticky on the whole thead when the table also scrolls sideways. */
-      #statsTable thead {
-        position: static;
-      }
-
-      #statsTable thead th {
-        position: sticky;
-        top: 0;
-        background: var(--bg-surface);
-        z-index: 40;
-      }
-
-      #statsTable thead th.type-filter-header {
-        position: sticky;
-      }
-
-      /* Sticky first two columns only: # and Card. */
-      #statsTable th:nth-child(1),
-      #statsTable td:nth-child(1),
-      #statsTable th:nth-child(2),
-      #statsTable td:nth-child(2) {
-        position: sticky !important;
-        background: var(--bg-panel);
-      }
-
-      #statsTable th:nth-child(1),
-      #statsTable td:nth-child(1) {
-        left: var(--phone-rank-left);
-      }
-
-      #statsTable th:nth-child(2),
-      #statsTable td:nth-child(2) {
-        left: var(--phone-card-left);
-        box-shadow: 3px 0 0 var(--border);
-      }
-
-      /* Top-left sticky cells need to sit above both the horizontal-scrolling
-         header cells and the vertical body cells, otherwise header text can
-         appear to slide through them while scrolling. */
-      #statsTable thead th:nth-child(1),
-      #statsTable thead th:nth-child(2) {
-        top: 0;
-        background: var(--bg-surface);
-        z-index: 80;
-      }
-
-      #statsTable tbody td:nth-child(1),
-      #statsTable tbody td:nth-child(2) {
-        background: var(--bg-panel);
-        z-index: 30;
-      }
-
-      #statsTable tbody tr:hover td:nth-child(1),
-      #statsTable tbody tr:hover td:nth-child(2) {
-        background: var(--bg-hover);
       }
     }
 
@@ -1181,7 +1142,7 @@
   <main class="main">
     <div class="main-header">
       <div class="table-meta" id="tableMeta">—</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="main-controls">
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input class="search-input" type="text" id="searchInput" placeholder="Search cards…" oninput="onSearch()" />
@@ -1203,14 +1164,7 @@
         <thead>
           <tr>
             <th style="width:5%;text-align:center;cursor:default;">#</th>
-            <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
-            <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
-            <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
-            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
-            <th onclick="sortBy('playrate_pct')" style="width:13%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
-            <th onclick="sortBy('n_played')" style="width:10%;text-align:center">Played<span class="col-tip" data-tip-played>?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
-            <th onclick="sortBy('n_seen')" style="width:10%;text-align:center">Seen<span class="col-tip" data-tip-seen>?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
-            <th class="type-filter-header" style="width:10%;text-align:center;cursor:pointer;" onclick="toggleTypeFilterPopup(event)">
+            <th style="width:10%;text-align:center;cursor:pointer;" onclick="toggleTypeFilterPopup(event)">
               Type ▼
               <div class="type-filter-popup" id="typeFilterPopup">
                 <button class="chip active" data-value="animal" onclick="toggleTypeChip(this)">Animal</button>
@@ -1218,6 +1172,13 @@
                 <button class="chip active" data-value="project" onclick="toggleTypeChip(this)">Project</button>
               </div>
             </th>
+            <th onclick="sortBy('card_name')" style="width:20%;text-align:center">Card <span class="sort-arrow" id="sort-card_name">↕</span></th>
+            <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
+            <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
+            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
+            <th onclick="sortBy('playrate_pct')" style="width:13%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
+            <th onclick="sortBy('n_played')" style="width:10%;text-align:center">Played<span class="col-tip" data-tip-played>?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
+            <th onclick="sortBy('n_seen')" style="width:10%;text-align:center">Seen<span class="col-tip" data-tip-seen>?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -1309,7 +1270,6 @@
 <script>
 // ── Config ─────────────────────────────────────────────────────────────────────
 const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
-const CARD_ALIASES_URL = 'cards_altnames.csv';
 
 const VALID_MAPS = [
   { code: '1a',  full: 'Map 1a: Observation Tower' },
@@ -1336,13 +1296,11 @@ let currentSort = { col: 'delta_in_hand', dir: 'desc' };
 let currentPage = 1;
 let rowsPerPage = 50;
 let searchQuery = '';
-let cardAliases = new Map();
 let isMW = 1;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   buildMapChips();
-  await loadCardAliases();
   applyFilters(); // auto-load on page open with defaults
 });
 
@@ -1490,7 +1448,7 @@ async function applyFilters() {
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
     allData = json.data;
-    searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+    searchQuery = document.getElementById('searchInput').value.toLowerCase();
     applySearch();
 
   } catch (err) {
@@ -1501,91 +1459,9 @@ async function applyFilters() {
   }
 }
 
-
-// ── Card aliases / nicknames for search ───────────────────────────────────────
-function normalizeSearchText(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}
-
-async function loadCardAliases() {
-  try {
-    const res = await fetch(CARD_ALIASES_URL, { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`Could not load ${CARD_ALIASES_URL}`);
-
-    const csv = await res.text();
-    const rows = parseCsv(csv);
-    const aliases = new Map();
-
-    rows.slice(1).forEach(row => {
-      const cardName = (row[0] || '').trim();
-      const aliasText = (row[1] || '').trim();
-      if (!cardName || !aliasText) return;
-
-      const aliasList = aliasText
-        .split(';')
-        .map(a => normalizeSearchText(a))
-        .filter(Boolean);
-
-      if (aliasList.length) aliases.set(normalizeSearchText(cardName), aliasList);
-    });
-
-    cardAliases = aliases;
-  } catch (err) {
-    console.warn('Card aliases were not loaded. Search will use card names only.', err);
-    cardAliases = new Map();
-  }
-}
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const next = text[i + 1];
-
-    if (char === '"') {
-      if (inQuotes && next === '"') {
-        field += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      row.push(field);
-      field = '';
-    } else if ((char === '\n' || char === '\r') && !inQuotes) {
-      if (char === '\r' && next === '\n') i++;
-      row.push(field);
-      if (row.some(cell => cell.trim() !== '')) rows.push(row);
-      row = [];
-      field = '';
-    } else {
-      field += char;
-    }
-  }
-
-  row.push(field);
-  if (row.some(cell => cell.trim() !== '')) rows.push(row);
-
-  // Remove possible BOM from the first header cell.
-  if (rows.length && rows[0].length) rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
-  return rows;
-}
-
-function aliasesForCard(cardName) {
-  return cardAliases.get(normalizeSearchText(cardName)) || [];
-}
-
 // ── Search ─────────────────────────────────────────────────────────────────────
 function onSearch() {
-  searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+  searchQuery = document.getElementById('searchInput').value.toLowerCase();
   applySearch();
 }
 
@@ -1593,19 +1469,11 @@ function applySearch() {
   const activeTypes = new Set(
     [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
   );
-
-  filteredData = allData.filter(row => {
-    if (!activeTypes.has(row.card_type)) return false;
-
-    const cardName = normalizeSearchText(row.card_name);
-    const cardType = normalizeSearchText(row.card_type);
-    const aliases = aliasesForCard(row.card_name);
-
-    return cardName.includes(searchQuery) ||
-      cardType.includes(searchQuery) ||
-      aliases.some(alias => alias.includes(searchQuery));
-  });
-
+  filteredData = allData.filter(row =>
+    activeTypes.has(row.card_type) &&
+    (row.card_name.toLowerCase().includes(searchQuery) ||
+     row.card_type.toLowerCase().includes(searchQuery))
+  );
   currentPage = 1;
   applySortAndRender();
 }
@@ -1719,6 +1587,7 @@ function renderTable(data) {
 
     return `<tr>
       <td class="rank-cell">${row.global_rank ?? '—'}</td>
+      <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
       <td class="card-name">${titleCase(row.card_name)}</td>
       <td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>
       <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
@@ -1733,14 +1602,13 @@ function renderTable(data) {
       </td>
       <td class="n-cell">${fmtN(row.n_played)}</td>
       <td class="n-cell">${fmtN(row.n_seen)}</td>
-      <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
     </tr>`;
   }).join('');
 
   // Meta
   const from = start + 1;
   const to = Math.min(start + rpp, data.length);
-  meta.innerHTML = `Showing <strong>${from}–${to}</strong> of <strong>${data.length}</strong> cards`;
+  meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}–${to}</strong> of <strong>${data.length}</strong> cards`;
 
   // Pagination
   if (totalPages <= 1) {
@@ -1932,7 +1800,7 @@ function toggleTypeChip(btn) {
 // Close type popup when clicking outside
 document.addEventListener('click', e => {
   const popup = document.getElementById('typeFilterPopup');
-  if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th.type-filter-header')) {
+  if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th:nth-child(2)')) {
     popup.classList.remove('open');
   }
 });
