@@ -983,6 +983,55 @@
 
       .main { padding: 12px 10px; }
 
+      /* Phone-only main controls: first row = result count + rows selector,
+         second row = full-width search bar. */
+      .main-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px 12px;
+        margin-bottom: 14px;
+      }
+
+      .main-header > .table-meta {
+        grid-column: 1;
+        grid-row: 1;
+        min-width: 0;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .main-header > .main-controls {
+        display: contents !important;
+      }
+
+      .main-header .rpp-wrap {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        gap: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .main-header .rpp-select {
+        font-size: 12px;
+        padding: 5px 8px;
+      }
+
+      .main-header .search-wrap {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
+      }
+
+      .main-header .search-input,
+      .main-header .search-input:focus {
+        width: 100% !important;
+      }
+
       .table-wrap {
         width: 100%;
         overflow-x: auto;
@@ -1181,7 +1230,7 @@
   <main class="main">
     <div class="main-header">
       <div class="table-meta" id="tableMeta">—</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="main-controls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input class="search-input" type="text" id="searchInput" placeholder="Search cards…" oninput="onSearch()" />
