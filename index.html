@@ -196,36 +196,83 @@
     }
 
     /* ── Layout ──────────────────────────────────────────────────────────────
-       Desktop layout is a main content area plus a right sidebar.
-       The sidebar is hidden by default using .sidebar-hidden and can be toggled open. */
+       The main dashboard has a compact fixed navigation rail on the left.
+       Filters always open as a right-side overlay, so the table never resizes. */
+    :root {
+      --side-nav-width: 74px;
+    }
+
     .layout {
-      display: grid;
-      grid-template-columns: 1fr 260px;
+      display: block;
+      margin-left: var(--side-nav-width);
       min-height: calc(100vh - 56px);
     }
 
-    /* Sidebar hidden by default — toggled in by button */
-    .layout.sidebar-hidden {
-      grid-template-columns: 1fr;
+    .side-nav {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      width: var(--side-nav-width);
+      background: #111b13;
+      border-right: 1px solid var(--border);
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 12px 8px;
+      gap: 8px;
+    }
+
+    .side-nav-link {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8px 6px;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+      border: 1px solid transparent;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+
+    .side-nav-link.active {
+      color: var(--text);
+      background: var(--accent-dim);
+      border-color: var(--accent);
+    }
+
+    .side-nav-link.disabled {
+      color: var(--text-dim);
+      cursor: default;
+      opacity: 0.68;
     }
 
     /* ── Sidebar ─────────────────────────────────────────────────────────────
-       On desktop this is a right column. On <=768px it becomes a slide-in drawer.
-       Phone-specific padding is adjusted later to avoid an empty top gap. */
+       Universal right-side overlay. It never participates in layout width. */
     .sidebar {
       background: var(--bg-panel);
       border-left: 1px solid var(--border);
       padding: 20px 16px;
       overflow-y: auto;
-      position: sticky;
+      position: fixed;
       top: 56px;
+      right: -280px;
+      left: auto;
+      width: 260px;
       height: calc(100vh - 56px);
+      z-index: 200;
+      transition: right 0.25s ease;
+      box-shadow: none;
     }
 
-    /* Hidden by default on desktop */
-    .sidebar-hidden .sidebar {
-      display: none;
-    }
+    .sidebar.open { right: 0; box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
 
     .sidebar-header {
       display: flex;
@@ -1551,27 +1598,6 @@
     }
 
     @media (max-width: 768px) {
-      .layout { grid-template-columns: 1fr; }
-
-      .sidebar {
-        position: fixed;
-        top: 0;
-        right: -280px;
-        left: auto;
-        width: 260px;
-        height: 100vh;
-        z-index: 200;
-        transition: right 0.25s ease;
-        padding-top: 60px;
-        border-left: 1px solid var(--border);
-        border-right: none;
-      }
-
-      .sidebar.open { right: 0; box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
-
-      /* On mobile, sidebar-hidden has no effect — uses slide-in */
-      .sidebar-hidden .sidebar { display: block; }
-
       .topbar { padding: 0 16px; }
       .topbar-logo { font-size: 15px; gap: 6px; }
       .topbar-logo-img { width: 24px; height: 24px; }
@@ -1584,10 +1610,31 @@
        IMPORTANT: This breakpoint is where the phone table becomes horizontally scrollable.
        Tablet deliberately keeps desktop-like percentage widths. */
     @media (max-width: 600px) {
+      :root {
+        --side-nav-width: 56px;
+      }
+
       .topbar {
         height: 52px;
         padding: 0 10px;
         gap: 8px;
+      }
+
+      .side-nav {
+        top: 52px;
+        width: var(--side-nav-width);
+        padding: 10px 6px;
+      }
+
+      .side-nav-link {
+        min-height: 44px;
+        padding: 7px 3px;
+        font-size: 10px;
+      }
+
+      .sidebar {
+        top: 52px;
+        height: calc(100vh - 52px);
       }
 
       .topbar-logo {
@@ -1782,7 +1829,7 @@
         min-width: 34px;
       }
 
-      /* Remove the extra top gap in the slide-in filter panel on phones. */
+      /* Keep the slide-in filter panel compact on phones. */
       .sidebar {
         padding-top: 20px;
       }
@@ -1900,10 +1947,15 @@
   </button>
 </header>
 
+<nav class="side-nav" aria-label="Dashboard navigation">
+  <a class="side-nav-link active" href="#" aria-current="page">Cards</a>
+  <span class="side-nav-link disabled" aria-disabled="true">Opening<br />hand</span>
+</nav>
+
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <!-- ── Layout ────────────────────────────────────────────────────────────────── -->
-<div class="layout sidebar-hidden" id="mainLayout">
+<div class="layout" id="mainLayout">
 
   <!-- Main -->
   <main class="main">
@@ -2173,8 +2225,7 @@
   </main>
 
   <!-- Sidebar (right)
-       Desktop: toggled by adding/removing .sidebar-hidden on #mainLayout.
-       Mobile/tablet <=768px: slide-in drawer toggled with .open on #sidebar and overlay activation. -->
+       Always opens as a slide-in overlay, so it never changes table width. -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <span class="sidebar-title">Filters</span>
@@ -3179,17 +3230,10 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Mobile sidebar ─────────────────────────────────────────────────────────────
+// ── Filter sidebar overlay ────────────────────────────────────────────────────
 function toggleSidebar() {
-  // Desktop: hide/show the sidebar column.
-  // <=768px: use slide-in drawer + overlay instead of changing the grid layout.
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile) {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebarOverlay').classList.toggle('active');
-  } else {
-    document.getElementById('mainLayout').classList.toggle('sidebar-hidden');
-  }
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('active');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
