@@ -828,7 +828,7 @@
       display: none;
     }
 
-    /* Each filter group (Species, Continents, Strength, ...) */
+    /* Each filter group (Species, Habitat, Strength, ...) */
     .attr-group {
       display: flex;
       flex-direction: column;
@@ -869,7 +869,7 @@
       min-height: 42px;
       background: var(--border-light);
       opacity: 0.7;
-      margin: 0 2px;
+      margin: 0;
     }
 
     /* Disabled state shared by every group type. Disabling resets the group's
@@ -903,11 +903,12 @@
       font-size: 12px;
     }
 
-    /* Tag buttons open the popup for Species or Continents. */
+    /* Tag buttons open the popup for Species or Habitat. */
     .attr-tags-btn {
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 66px;
       padding: 5px 12px;
       border-radius: 20px;
       border: 1px solid var(--border);
@@ -932,7 +933,7 @@
       letter-spacing: 1px;
     }
 
-    /* Tags popup: a modal-style overlay for Species or Continents. */
+    /* Tags popup: a modal-style overlay for Species or Habitat. */
     .tags-popup-overlay {
       display: none;
       position: fixed;
@@ -1997,7 +1998,7 @@
     </div>
 
     <!-- ── Attributes bar ──────────────────────────────────────────────────
-         Client-side-only card metadata filters (Species, Continents, Strength,
+         Client-side-only card metadata filters (Species, Habitat, Strength,
          Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked
          up by card_name. Filtering is layered into applySearch() exactly like
          the Type filter — no backend call, instant results.
@@ -2014,7 +2015,7 @@
       </div>
       <div class="attributes-bar-body" id="attributesBarBody">
 
-        <!-- Species and Continents are separate include-list filters.
+        <!-- Species and Habitat are separate include-list filters.
              Both are disabled and reset when Type is Project-only. -->
         <div class="attr-group" id="attrGroupSpecies" data-attr-group="species">
           <span class="attr-group-label">Species</span>
@@ -2025,7 +2026,7 @@
         </div>
 
         <div class="attr-group" id="attrGroupContinent" data-attr-group="continent">
-          <span class="attr-group-label">Continents</span>
+          <span class="attr-group-label">Habitat</span>
           <button class="attr-tags-btn" id="continentBtn" onclick="toggleTagPopup('continent', event)">
             <span id="continentBtnLabel">All</span>
             <span class="attr-tags-indicator" id="continentBtnIndicator"></span>
@@ -2114,7 +2115,6 @@
               <input type="checkbox" id="reeferToggle" onchange="onReeferAviaryToggle('reefer')" />
               <span class="toggle-track"></span>
             </label>
-            <span class="attr-toggle-label" id="reeferToggleLabel">No</span>
           </div>
         </div>
 
@@ -2126,7 +2126,6 @@
               <input type="checkbox" id="aviaryToggle" onchange="onReeferAviaryToggle('aviary')" />
               <span class="toggle-track"></span>
             </label>
-            <span class="attr-toggle-label" id="aviaryToggleLabel">No</span>
           </div>
         </div>
 
@@ -2156,7 +2155,7 @@
       </div>
     </div>
 
-    <!-- Tag popup overlay: reused by Species and Continents. -->
+    <!-- Tag popup overlay: reused by Species and Habitat. -->
     <div class="tags-popup-overlay" id="tagPopupOverlay" onclick="closeTagPopupOnOverlay(event)">
       <div class="tags-popup" onclick="event.stopPropagation()">
         <div class="tags-popup-header">
@@ -2412,7 +2411,7 @@ let cardAttributes = new Map();
 let cardAttributesLoaded = false;
 
 // Selection sets for each group. Defaults are "all selected" (no filtering) for
-// Species/Continents/Strength/Size/Abilities, and "off" (no filtering) for
+// Species/Habitat/Strength/Size/Abilities, and "off" (no filtering) for
 // Water/Rock/Science/Reefer/Aviary toggles.
 let selectedSpeciesTags = new Set(SPECIES_TAGS);
 let selectedContinentTags = new Set(CONTINENT_TAGS);
@@ -2832,7 +2831,7 @@ function applySearch() {
   // 1. Type popup (animal/sponsor/project),
   // 2. optional Minimum plays input using n_played,
   // 3. search over card name, card type, and aliases from cards_altnames.csv,
-  // 4. Attributes bar (Species/Continents/Strength/Size/Reefer/Aviary/Abilities)
+  // 4. Attributes bar (Species/Habitat/Strength/Size/Reefer/Aviary/Abilities)
   //    using cards_attributes.csv, looked up by card_name.
   // This preserves original backend names and only changes frontend display behaviour.
   const activeTypes = new Set(
@@ -3410,7 +3409,7 @@ function setAttributeValues(kind, selectAll) {
   applySearch();
 }
 
-// ── Species / Continents popups ─────────────────────────────────────────────────
+// ── Species / Habitat popups ───────────────────────────────────────────────────
 function toggleTagPopup(kind, event) {
   if (event) event.stopPropagation();
   const group = document.getElementById(kind === 'species' ? 'attrGroupSpecies' : 'attrGroupContinent');
@@ -3439,7 +3438,7 @@ function renderCurrentTagPopup() {
   const selectedSet = currentTagPopupKind === 'species' ? selectedSpeciesTags : selectedContinentTags;
   const kind = currentTagPopupKind === 'species' ? 'species' : 'continent';
 
-  if (title) title.textContent = currentTagPopupKind === 'species' ? 'Species' : 'Continents';
+  if (title) title.textContent = currentTagPopupKind === 'species' ? 'Species' : 'Habitat';
   buildChipGroup('tagPopupChips', values, selectedSet, kind);
 }
 
@@ -3620,9 +3619,6 @@ function onReeferAviaryToggle(which) {
   reeferOn = reeferCheckbox.checked;
   aviaryOn = aviaryCheckbox.checked;
 
-  document.getElementById('reeferToggleLabel').textContent = reeferOn ? 'Yes' : 'No';
-  document.getElementById('aviaryToggleLabel').textContent = aviaryOn ? 'Yes' : 'No';
-
   const eitherOnNow = reeferOn || aviaryOn;
   const eitherOnBefore = wasReeferOn || wasAviaryOn;
 
@@ -3755,12 +3751,10 @@ function resetAttributeGroup(groupKey) {
     case 'reefer':
       reeferOn = false;
       document.getElementById('reeferToggle').checked = false;
-      document.getElementById('reeferToggleLabel').textContent = 'No';
       break;
     case 'aviary':
       aviaryOn = false;
       document.getElementById('aviaryToggle').checked = false;
-      document.getElementById('aviaryToggleLabel').textContent = 'No';
       break;
   }
 }
@@ -3784,8 +3778,8 @@ function resetAllAttributeFilters() {
   updateAbilitiesButtonLabel();
 
   [['waterToggle', null], ['rockToggle', null],
-   ['scienceToggle', null], ['reeferToggle', 'reeferToggleLabel'],
-   ['aviaryToggle', 'aviaryToggleLabel']].forEach(([cbId, lblId]) => {
+   ['scienceToggle', null], ['reeferToggle', null],
+   ['aviaryToggle', null]].forEach(([cbId, lblId]) => {
     const cb = document.getElementById(cbId);
     const lbl = lblId ? document.getElementById(lblId) : null;
     if (cb) cb.checked = false;
@@ -3813,7 +3807,7 @@ function passesAttributeFilters(row) {
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
 
-  // Species and Continents are separate include-lists. Default all selected =
+  // Species and Habitat are separate include-lists. Default all selected =
   // no filtering for that group. Once narrowed, a card must match at least one
   // selected value in the narrowed group. Selecting none intentionally returns
   // no matches for that group.
