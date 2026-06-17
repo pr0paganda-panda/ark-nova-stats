@@ -199,12 +199,13 @@
        The main dashboard has a compact fixed navigation rail on the left.
        Filters always open as a right-side overlay, so the table never resizes. */
     :root {
-      --side-nav-width: 74px;
+      --side-nav-width: 111px;
+      --side-nav-gap: 24px;
     }
 
     .layout {
       display: block;
-      margin-left: var(--side-nav-width);
+      margin-left: calc(var(--side-nav-width) + var(--side-nav-gap));
       min-height: calc(100vh - 56px);
     }
 
@@ -1611,7 +1612,8 @@
        Tablet deliberately keeps desktop-like percentage widths. */
     @media (max-width: 600px) {
       :root {
-        --side-nav-width: 56px;
+        --side-nav-width: 84px;
+        --side-nav-gap: 20px;
       }
 
       .topbar {
