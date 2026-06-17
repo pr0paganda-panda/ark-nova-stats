@@ -450,29 +450,24 @@
       overflow-x: auto;
     }
 
-    /* Header above the table.
-       Desktop/tablet: result count on the left, then controls aligned with the
-       rightmost table columns: Minimum plays roughly above Played+Seen, Rows above Type.
-       Card search lives in the Card table header instead of this control row. */
+    /* Header above the table: result count on the left, minimum-play and row controls on the right.
+       Card search now lives in the Card table header instead of this control row. */
     .main-header {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 30%);
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       margin-bottom: 16px;
       padding: 0 2px;
-      column-gap: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
     .main-controls {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
+      display: flex;
+      gap: 12px;
       align-items: center;
-      column-gap: 28px;
-      justify-self: stretch;
+      flex-wrap: wrap;
     }
-
-    .main-controls .min-plays-wrap { justify-self: center; }
-    .main-controls .rpp-wrap { justify-self: end; }
 
     .min-plays-wrap {
       display: flex;
@@ -531,13 +526,11 @@
     .card-search-header { position: relative; }
 
     .card-header-content {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 5px;
       width: 100%;
-      position: relative;
-      min-height: 18px;
     }
 
     .card-search-btn {
@@ -546,10 +539,6 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
       background: none;
       border: none;
       color: var(--text-dim);
@@ -1219,21 +1208,21 @@
 
       .main { padding: 12px 10px; }
 
-      /* Phone-only main controls: compact single row with result count left,
-         minimum plays centered, and rows selector right.
+      /* Phone-only main controls: compact single row with result count, minimum plays, and rows selector.
          Search stays in the Card table header on all screen sizes. */
       .main-header {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        display: flex;
         align-items: center;
-        column-gap: 8px;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 8px;
         margin-bottom: 14px;
         padding: 0;
       }
 
       .main-header > .table-meta {
-        grid-column: 1;
         min-width: 0;
+        flex: 1 1 auto;
         font-size: 12px;
         white-space: nowrap;
         overflow: hidden;
@@ -1243,15 +1232,15 @@
       .main-header .meta-prefix { display: none; }
 
       .main-header > .main-controls {
-        display: contents !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+        gap: 7px;
+        flex-wrap: nowrap;
       }
 
-      .main-header .min-plays-wrap {
-        grid-column: 2;
-        justify-self: center;
-        gap: 5px;
-      }
-
+      .main-header .min-plays-wrap { gap: 5px; }
       .main-header .min-plays-label { font-size: 11px; }
       .min-plays-label-full { display: none; }
       .min-plays-label-short { display: inline; }
@@ -1263,8 +1252,6 @@
       }
 
       .main-header .rpp-wrap {
-        grid-column: 3;
-        justify-self: end;
         gap: 5px;
         font-size: 11px;
         white-space: nowrap;
@@ -1479,8 +1466,8 @@
   <main class="main">
     <!--
       Main table controls.
-      Desktop/tablet: meta left, Minimum plays aligned above Played+Seen, Rows above Type.
-      Phone: compact single row with Minimum plays centered. Card search lives inside the Card table header.
+      Desktop/tablet: meta left, Minimum plays + Rows controls right.
+      Phone: compact single row. Card search lives inside the Card table header.
     -->
     <div class="main-header">
       <div class="table-meta" id="tableMeta">—</div>
