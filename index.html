@@ -1976,7 +1976,7 @@
       Phone: compact single row. Card search lives inside the Card table header.
     -->
     <div class="main-header">
-      <div class="table-meta" id="tableMeta">—</div>
+      <div class="table-meta" id="tableMeta"></div>
       <div class="main-controls">
         <!-- Frontend-only Minimum plays filter.
              Empty value = no minimum. It filters by n_played immediately via onMinPlaysInput().
@@ -3065,7 +3065,7 @@ function showLoading() {
     </div>
   </td></tr>`;
   document.getElementById('pagination').style.display = 'none';
-  document.getElementById('tableMeta').innerHTML = '—';
+  document.getElementById('tableMeta').innerHTML = '';
 }
 
 function showError(msg) {
