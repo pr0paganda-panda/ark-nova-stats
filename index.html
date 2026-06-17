@@ -819,8 +819,9 @@
     .attributes-bar-body {
       display: flex;
       flex-wrap: wrap;
-      gap: 16px 22px;
-      padding: 4px 16px 16px;
+      align-items: stretch;
+      gap: 0;
+      padding: 0 16px;
       border-top: 1px solid var(--border);
     }
 
@@ -832,8 +833,11 @@
     .attr-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       min-width: 0;
+      padding: 12px 11px;
     }
 
     .attr-group-label {
@@ -844,12 +848,15 @@
       letter-spacing: 0.07em;
       display: flex;
       align-items: center;
+      justify-content: center;
+      text-align: center;
       gap: 5px;
     }
 
     .attr-group-heading {
       display: flex;
       align-items: baseline;
+      justify-content: center;
       gap: 6px;
     }
 
@@ -860,13 +867,12 @@
     }
 
     #attrGroupSize {
-      margin-left: 10px;
+      margin-left: 0;
     }
 
     .attr-separator {
       width: 1px;
       align-self: stretch;
-      min-height: 42px;
       background: var(--border-light);
       opacity: 0.7;
       margin: 0;
@@ -895,6 +901,7 @@
     .attr-chip-row {
       display: flex;
       flex-wrap: wrap;
+      justify-content: center;
       gap: 5px;
     }
 
@@ -907,6 +914,7 @@
     .attr-tags-btn {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       min-width: 66px;
       padding: 5px 12px;
@@ -1028,6 +1036,7 @@
     .attr-toggle-row {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
     }
 
@@ -1039,11 +1048,14 @@
     /* Abilities searchable multi-select dropdown */
     .abilities-dropdown {
       position: relative;
+      display: flex;
+      justify-content: center;
     }
 
     .abilities-dropdown-btn {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       padding: 5px 12px;
       border-radius: 20px;
@@ -1137,13 +1149,14 @@
     }
 
     @media (max-width: 768px) {
-      .attributes-bar-body { gap: 14px 18px; }
+      .attributes-bar-body { gap: 0; }
     }
 
     @media (max-width: 600px) {
       .attributes-bar-header { padding: 9px 12px; }
       .attributes-bar-title { font-size: 12px; }
-      .attributes-bar-body { padding: 4px 12px 14px; gap: 12px 16px; }
+      .attributes-bar-body { padding: 0 12px; gap: 0; }
+      .attr-group { padding: 11px 9px; }
       .tags-popup { width: calc(100vw - 32px); padding: 14px 16px; }
       .abilities-panel { width: 220px; }
     }
