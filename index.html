@@ -746,6 +746,30 @@
       transition: transform 0.2s;
     }
 
+    .attributes-bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .attributes-reset-btn {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .attributes-reset-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
     .attributes-bar.collapsed .attributes-bar-chevron {
       transform: rotate(-90deg);
     }
@@ -1905,14 +1929,17 @@
          Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked
          up by card_name. Filtering is layered into applySearch() exactly like
          the Type filter — no backend call, instant results.
-         Collapsible, visible by default. -->
-    <div class="attributes-bar" id="attributesBar">
+         Collapsible, collapsed by default. -->
+    <div class="attributes-bar collapsed" id="attributesBar">
       <div class="attributes-bar-header" onclick="toggleAttributesBar()">
         <div class="attributes-bar-title">
           Attributes
           <span class="attributes-summary" id="attributesSummary"></span>
         </div>
-        <span class="attributes-bar-chevron">▾</span>
+        <div class="attributes-bar-actions">
+          <button class="attributes-reset-btn" onclick="resetAttributesFromHeader(event)">Reset</button>
+          <span class="attributes-bar-chevron">▾</span>
+        </div>
       </div>
       <div class="attributes-bar-body" id="attributesBarBody">
 
@@ -3237,6 +3264,13 @@ function toggleAttributesBar() {
   document.getElementById('attributesBar').classList.toggle('collapsed');
 }
 
+function resetAttributesFromHeader(event) {
+  if (event) event.stopPropagation();
+  resetAllAttributeFilters();
+  refreshAttributeAvailability();
+  applySearch();
+}
+
 // ── Building the static chip rows (Conditions/Strength/Size) and Tags popup ──────
 function buildAttributeChips() {
   buildChipGroup('conditionsChips', CONDITION_VALUES, selectedConditions, 'condition');
@@ -3253,7 +3287,7 @@ function buildChipGroup(containerId, values, selectedSet, kind) {
   container.innerHTML = '';
   values.forEach(value => {
     const btn = document.createElement('button');
-    btn.className = 'chip active';
+    btn.className = selectedSet.has(value) ? 'chip active' : 'chip';
     btn.dataset.value = value;
     btn.textContent = value;
     btn.onclick = () => toggleAttributeChip(btn, selectedSet, values, kind);
@@ -3308,12 +3342,14 @@ function selectAllTags() {
   selectedSpeciesTags = new Set(SPECIES_TAGS);
   selectedContinentTags = new Set(CONTINENT_TAGS);
   buildAttributeChips();
+  updateTagsButtonLabel();
 }
 
 function selectNoneTags() {
   selectedSpeciesTags = new Set();
   selectedContinentTags = new Set();
   buildAttributeChips();
+  updateTagsButtonLabel();
 }
 
 function isTagsAtDefault() {
