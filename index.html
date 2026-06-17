@@ -730,16 +730,6 @@
       letter-spacing: 0.07em;
     }
 
-    /* Warm moss-green summary text, same family as the Type filter indicator,
-       shown only when at least one Attribute group is narrowed from default. */
-    .attributes-summary {
-      font-size: 11px;
-      font-weight: 500;
-      color: #9cab63;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-
     .attributes-bar-chevron {
       font-size: 11px;
       color: var(--text-dim);
@@ -768,6 +758,10 @@
     .attributes-reset-btn:hover {
       border-color: var(--accent-dim);
       color: var(--accent);
+    }
+
+    .attributes-bar.collapsed .attributes-reset-btn {
+      display: none;
     }
 
     .attributes-bar.collapsed .attributes-bar-chevron {
@@ -1934,7 +1928,6 @@
       <div class="attributes-bar-header" onclick="toggleAttributesBar()">
         <div class="attributes-bar-title">
           Attributes
-          <span class="attributes-summary" id="attributesSummary"></span>
         </div>
         <div class="attributes-bar-actions">
           <button class="attributes-reset-btn" onclick="resetAttributesFromHeader(event)">Reset</button>
@@ -1964,7 +1957,6 @@
               <input type="checkbox" id="waterToggle" onchange="onBoolTagToggle('water')" />
               <span class="toggle-track"></span>
             </label>
-            <span class="attr-toggle-label" id="waterToggleLabel">No</span>
           </div>
         </div>
 
@@ -1975,7 +1967,6 @@
               <input type="checkbox" id="rockToggle" onchange="onBoolTagToggle('rock')" />
               <span class="toggle-track"></span>
             </label>
-            <span class="attr-toggle-label" id="rockToggleLabel">No</span>
           </div>
         </div>
 
@@ -1986,7 +1977,6 @@
               <input type="checkbox" id="scienceToggle" onchange="onBoolTagToggle('science')" />
               <span class="toggle-track"></span>
             </label>
-            <span class="attr-toggle-label" id="scienceToggleLabel">No</span>
           </div>
         </div>
 
@@ -3254,9 +3244,7 @@ function attributesForCard(cardName) {
 
 function setAttributesUnavailable(unavailable) {
   const bar = document.getElementById('attributesBar');
-  const summary = document.getElementById('attributesSummary');
   if (bar) bar.classList.toggle('attributes-unavailable', unavailable);
-  if (summary && unavailable) summary.textContent = '· unavailable';
 }
 
 // ── Collapse / expand ───────────────────────────────────────────────────────────
@@ -3370,7 +3358,7 @@ function updateTagsButtonLabel() {
   } else {
     btn.classList.add('narrowed');
     const totalSelected = selectedSpeciesTags.size + selectedContinentTags.size;
-    label.textContent = 'Narrowed';
+    label.textContent = 'Selected';
     indicator.textContent = `(${totalSelected})`;
   }
 }
@@ -3462,7 +3450,7 @@ function updateAbilitiesButtonLabel() {
     indicator.textContent = '';
   } else {
     btn.classList.add('narrowed');
-    label.textContent = 'Narrowed';
+    label.textContent = 'Selected';
     indicator.textContent = `(${selectedAbilities.size})`;
   }
 }
@@ -3482,13 +3470,10 @@ document.addEventListener('click', e => {
 function onBoolTagToggle(which) {
   if (which === 'water') {
     waterOn = document.getElementById('waterToggle').checked;
-    document.getElementById('waterToggleLabel').textContent = waterOn ? 'Yes' : 'No';
   } else if (which === 'rock') {
     rockOn = document.getElementById('rockToggle').checked;
-    document.getElementById('rockToggleLabel').textContent = rockOn ? 'Yes' : 'No';
   } else if (which === 'science') {
     scienceOn = document.getElementById('scienceToggle').checked;
-    document.getElementById('scienceToggleLabel').textContent = scienceOn ? 'Yes' : 'No';
     if (scienceOn) forceTypeToOnly('sponsor');
   }
   updateAttributesSummary();
@@ -3625,17 +3610,14 @@ function resetAttributeGroup(groupKey) {
     case 'water':
       waterOn = false;
       document.getElementById('waterToggle').checked = false;
-      document.getElementById('waterToggleLabel').textContent = 'No';
       break;
     case 'rock':
       rockOn = false;
       document.getElementById('rockToggle').checked = false;
-      document.getElementById('rockToggleLabel').textContent = 'No';
       break;
     case 'science':
       scienceOn = false;
       document.getElementById('scienceToggle').checked = false;
-      document.getElementById('scienceToggleLabel').textContent = 'No';
       break;
     case 'reefer':
       reeferOn = false;
@@ -3667,11 +3649,11 @@ function resetAllAttributeFilters() {
   renderAbilitiesList();
   updateAbilitiesButtonLabel();
 
-  [['waterToggle', 'waterToggleLabel'], ['rockToggle', 'rockToggleLabel'],
-   ['scienceToggle', 'scienceToggleLabel'], ['reeferToggle', 'reeferToggleLabel'],
+  [['waterToggle', null], ['rockToggle', null],
+   ['scienceToggle', null], ['reeferToggle', 'reeferToggleLabel'],
    ['aviaryToggle', 'aviaryToggleLabel']].forEach(([cbId, lblId]) => {
     const cb = document.getElementById(cbId);
-    const lbl = document.getElementById(lblId);
+    const lbl = lblId ? document.getElementById(lblId) : null;
     if (cb) cb.checked = false;
     if (lbl) lbl.textContent = 'No';
   });
@@ -3682,29 +3664,11 @@ function resetAllAttributeFilters() {
 // ── Summary text in the Attributes bar header ─────────────────────────────────────
 function updateAttributesSummary() {
   if (!cardAttributesLoaded) {
-    const summary = document.getElementById('attributesSummary');
-    if (summary) summary.textContent = '· unavailable';
     return;
   }
 
   updateTagsButtonLabel();
   updateAbilitiesButtonLabel();
-
-  const narrowedGroups = [];
-  if (!isTagsAtDefault()) narrowedGroups.push('Tags');
-  if (selectedConditions.size !== CONDITION_VALUES.length) narrowedGroups.push('Conditions');
-  if (selectedStrengths.size !== STRENGTH_VALUES.length) narrowedGroups.push('Strength');
-  if (selectedSizes.size !== SIZE_VALUES.length) narrowedGroups.push('Size');
-  if (waterOn) narrowedGroups.push('Water');
-  if (rockOn) narrowedGroups.push('Rock');
-  if (scienceOn) narrowedGroups.push('Science');
-  if (reeferOn) narrowedGroups.push('Reefer');
-  if (aviaryOn) narrowedGroups.push('Aviary');
-  if (selectedAbilities.size !== allAbilities.length) narrowedGroups.push('Abilities');
-
-  const summary = document.getElementById('attributesSummary');
-  if (!summary) return;
-  summary.textContent = narrowedGroups.length ? `· ${narrowedGroups.join(', ')} narrowed` : '';
 }
 
 // ── The actual per-row filtering check ───────────────────────────────────────────
