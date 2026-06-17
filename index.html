@@ -799,6 +799,22 @@
       gap: 5px;
     }
 
+    .attr-group-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .attr-group-actions {
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    #attrGroupSize {
+      margin-left: 10px;
+    }
+
     /* Disabled state shared by every group type. Disabling resets the group's
        selection to default underneath (handled in JS), so re-enabling always
        starts clean rather than restoring a stale prior choice. */
@@ -1983,7 +1999,12 @@
         <!-- Conditions: 0/1/2/3/4 chips. Blank source data counts as 0.
              Disabled when Type has only Project active. -->
         <div class="attr-group" id="attrGroupConditions" data-attr-group="conditions">
-          <span class="attr-group-label">Conditions</span>
+          <div class="attr-group-heading">
+            <span class="attr-group-label">Conditions</span>
+            <span class="attr-group-actions">
+              (<span class="map-toggle-link" onclick="selectAllAttributeValues('conditions')">all</span> / <span class="map-toggle-link" onclick="selectNoneAttributeValues('conditions')">none</span>)
+            </span>
+          </div>
           <div class="attr-chip-row" id="conditionsChips"></div>
         </div>
 
@@ -1991,7 +2012,12 @@
              Disabled unless Sponsor is active in the Type filter.
              Narrowing this (away from all-selected) forces Type to Sponsor-only. -->
         <div class="attr-group" id="attrGroupStrength" data-attr-group="strength">
-          <span class="attr-group-label">Strength</span>
+          <div class="attr-group-heading">
+            <span class="attr-group-label">Strength</span>
+            <span class="attr-group-actions">
+              (<span class="map-toggle-link" onclick="selectAllAttributeValues('strength')">all</span> / <span class="map-toggle-link" onclick="selectNoneAttributeValues('strength')">none</span>)
+            </span>
+          </div>
           <div class="attr-chip-row" id="strengthChips"></div>
         </div>
 
@@ -1999,7 +2025,12 @@
              Disabled unless Animal is active in the Type filter.
              Narrowing this forces Type to Animal-only. -->
         <div class="attr-group" id="attrGroupSize" data-attr-group="size">
-          <span class="attr-group-label">Size</span>
+          <div class="attr-group-heading">
+            <span class="attr-group-label">Size</span>
+            <span class="attr-group-actions">
+              (<span class="map-toggle-link" onclick="selectAllAttributeValues('size')">all</span> / <span class="map-toggle-link" onclick="selectNoneAttributeValues('size')">none</span>)
+            </span>
+          </div>
           <div class="attr-chip-row" id="sizeChips"></div>
         </div>
 
@@ -3254,6 +3285,7 @@ function toggleAttributesBar() {
 
 function resetAttributesFromHeader(event) {
   if (event) event.stopPropagation();
+  setActiveTypeTokens(['animal', 'sponsor', 'project']);
   resetAllAttributeFilters();
   refreshAttributeAvailability();
   applySearch();
@@ -3301,6 +3333,32 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
   const isDefault = selectedSet.size === values.length;
   if (kind === 'strength' && !isDefault) forceTypeToOnly('sponsor');
   if (kind === 'size' && !isDefault) forceTypeToOnly('animal');
+
+  updateAttributesSummary();
+  applySearch();
+}
+
+function selectAllAttributeValues(kind) {
+  setAttributeValues(kind, true);
+}
+
+function selectNoneAttributeValues(kind) {
+  setAttributeValues(kind, false);
+}
+
+function setAttributeValues(kind, selectAll) {
+  if (kind === 'conditions') {
+    selectedConditions = selectAll ? new Set(CONDITION_VALUES) : new Set();
+    buildChipGroup('conditionsChips', CONDITION_VALUES, selectedConditions, 'condition');
+  } else if (kind === 'strength') {
+    selectedStrengths = selectAll ? new Set(STRENGTH_VALUES) : new Set();
+    buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
+    if (!selectAll) forceTypeToOnly('sponsor');
+  } else if (kind === 'size') {
+    selectedSizes = selectAll ? new Set(SIZE_VALUES) : new Set();
+    buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
+    if (!selectAll) forceTypeToOnly('animal');
+  }
 
   updateAttributesSummary();
   applySearch();
@@ -3679,17 +3737,15 @@ function passesAttributeFilters(row) {
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
 
-  // Tags: Species (any-of: card passes if at least one of its species tags is
-  // selected), Continent (card's single continent must be selected).
-  // When either sub-group is narrowed, cards without that attribute no longer
-  // pass as tagless fallbacks; a positive tag filter means "must match".
-  if (selectedSpeciesTags.size !== SPECIES_TAGS.length) {
-    if (!attrs.species.length) return false;
-    if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
-  }
-  if (selectedContinentTags.size !== CONTINENT_TAGS.length) {
-    if (!attrs.continent) return false;
-    if (!selectedContinentTags.has(attrs.continent)) return false;
+  // Tags are one combined include-list across Species and Continent.
+  // Default = all tags selected = no filtering. Once narrowed, a card passes
+  // if it has at least one selected Species OR its Continent is selected.
+  // Selecting none intentionally returns no tag matches.
+  if (!isTagsAtDefault()) {
+    const anyTagSelected = selectedSpeciesTags.size + selectedContinentTags.size > 0;
+    const speciesMatch = attrs.species.some(s => selectedSpeciesTags.has(s));
+    const continentMatch = Boolean(attrs.continent && selectedContinentTags.has(attrs.continent));
+    if (!anyTagSelected || (!speciesMatch && !continentMatch)) return false;
   }
 
   // Water/Rock/Science: simple boolean toggles, default OFF (no filtering).
