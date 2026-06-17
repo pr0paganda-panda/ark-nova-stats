@@ -784,13 +784,19 @@
     /* Disabled state shared by every group type. Disabling resets the group's
        selection to default underneath (handled in JS), so re-enabling always
        starts clean rather than restoring a stale prior choice. */
-    .attr-group.disabled {
+    .attr-group.disabled,
+    .attributes-bar.attributes-unavailable .attr-group {
       opacity: 0.38;
       pointer-events: none;
     }
 
-    .attr-group.disabled .attr-group-label {
+    .attr-group.disabled .attr-group-label,
+    .attributes-bar.attributes-unavailable .attr-group-label {
       color: var(--text-dim);
+    }
+
+    .attributes-bar.attributes-unavailable .attributes-bar-body {
+      pointer-events: none;
     }
 
     /* Chip row reuses the existing .chip look for visual consistency with
@@ -1966,8 +1972,7 @@
 
         <!-- Strength: 3/4/5/6 chips. Sponsor-only attribute.
              Disabled unless Sponsor is active in the Type filter.
-             Narrowing this (away from all-selected) forces Type to Sponsor-only
-             if Type is currently at its default (all three types active). -->
+             Narrowing this (away from all-selected) forces Type to Sponsor-only. -->
         <div class="attr-group" id="attrGroupStrength" data-attr-group="strength">
           <span class="attr-group-label">Strength</span>
           <div class="attr-chip-row" id="strengthChips"></div>
@@ -1975,7 +1980,7 @@
 
         <!-- Size: 1/2/3/4/5 chips. Animal-only attribute.
              Disabled unless Animal is active in the Type filter.
-             Narrowing this forces Type to Animal-only if Type is currently default. -->
+             Narrowing this forces Type to Animal-only. -->
         <div class="attr-group" id="attrGroupSize" data-attr-group="size">
           <span class="attr-group-label">Size</span>
           <div class="attr-chip-row" id="sizeChips"></div>
@@ -2295,6 +2300,7 @@ let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blan
 // ── Attributes bar state ──────────────────────────────────────────────────────
 // cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
 let cardAttributes = new Map();
+let cardAttributesLoaded = false;
 
 // Selection sets for each group. Defaults are "all selected" (no filtering) for
 // Tags/Conditions/Strength/Size/Abilities, and "off" (no filtering) for
@@ -3200,19 +3206,30 @@ async function loadCardAttributes() {
     });
 
     cardAttributes = attrs;
+    cardAttributesLoaded = true;
     allAbilities = [...abilitySet].sort((a, b) => a.localeCompare(b));
     selectedAbilities = new Set(allAbilities); // default: all selected = no filtering
     buildAbilitiesList();
+    setAttributesUnavailable(false);
   } catch (err) {
     console.warn('Card attributes were not loaded. The Attributes bar will have no effect.', err);
     cardAttributes = new Map();
+    cardAttributesLoaded = false;
     allAbilities = [];
     selectedAbilities = new Set();
+    setAttributesUnavailable(true);
   }
 }
 
 function attributesForCard(cardName) {
   return cardAttributes.get(normalizeSearchText(cardName)) || null;
+}
+
+function setAttributesUnavailable(unavailable) {
+  const bar = document.getElementById('attributesBar');
+  const summary = document.getElementById('attributesSummary');
+  if (bar) bar.classList.toggle('attributes-unavailable', unavailable);
+  if (summary && unavailable) summary.textContent = '· unavailable';
 }
 
 // ── Collapse / expand ───────────────────────────────────────────────────────────
@@ -3256,13 +3273,12 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
     btn.classList.add('active');
   }
 
-  // Strength/Size narrowing forces Type toward Sponsor-only / Animal-only,
-  // but only when Type is currently still at its untouched default (all three
-  // active). If the user already narrowed Type manually, leave it alone —
-  // the disable-on-impossible rule covers the rest.
+  // Strength/Size narrowing forces Type toward Sponsor-only / Animal-only.
+  // This is an intentional convenience: once the user chooses a sponsor-only
+  // or animal-only attribute value, the Type filter should follow that intent.
   const isDefault = selectedSet.size === values.length;
-  if (kind === 'strength' && !isDefault) forceTypeToOnlyIfDefault('sponsor');
-  if (kind === 'size' && !isDefault) forceTypeToOnlyIfDefault('animal');
+  if (kind === 'strength' && !isDefault) forceTypeToOnly('sponsor');
+  if (kind === 'size' && !isDefault) forceTypeToOnly('animal');
 
   updateAttributesSummary();
   applySearch();
@@ -3352,14 +3368,23 @@ function renderAbilitiesList() {
     return;
   }
 
-  list.innerHTML = matches.map(ability => {
-    const checked = selectedAbilities.has(ability) ? 'checked' : '';
-    const safeId = 'ability-' + ability.replace(/[^a-zA-Z0-9]/g, '_');
-    return `<label class="abilities-list-item" for="${safeId}">
-      <input type="checkbox" id="${safeId}" ${checked} onchange="toggleAbility('${ability.replace(/'/g, "\\'")}', this)" />
-      ${ability}
-    </label>`;
-  }).join('');
+  list.innerHTML = '';
+  matches.forEach((ability, index) => {
+    const safeId = 'ability-' + ability.replace(/[^a-zA-Z0-9]/g, '_') + '-' + index;
+    const label = document.createElement('label');
+    label.className = 'abilities-list-item';
+    label.setAttribute('for', safeId);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = safeId;
+    checkbox.checked = selectedAbilities.has(ability);
+    checkbox.addEventListener('change', () => toggleAbility(ability, checkbox));
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(` ${ability}`));
+    list.appendChild(label);
+  });
 }
 
 function toggleAbility(ability, checkbox) {
@@ -3415,9 +3440,9 @@ document.addEventListener('click', e => {
 });
 
 // ── Water / Rock / Science toggles ────────────────────────────────────────────
-// Unlike Reefer/Aviary, these don't force a Type change: Water and Rock apply to
-// both Animal and Sponsor cards, and Science to Sponsor only, so there's no single
-// Type to force. They only need the standard disable-when-impossible behaviour.
+// Water and Rock apply to both Animal and Sponsor cards, so they don't force a
+// single Type. Science is Sponsor-only, so turning it on follows the same intent
+// as narrowing Strength and forces the Type filter to Sponsor.
 function onBoolTagToggle(which) {
   if (which === 'water') {
     waterOn = document.getElementById('waterToggle').checked;
@@ -3428,6 +3453,7 @@ function onBoolTagToggle(which) {
   } else if (which === 'science') {
     scienceOn = document.getElementById('scienceToggle').checked;
     document.getElementById('scienceToggleLabel').textContent = scienceOn ? 'Yes' : 'No';
+    if (scienceOn) forceTypeToOnly('sponsor');
   }
   updateAttributesSummary();
   applySearch();
@@ -3483,19 +3509,8 @@ function setActiveTypeTokens(tokens) {
   updateTypeFilterIndicator();
 }
 
-function isTypeAtDefault() {
-  return getActiveTypeTokens().length === 3;
-}
-
-// Forces Type to a single value, but only if Type is currently untouched
-// (all three types active). Used by Strength/Size narrowing.
-function forceTypeToOnlyIfDefault(typeValue) {
-  if (!isTypeAtDefault()) return;
-  forceTypeToOnly(typeValue);
-}
-
-// Forces Type to a single value unconditionally. Used by Reefer/Aviary, since
-// those represent a binary on/off rather than a "narrowed away from all" state.
+// Forces Type to a single value for attribute groups that are meaningful for
+// only one card type.
 function forceTypeToOnly(typeValue) {
   setActiveTypeTokens([typeValue]);
   refreshAttributeAvailability();
@@ -3514,6 +3529,10 @@ function refreshAttributeAvailability() {
     const isPossible = relevant.some(t => activeTypes.has(t));
     setGroupDisabled(groupKey, !isPossible);
   });
+
+  if (!reeferOn && !aviaryOn) {
+    typeBeforeReeferAviary = null;
+  }
 
   updateAttributesSummary();
 }
@@ -3626,6 +3645,12 @@ function resetAllAttributeFilters() {
 
 // ── Summary text in the Attributes bar header ─────────────────────────────────────
 function updateAttributesSummary() {
+  if (!cardAttributesLoaded) {
+    const summary = document.getElementById('attributesSummary');
+    if (summary) summary.textContent = '· unavailable';
+    return;
+  }
+
   updateTagsButtonLabel();
   updateAbilitiesButtonLabel();
 
@@ -3650,16 +3675,20 @@ function updateAttributesSummary() {
 function passesAttributeFilters(row) {
   // If the attributes CSV failed to load, or this particular card has no entry
   // in it, do not filter the row out — fail open so the table still works.
+  if (!cardAttributesLoaded) return true;
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
 
   // Tags: Species (any-of: card passes if at least one of its species tags is
-  // selected, or if the card has no species tags at all), Continent (card's
-  // single continent must be selected, or it has none).
-  if (attrs.species.length) {
+  // selected), Continent (card's single continent must be selected).
+  // When either sub-group is narrowed, cards without that attribute no longer
+  // pass as tagless fallbacks; a positive tag filter means "must match".
+  if (selectedSpeciesTags.size !== SPECIES_TAGS.length) {
+    if (!attrs.species.length) return false;
     if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
   }
-  if (attrs.continent) {
+  if (selectedContinentTags.size !== CONTINENT_TAGS.length) {
+    if (!attrs.continent) return false;
     if (!selectedContinentTags.has(attrs.continent)) return false;
   }
 
@@ -3672,14 +3701,15 @@ function passesAttributeFilters(row) {
   // Conditions: card's single condition value (blank treated as '0') must be selected.
   if (!selectedConditions.has(attrs.conditions)) return false;
 
-  // Strength: only meaningful for Sponsor cards. Non-sponsors always pass
-  // (the group is disabled/inactive for them anyway).
-  if (attrs.strength) {
+  // Strength: when narrowed, a card must have one of the selected strength values.
+  if (selectedStrengths.size !== STRENGTH_VALUES.length) {
+    if (!attrs.strength) return false;
     if (!selectedStrengths.has(attrs.strength)) return false;
   }
 
-  // Size: only meaningful for Animal cards.
-  if (attrs.size) {
+  // Size: when narrowed, a card must have one of the selected size values.
+  if (selectedSizes.size !== SIZE_VALUES.length) {
+    if (!attrs.size) return false;
     if (!selectedSizes.has(attrs.size)) return false;
   }
 
