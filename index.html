@@ -476,6 +476,7 @@
       font-size: 12px;
       color: #8aa386;
       white-space: nowrap;
+      transform: translateX(-20px);
     }
 
     .min-plays-label {
@@ -506,7 +507,7 @@
       background-image: linear-gradient(var(--text-dim), var(--text-dim));
       background-repeat: no-repeat;
       background-position: center;
-      background-size: 60% 1px;
+      background-size: 30% 1px;
     }
 
     .min-plays-input::-webkit-outer-spin-button,
@@ -1247,7 +1248,10 @@
         flex-wrap: nowrap;
       }
 
-      .main-header .min-plays-wrap { gap: 5px; }
+      .main-header .min-plays-wrap {
+        gap: 5px;
+        transform: none;
+      }
       .main-header .min-plays-label { font-size: 11px; }
       .min-plays-label-full { display: none; }
       .min-plays-label-short { display: inline; }
