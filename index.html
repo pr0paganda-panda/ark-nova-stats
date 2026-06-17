@@ -464,7 +464,7 @@
 
     .main-controls {
       display: flex;
-      gap: 12px;
+      gap: 18px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -487,20 +487,27 @@
     .min-plays-label-short { display: none; }
 
     .min-plays-input {
-      width: 74px;
-      background: var(--bg-surface);
+      width: 44px;
+      background-color: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 12px;
-      padding: 4px 8px;
+      padding: 4px 4px;
       outline: none;
+      text-align: center;
       transition: border-color 0.15s;
     }
 
     .min-plays-input:focus { border-color: var(--accent-dim); }
-    .min-plays-input::placeholder { color: var(--text-dim); }
+
+    .min-plays-input:placeholder-shown {
+      background-image: linear-gradient(var(--text-dim), var(--text-dim));
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 60% 1px;
+    }
 
     .min-plays-input::-webkit-outer-spin-button,
     .min-plays-input::-webkit-inner-spin-button {
@@ -1236,7 +1243,7 @@
         align-items: center;
         justify-content: flex-end;
         flex: 0 0 auto;
-        gap: 7px;
+        gap: 9px;
         flex-wrap: nowrap;
       }
 
@@ -1246,8 +1253,8 @@
       .min-plays-label-short { display: inline; }
 
       .main-header .min-plays-input {
-        width: 50px;
-        padding: 5px 6px;
+        width: 34px;
+        padding: 5px 4px;
         font-size: 12px;
       }
 
@@ -1474,7 +1481,7 @@
       <div class="main-controls">
         <div class="min-plays-wrap">
           <label class="min-plays-label" for="minPlayedInput"><span class="min-plays-label-full">Minimum plays</span><span class="min-plays-label-short">Min plays</span></label>
-          <input class="min-plays-input" type="number" id="minPlayedInput" placeholder="—" min="0" inputmode="numeric" oninput="onMinPlaysInput()" />
+          <input class="min-plays-input" type="number" id="minPlayedInput" placeholder=" " min="0" inputmode="numeric" oninput="onMinPlaysInput()" />
         </div>
         <div class="rpp-wrap">
           Rows
