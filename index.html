@@ -1190,7 +1190,7 @@
     }
 
     .abilities-list {
-      max-height: 220px;
+      height: min(220px, calc(100vh - 210px));
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -3651,9 +3651,16 @@ function toggleAbilitiesPanel(event) {
   const panel = document.getElementById('abilitiesPanel');
   panel.classList.toggle('open');
   if (panel.classList.contains('open')) {
-    positionAbilitiesPanel();
     const input = document.getElementById('abilitiesSearchInput');
-    if (input) input.focus();
+    if (input) {
+      try {
+        input.focus({ preventScroll: true });
+      } catch {
+        input.focus();
+      }
+    }
+    positionAbilitiesPanel();
+    requestAnimationFrame(positionAbilitiesPanel);
   }
 }
 
@@ -3766,7 +3773,6 @@ document.addEventListener('click', e => {
 });
 
 window.addEventListener('resize', positionAbilitiesPanel);
-window.addEventListener('scroll', positionAbilitiesPanel, true);
 
 // ── Water / Rock / Science toggles ────────────────────────────────────────────
 // Water and Rock apply to both Animal and Sponsor cards. Turning either on
