@@ -3482,8 +3482,14 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
   // actually carry that attribute, so the Type header and popup reflect the
   // effective filtering users see in the table.
   const isDefault = selectedSet.size === values.length;
-  if (kind === 'strength' && !isDefault) forceTypeToOnly('sponsor');
-  if (kind === 'size' && !isDefault) forceTypeToOnly('animal');
+  if (kind === 'strength') {
+    if (!isDefault) forceTypeToOnly('sponsor');
+    else syncSponsorOnlyTypeFilter();
+  }
+  if (kind === 'size') {
+    if (!isDefault) forceTypeToOnly('animal');
+    else syncAnimalOnlyTypeFilter();
+  }
   if (kind === 'species' || kind === 'continent') {
     syncSharedAnimalSponsorTypeFilter();
     updateTagButtonLabels();
@@ -3506,10 +3512,12 @@ function setAttributeValues(kind, selectAll) {
     selectedStrengths = selectAll ? new Set(STRENGTH_VALUES) : new Set();
     buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
     if (!selectAll) forceTypeToOnly('sponsor');
+    else syncSponsorOnlyTypeFilter();
   } else if (kind === 'size') {
     selectedSizes = selectAll ? new Set(SIZE_VALUES) : new Set();
     buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
     if (!selectAll) forceTypeToOnly('animal');
+    else syncAnimalOnlyTypeFilter();
   }
 
   updateAttributesSummary();
@@ -3715,6 +3723,7 @@ function onBoolTagToggle(which) {
   } else if (which === 'science') {
     scienceOn = document.getElementById('scienceToggle').checked;
     if (scienceOn) forceTypeToOnly('sponsor');
+    else syncSponsorOnlyTypeFilter();
   }
   updateAttributesSummary();
   applySearch();
@@ -3794,6 +3803,32 @@ function syncSharedAnimalSponsorTypeFilter() {
     setActiveTypeTokens(['animal', 'sponsor']);
     refreshAttributeAvailability();
   } else if (isAutoSharedAnimalSponsorTypeState) {
+    setActiveTypeTokens(['animal', 'sponsor', 'project']);
+    refreshAttributeAvailability();
+  }
+}
+
+function syncSponsorOnlyTypeFilter() {
+  // Science and narrowed Strength are Sponsor-only. If both return to default
+  // while Type is still in the automatic Sponsor-only state, restore all Types.
+  const allSponsorOnlyFiltersDefault =
+    !scienceOn &&
+    selectedStrengths.size === STRENGTH_VALUES.length;
+  const activeTypes = getActiveTypeTokens();
+
+  if (allSponsorOnlyFiltersDefault && activeTypes.length === 1 && activeTypes[0] === 'sponsor') {
+    setActiveTypeTokens(['animal', 'sponsor', 'project']);
+    refreshAttributeAvailability();
+  }
+}
+
+function syncAnimalOnlyTypeFilter() {
+  // Narrowed Size is Animal-only. If it returns to default while Type is still
+  // in the automatic Animal-only state, restore all Types.
+  const allAnimalOnlyFiltersDefault = selectedSizes.size === SIZE_VALUES.length;
+  const activeTypes = getActiveTypeTokens();
+
+  if (allAnimalOnlyFiltersDefault && activeTypes.length === 1 && activeTypes[0] === 'animal') {
     setActiveTypeTokens(['animal', 'sponsor', 'project']);
     refreshAttributeAvailability();
   }
