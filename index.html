@@ -104,7 +104,7 @@
     .topbar {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
-      padding: 0 24px;
+      padding: 0 24px 0 calc((var(--side-nav-width) - var(--dataset-switch-width)) / 2);
       display: flex;
       align-items: center;
       gap: 20px;
@@ -152,9 +152,9 @@
 
     /* MW / Base segmented switch.
        This uses the compact MW/Base switch on every viewport, not only phone.
-       On desktop/tablet its width matches the left navigation rail. */
+       On desktop/tablet it is centered inside the left navigation rail span. */
     .tabs {
-      width: var(--side-nav-width);
+      width: var(--dataset-switch-width);
       height: 34px;
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -223,9 +223,10 @@
        The main dashboard has a compact fixed navigation rail on the left.
        Filters always open as a right-side overlay, so the table never resizes. */
     :root {
-      --side-nav-width: 151px;
+      --side-nav-width: 131px;
       --side-nav-gap: 24px;
       --content-left-offset: 135px;
+      --dataset-switch-width: 113px;
     }
 
     .layout {
@@ -1649,11 +1650,12 @@
         --side-nav-width: 84px;
         --side-nav-gap: 20px;
         --content-left-offset: 104px;
+        --dataset-switch-width: 84px;
       }
 
       .topbar {
         height: 52px;
-        padding: 0 10px;
+        padding: 0 10px 0 calc((var(--side-nav-width) - var(--dataset-switch-width)) / 2);
         gap: 8px;
       }
 
@@ -1684,9 +1686,9 @@
         height: 21px;
       }
 
-      /* Phone only compacts the universal MW/Base switch; width still follows the rail. */
+      /* Phone only compacts the universal MW/Base switch. */
       .tabs {
-        width: var(--side-nav-width);
+        width: var(--dataset-switch-width);
         height: 30px;
       }
 
