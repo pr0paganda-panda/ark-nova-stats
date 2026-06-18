@@ -3452,13 +3452,16 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
     btn.classList.add('active');
   }
 
-  // Strength/Size narrowing forces Type toward Sponsor-only / Animal-only.
-  // This is an intentional convenience: once the user chooses a sponsor-only
-  // or animal-only attribute value, the Type filter should follow that intent.
+  // Attribute narrowing forces the Type filter toward the card types that can
+  // actually carry that attribute, so the Type header and popup reflect the
+  // effective filtering users see in the table.
   const isDefault = selectedSet.size === values.length;
   if (kind === 'strength' && !isDefault) forceTypeToOnly('sponsor');
   if (kind === 'size' && !isDefault) forceTypeToOnly('animal');
-  if (kind === 'species' || kind === 'continent') updateTagButtonLabels();
+  if (kind === 'species' || kind === 'continent') {
+    syncSpeciesHabitatTypeFilter();
+    updateTagButtonLabels();
+  }
 
   updateAttributesSummary();
   applySearch();
@@ -3526,6 +3529,7 @@ function selectAllCurrentTagPopup() {
   } else {
     selectedContinentTags = new Set(CONTINENT_TAGS);
   }
+  syncSpeciesHabitatTypeFilter();
   renderCurrentTagPopup();
   updateTagButtonLabels();
 }
@@ -3536,6 +3540,7 @@ function selectNoneCurrentTagPopup() {
   } else {
     selectedContinentTags = new Set();
   }
+  syncSpeciesHabitatTypeFilter();
   renderCurrentTagPopup();
   updateTagButtonLabels();
 }
@@ -3739,6 +3744,23 @@ function setActiveTypeTokens(tokens) {
 function forceTypeToOnly(typeValue) {
   setActiveTypeTokens([typeValue]);
   refreshAttributeAvailability();
+}
+
+function syncSpeciesHabitatTypeFilter() {
+  const bothDefault = areSpeciesAtDefault() && areContinentsAtDefault();
+  const activeTypes = getActiveTypeTokens();
+  const isAutoSpeciesHabitatTypeState =
+    activeTypes.length === 2 &&
+    activeTypes.includes('animal') &&
+    activeTypes.includes('sponsor');
+
+  if (!bothDefault) {
+    setActiveTypeTokens(['animal', 'sponsor']);
+    refreshAttributeAvailability();
+  } else if (isAutoSpeciesHabitatTypeState) {
+    setActiveTypeTokens(['animal', 'sponsor', 'project']);
+    refreshAttributeAvailability();
+  }
 }
 
 // ── Disabling groups based on the active Type filter ──────────────────────────────
