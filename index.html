@@ -819,8 +819,9 @@
     .attributes-bar-body {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 16px 22px;
-      padding: 4px 16px 16px;
+      padding: 16px;
       border-top: 1px solid var(--border);
     }
 
@@ -832,6 +833,7 @@
     .attr-group {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 6px;
       min-width: 0;
     }
@@ -857,10 +859,6 @@
       font-size: 11px;
       color: var(--text-dim);
       white-space: nowrap;
-    }
-
-    #attrGroupSize {
-      margin-left: 10px;
     }
 
     .attr-separator {
@@ -1958,6 +1956,14 @@
   </button>
 </header>
 
+<!--
+  Fixed dashboard navigation rail.
+  This is intentionally separate from the topbar tabs:
+  - MW/Base tabs switch the current Cards dashboard dataset.
+  - This left rail is for switching between different dashboards/pages.
+  "Opening hand" is a placeholder and deliberately has no link yet.
+  Keep the rail narrow because table width is precious.
+-->
 <nav class="side-nav" aria-label="Dashboard navigation">
   <a class="side-nav-link active" href="#" aria-current="page">Cards</a>
   <span class="side-nav-link disabled" aria-disabled="true">Opening<br />hand</span>
@@ -2002,7 +2008,15 @@
          Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked
          up by card_name. Filtering is layered into applySearch() exactly like
          the Type filter — no backend call, instant results.
-         Collapsible, collapsed by default. -->
+         Collapsible, collapsed by default.
+
+         Important maintenance notes:
+         - Conditions still exists in cards_attributes.csv, but is intentionally
+           NOT exposed in the UI and is not read by the frontend.
+         - Species and Habitat are separate filters, not a combined OR group.
+         - Rock/Water/Science are boolean "only cards with this tag" toggles.
+         - Strength/Science are Sponsor-only; Size/Reefer/Aviary/Abilities are
+           Animal-only. Availability is controlled in ATTR_RELEVANT_TYPES. -->
     <div class="attributes-bar collapsed" id="attributesBar">
       <div class="attributes-bar-header" onclick="toggleAttributesBar()">
         <div class="attributes-bar-title">
@@ -2016,7 +2030,9 @@
       <div class="attributes-bar-body" id="attributesBarBody">
 
         <!-- Species and Habitat are separate include-list filters.
-             Both are disabled and reset when Type is Project-only. -->
+             Both are disabled and reset when Type is Project-only.
+             Do not merge these back into one Tags control unless Panda asks:
+             user testing specifically preferred them split. -->
         <div class="attr-group" id="attrGroupSpecies" data-attr-group="species">
           <span class="attr-group-label">Species</span>
           <button class="attr-tags-btn" id="speciesBtn" onclick="toggleTagPopup('species', event)">
@@ -2155,7 +2171,9 @@
       </div>
     </div>
 
-    <!-- Tag popup overlay: reused by Species and Habitat. -->
+    <!-- Tag popup overlay: reused by Species and Habitat.
+         The popup content is generated from currentTagPopupKind, so there is
+         only one modal in the DOM for both controls. -->
     <div class="tags-popup-overlay" id="tagPopupOverlay" onclick="closeTagPopupOnOverlay(event)">
       <div class="tags-popup" onclick="event.stopPropagation()">
         <div class="tags-popup-header">
@@ -2359,6 +2377,12 @@ const ATTR_RELEVANT_TYPES = {
   aviary: ['animal'],
   abilities: ['animal'],
 };
+
+// Keep this list in sync with the actual UI groups above.
+// refreshAttributeAvailability() uses it as the single source of truth for:
+// - disabling impossible attribute groups when Type excludes their card type,
+// - resetting disabled groups back to default,
+// - preventing hidden stale selections from continuing to filter rows.
 
 
 // These are the map choices exposed to users in the sidebar.
@@ -3241,6 +3265,9 @@ document.addEventListener('click', e => {
 
 // ── Filter sidebar overlay ────────────────────────────────────────────────────
 function toggleSidebar() {
+  // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
+  // back the old desktop grid column behavior unless Panda explicitly asks:
+  // opening Filters must not shrink or shift the table.
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('active');
 }
@@ -3669,6 +3696,9 @@ function forceTypeToOnly(typeValue) {
 // selection back to its default (all-selected for chip/ability groups, off
 // for Reefer/Aviary) so re-enabling never restores a stale prior choice.
 function refreshAttributeAvailability() {
+  // Central "impossible by Type" rule. Example: if Sponsor is inactive,
+  // Strength and Science are disabled and reset; if Animal is inactive,
+  // Size/Reefer/Aviary/Abilities are disabled and reset.
   const activeTypes = new Set(getActiveTypeTokens());
 
   Object.keys(ATTR_RELEVANT_TYPES).forEach(groupKey => {
@@ -3811,6 +3841,8 @@ function passesAttributeFilters(row) {
   // no filtering for that group. Once narrowed, a card must match at least one
   // selected value in the narrowed group. Selecting none intentionally returns
   // no matches for that group.
+  // Important: these are ANDed as groups. If Species and Habitat are both
+  // narrowed, a card must satisfy both groups.
   if (!areSpeciesAtDefault()) {
     if (!selectedSpeciesTags.size) return false;
     if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
