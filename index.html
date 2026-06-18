@@ -76,8 +76,14 @@
       --accent-teal:     #2bb8d6;   /* marine/ocean blue — Marine Worlds tab */
       --accent-teal-dim: #155a68;
 
-      --accent-gold:     #e8ad4f;   /* warm amber-gold — Base tab, narrowed-filter highlight */
+      --accent-gold:     #e8ad4f;   /* warm amber-gold — Base tab only */
       --accent-gold-dim: #6b4a1d;
+
+      --accent-ember:     #cc6a39;   /* warm ember — narrowed-filter highlight (Species/Habitat/
+                                         Abilities buttons, Type column header). Kept distinct from
+                                         --accent-gold so it doesn't collide with the Base tab or
+                                         the Project type badge, which are both gold. */
+      --accent-ember-dim: #5c2d18;
 
       --tab-active:  var(--accent);
       --tab-bg:      var(--bg-surface);
@@ -865,7 +871,7 @@
     .attributes-bar-body {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-start;
       gap: 16px 22px;
       padding: 16px;
       border-top: 1px solid var(--border);
@@ -943,8 +949,9 @@
     }
 
     .attr-chip-row .chip {
-      padding: 4px 9px;
+      padding: 3px 9px;
       font-size: 12px;
+      line-height: 1;
     }
 
     /* Tag buttons open the popup for Species or Habitat. */
@@ -953,7 +960,8 @@
       align-items: center;
       gap: 6px;
       min-width: 66px;
-      padding: 5px 12px;
+      padding: 3px 12px;
+      line-height: 1;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--bg-surface);
@@ -968,8 +976,8 @@
     .attr-tags-btn:hover { border-color: var(--border-light); color: var(--text); }
 
     .attr-tags-btn.narrowed {
-      border-color: var(--accent-gold);
-      color: var(--accent-gold);
+      border-color: var(--accent-ember);
+      color: var(--accent-ember);
     }
 
     .attr-tags-indicator {
@@ -1089,7 +1097,8 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 12px;
+      padding: 3px 12px;
+      line-height: 1;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--bg-surface);
@@ -1105,8 +1114,8 @@
     .abilities-dropdown-btn:hover { border-color: var(--border-light); color: var(--text); }
 
     .abilities-dropdown-btn.narrowed {
-      border-color: var(--accent-gold);
-      color: var(--accent-gold);
+      border-color: var(--accent-ember);
+      color: var(--accent-ember);
     }
 
     .abilities-panel {
@@ -1238,12 +1247,12 @@
     }
 
     #statsTable thead th.type-filter-header.type-filter-active .type-filter-label {
-      color: var(--accent-gold);
-      text-shadow: 0 0 8px rgba(232,173,79,0.35);
+      color: var(--accent-ember);
+      text-shadow: 0 0 8px rgba(204,106,57,0.35);
     }
 
     #statsTable thead th.type-filter-header.type-filter-active {
-      box-shadow: inset 0 -2px 0 rgba(232,173,79,0.55);
+      box-shadow: inset 0 -2px 0 rgba(204,106,57,0.55);
     }
 
     .type-filter-popup {
@@ -1412,8 +1421,8 @@
       letter-spacing: 0.04em;
     }
 
-    .type-animal   { background: #1a3a1e; color: #6fc97a; border: 1px solid #2d5e33; }
-    .type-sponsor  { background: #1a2e3a; color: #6ab0d4; border: 1px solid #2d5070; }
+    .type-animal   { background: #351a1a; color: #cc7b6e; border: 1px solid #5e2e2c; }
+    .type-sponsor  { background: #261a33; color: #a98ed1; border: 1px solid #46336a; }
     .type-project  { background: #2e2a1a; color: #c4a84a; border: 1px solid #5a4e20; }
 
     /* Card name */
@@ -3552,8 +3561,8 @@ function updateSingleTagButton(kind, selectedSet, values) {
     indicator.textContent = '';
   } else {
     btn.classList.add('narrowed');
-    label.textContent = 'Selected';
-    indicator.textContent = `(${selectedSet.size})`;
+    label.textContent = '';
+    indicator.textContent = `(${selectedSet.size}/${values.length})`;
   }
 }
 
@@ -3649,8 +3658,8 @@ function updateAbilitiesButtonLabel() {
     indicator.textContent = '';
   } else {
     btn.classList.add('narrowed');
-    label.textContent = 'Selected';
-    indicator.textContent = `(${selectedAbilities.size})`;
+    label.textContent = '';
+    indicator.textContent = `(${selectedAbilities.size}/${allAbilities.length})`;
   }
 }
 
