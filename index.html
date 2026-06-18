@@ -46,27 +46,43 @@
   <style>
     /* ── Design tokens ───────────────────────────────────────────────────────
        Central colour/spacing variables. Most of the visual theme should be changed here first.
-       The project uses an Ark Nova inspired dark forest palette. */
+       Redesigned 2026-06-18: moved the dark base from a yellow-green "forest"
+       cast to a cooler deep-marine teal-black. This gives the emerald accent
+       real contrast to pop against (rather than green-on-khaki-green), while
+       staying on-theme — Ark Nova's own box/board palette is dark teal, not
+       olive. Two secondary accents were added for variety: a marine teal
+       (Marine Worlds tab) and a warm gold (Base tab, "narrowed filter"
+       highlights, echoing the sponsorship/conservation gold already used on
+       the Project type badge in the table). The table's own value-driven
+       colours (delta/elo/playrate gradients, type badges) are NOT touched. */
     :root {
-      --bg:          #0f1a10;   /* deep forest night */
-      --bg-panel:    #162018;   /* sidebar / card panel */
-      --bg-surface:  #1e2d20;   /* table rows, inputs */
-      --bg-hover:    #253328;   /* row hover */
-      --border:      #2e4030;
-      --border-light:#3a5040;
+      --bg:          #0a1614;   /* deep marine-black, cool undertone */
+      --bg-panel:    #0e1f1c;   /* sidebar / card panel */
+      --bg-surface:  #152c28;   /* table rows, inputs */
+      --bg-hover:    #1d3a34;   /* row hover */
+      --bg-deep:     #071110;   /* near-black, for floating tooltips/dropdowns */
+      --border:      #25453f;
+      --border-light:#386059;
 
-      --text:        #e8f0e9;   /* primary text */
-      --text-muted:  #7a9e80;   /* labels, secondary */
-      --text-dim:    #4a6a50;   /* very faint */
+      --text:        #eef6f1;   /* primary text */
+      --text-muted:  #84ada3;   /* labels, secondary */
+      --text-dim:    #4f7269;   /* very faint */
 
-      --accent:      #5bbf72;   /* Ark Nova leaf green */
-      --accent-dim:  #2d6b3c;
-      --accent-glow: rgba(91,191,114,0.15);
+      --accent:        #34d399;   /* vivid emerald — Ark Nova leaf, primary */
+      --accent-dim:    #1d6b48;
+      --accent-bright: #6df5b8;   /* lighter emerald, for links/hover */
+      --accent-glow:   rgba(52,211,153,0.18);
 
-      --tab-active:  #5bbf72;
-      --tab-bg:      #1e2d20;
+      --accent-teal:     #2bb8d6;   /* marine/ocean blue — Marine Worlds tab */
+      --accent-teal-dim: #155a68;
 
-      /* delta colours */
+      --accent-gold:     #e8ad4f;   /* warm amber-gold — Base tab, narrowed-filter highlight */
+      --accent-gold-dim: #6b4a1d;
+
+      --tab-active:  var(--accent);
+      --tab-bg:      var(--bg-surface);
+
+      /* delta colours — unchanged, do not touch */
       --pos-strong:  #4caf72;
       --pos-mid:     #8bc78a;
       --pos-weak:    #b8dbb5;
@@ -75,7 +91,7 @@
       --neg-strong:  #c0432a;
       --neutral:     #7a9e80;
 
-      /* elo colour scale (teal/blue-green) */
+      /* elo colour scale (teal/blue-green) — unchanged, do not touch */
       --elo-low:   #2a5a5a;
       --elo-mid:   #2a8a7a;
       --elo-high:  #4acfb0;
@@ -104,7 +120,7 @@
     .topbar {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
-      padding: 0 24px 0 calc((var(--side-nav-width) - var(--dataset-switch-width)) / 2);
+      padding: 0 24px;
       display: flex;
       align-items: center;
       gap: 20px;
@@ -150,20 +166,10 @@
       font-weight: 400;
     }
 
-    /* MW / Base segmented switch.
-       This uses the compact MW/Base switch on every viewport, not only phone.
-       On desktop/tablet it is centered inside the left navigation rail span. */
+    /* MW / Base tabs */
     .tabs {
-      width: var(--dataset-switch-width);
-      height: 34px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2px;
-      padding: 2px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      flex-shrink: 0;
+      display: flex;
+      gap: 4px;
     }
 
     /* push filter button to the far right */
@@ -172,46 +178,32 @@
     }
 
     .tab-btn {
-      height: 28px;
-      min-width: 0;
-      padding: 0;
-      border: none;
-      border-radius: 999px;
-      background: transparent;
+      padding: 6px 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--tab-bg);
       color: var(--text-muted);
       font-family: 'Inter', sans-serif;
-      font-size: 0;
+      font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
-
-    .tab-btn::after {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .tab-mw::after { content: 'MW'; }
-    .tab-base::after { content: 'Base'; }
 
     .tab-btn.active {
       border-color: currentColor;
-      color: #0f1a10;
+      color: var(--bg);
       font-weight: 600;
     }
 
     .tab-btn.active.tab-mw {
-      background: #3aab8a;   /* teal-green for Marine Worlds */
-      border-color: #3aab8a;
+      background: var(--accent-teal);   /* marine teal for Marine Worlds */
+      border-color: var(--accent-teal);
     }
 
     .tab-btn.active.tab-base {
-      background: #7abf55;   /* yellow-green / olive for Base */
-      border-color: #7abf55;
+      background: var(--accent-gold);   /* warm gold for Base — replaces the old olive/khaki tone */
+      border-color: var(--accent-gold);
     }
 
     .tab-btn:hover:not(.active) {
@@ -223,15 +215,13 @@
        The main dashboard has a compact fixed navigation rail on the left.
        Filters always open as a right-side overlay, so the table never resizes. */
     :root {
-      --side-nav-width: 131px;
+      --side-nav-width: 111px;
       --side-nav-gap: 24px;
-      --content-left-offset: 135px;
-      --dataset-switch-width: 113px;
     }
 
     .layout {
       display: block;
-      margin-left: var(--content-left-offset);
+      margin-left: calc(var(--side-nav-width) + var(--side-nav-gap));
       min-height: calc(100vh - 56px);
     }
 
@@ -241,7 +231,7 @@
       left: 0;
       bottom: 0;
       width: var(--side-nav-width);
-      background: #111b13;
+      background: #0c1b18;
       border-right: 1px solid var(--border);
       z-index: 95;
       display: flex;
@@ -289,14 +279,44 @@
       padding: 20px 16px;
       overflow-y: auto;
       position: fixed;
-      top: 56px;
+      top: 0;
       right: -280px;
       left: auto;
       width: 260px;
-      height: calc(100vh - 56px);
+      height: 100vh;
       z-index: 200;
       transition: right 0.25s ease;
       box-shadow: none;
+      /* RTL trick: flips the native scrollbar to the left edge of the panel.
+         Direction is reset back to ltr on every direct child below so text,
+         inputs, and flex ordering all read normally; only the scrollbar
+         track itself stays mirrored. */
+      direction: rtl;
+      /* Firefox: thin width + themed thumb/track colours. */
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-light) transparent;
+    }
+
+    .sidebar > * {
+      direction: ltr;
+    }
+
+    /* Slim, theme-coloured scrollbar for the Filters sidebar (WebKit/Blink). */
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 3px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-dim);
     }
 
     .sidebar.open { right: 0; box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
@@ -516,7 +536,7 @@
       width: 100%;
       padding: 10px;
       background: var(--accent);
-      color: #0f1a10;
+      color: var(--bg);
       border: none;
       border-radius: var(--radius);
       font-family: 'Bitter', serif;
@@ -570,14 +590,14 @@
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      color: #8aa386;
+      color: var(--text-muted);
       white-space: nowrap;
       transform: translateX(-35px);
     }
 
     .min-plays-label {
       font-size: 12px;
-      color: #8aa386;
+      color: var(--text-muted);
       font-weight: 500;
     }
 
@@ -755,14 +775,14 @@
     }
 
     .map-toggle-link {
-      color: #4f9f61;
+      color: var(--accent);
       cursor: pointer;
       text-decoration: underline;
       text-underline-offset: 2px;
     }
 
     .map-toggle-link:hover {
-      color: #6fbf7f;
+      color: var(--accent-bright);
     }
 
     /* ── Attributes bar ──────────────────────────────────────────────────────
@@ -845,8 +865,9 @@
     .attributes-bar-body {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 16px 22px;
-      padding: 4px 16px 16px;
+      padding: 16px;
       border-top: 1px solid var(--border);
     }
 
@@ -858,6 +879,7 @@
     .attr-group {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 6px;
       min-width: 0;
     }
@@ -883,10 +905,6 @@
       font-size: 11px;
       color: var(--text-dim);
       white-space: nowrap;
-    }
-
-    #attrGroupSize {
-      margin-left: 10px;
     }
 
     .attr-separator {
@@ -950,8 +968,8 @@
     .attr-tags-btn:hover { border-color: var(--border-light); color: var(--text); }
 
     .attr-tags-btn.narrowed {
-      border-color: #9cab63;
-      color: #9cab63;
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
     }
 
     .attr-tags-indicator {
@@ -1038,7 +1056,7 @@
       padding: 8px;
       margin-top: 16px;
       background: var(--accent);
-      color: #0f1a10;
+      color: var(--bg);
       border: none;
       border-radius: var(--radius);
       font-family: 'Bitter', serif;
@@ -1087,21 +1105,23 @@
     .abilities-dropdown-btn:hover { border-color: var(--border-light); color: var(--text); }
 
     .abilities-dropdown-btn.narrowed {
-      border-color: #9cab63;
-      color: #9cab63;
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
     }
 
     .abilities-panel {
       display: none;
       position: absolute;
       top: calc(100% + 6px);
-      left: 0;
-      background: #0a120b;
+      right: 0;
+      left: auto;
+      background: var(--bg-deep);
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       z-index: 500;
       width: 260px;
+      max-width: calc(100vw - 32px);
       padding: 10px;
     }
 
@@ -1218,12 +1238,12 @@
     }
 
     #statsTable thead th.type-filter-header.type-filter-active .type-filter-label {
-      color: #9cab63;
-      text-shadow: 0 0 8px rgba(156,171,99,0.35);
+      color: var(--accent-gold);
+      text-shadow: 0 0 8px rgba(232,173,79,0.35);
     }
 
     #statsTable thead th.type-filter-header.type-filter-active {
-      box-shadow: inset 0 -2px 0 rgba(156,171,99,0.55);
+      box-shadow: inset 0 -2px 0 rgba(232,173,79,0.55);
     }
 
     .type-filter-popup {
@@ -1232,7 +1252,7 @@
       top: calc(100% + 6px);
       left: 50%;
       transform: translateX(-50%);
-      background: #0a120b;
+      background: var(--bg-deep);
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
       padding: 10px;
@@ -1270,7 +1290,7 @@
 
     #col-tooltip {
       position: fixed;
-      background: #0a120b;
+      background: var(--bg-deep);
       border: 1px solid var(--border-light);
       color: var(--text);
       font-size: 11px;
@@ -1566,7 +1586,7 @@
     /* ── Tooltip for map chips ──────────────────────────────────────────────── */
     #map-tooltip {
       position: fixed;
-      background: #0a120b;
+      background: var(--bg-deep);
       border: 1px solid var(--border);
       color: var(--text);
       font-size: 11px;
@@ -1649,13 +1669,11 @@
       :root {
         --side-nav-width: 84px;
         --side-nav-gap: 20px;
-        --content-left-offset: 104px;
-        --dataset-switch-width: 84px;
       }
 
       .topbar {
         height: 52px;
-        padding: 0 10px 0 calc((var(--side-nav-width) - var(--dataset-switch-width)) / 2);
+        padding: 0 10px;
         gap: 8px;
       }
 
@@ -1671,11 +1689,6 @@
         font-size: 10px;
       }
 
-      .sidebar {
-        top: 52px;
-        height: calc(100vh - 52px);
-      }
-
       .topbar-logo {
         font-size: 13px;
         gap: 4px;
@@ -1686,14 +1699,31 @@
         height: 21px;
       }
 
-      /* Phone only compacts the universal MW/Base switch. */
+      /* Compact MW/Base segmented switch for narrow phone screens. */
       .tabs {
-        width: var(--dataset-switch-width);
+        width: 88px;
         height: 30px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px;
+        padding: 2px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        flex-shrink: 0;
       }
 
       .tab-btn {
         height: 24px;
+        min-width: 0;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        font-size: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .tab-btn::after {
