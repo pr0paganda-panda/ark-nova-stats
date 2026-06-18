@@ -1,5 +1,6 @@
 import functions_framework
 import json
+from datetime import date
 from google.cloud import bigquery
 
 # ── Constants ──────────────────────────────────────────────────────────────────
@@ -67,6 +68,18 @@ def _round_condition(alias, selected_rounds):
     return "(" + " OR ".join(conditions) + ")"
 
 
+def _parse_iso_date(raw_value, field_name, default=None):
+    """Return a datetime.date for YYYY-MM-DD input, or raise ValueError."""
+    if raw_value in (None, ""):
+        return default
+    if not isinstance(raw_value, str):
+        raise ValueError(f"{field_name} must be a YYYY-MM-DD string")
+    try:
+        return date.fromisoformat(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid YYYY-MM-DD date") from exc
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 @functions_framework.http
@@ -93,8 +106,14 @@ def get_card_stats(request):
     player_elo_max         = params.get('player_elo_max', None)
     opponent_elo_min       = params.get('opponent_elo_min', 300)
     opponent_elo_max       = params.get('opponent_elo_max', None)
-    date_from              = params.get('date_from', '2025-01-01')  # default: 2025 onwards
-    date_to                = params.get('date_to', None)
+    try:
+        date_from          = _parse_iso_date(params.get('date_from', '2025-01-01'), 'date_from', date(2025, 1, 1))
+        date_to            = _parse_iso_date(params.get('date_to', None), 'date_to')
+        if date_from and date_to and date_from > date_to:
+            raise ValueError("date_from must be on or before date_to")
+    except ValueError as exc:
+        return (json.dumps({'status': 'error', 'message': str(exc)}), 400, headers)
+
     end_game_triggered     = params.get('end_game_triggered', True) # True/False/None (None = no filter)
     selected_maps          = params.get('maps', VALID_MAPS)         # list of map strings
     card_types             = params.get('card_types', ['animal', 'sponsor', 'project'])
@@ -111,6 +130,7 @@ def get_card_stats(request):
         f"Map NOT IN ({', '.join(repr(m) for m in INVALID_MAPS)})",
         f"Map IN ({', '.join(repr(m) for m in selected_maps)})",
     ]
+    query_parameters = []
 
     if player_elo_min is not None:
         where_clauses.append(f"elo >= {int(player_elo_min)}")
@@ -121,9 +141,11 @@ def get_card_stats(request):
     if opponent_elo_max is not None:
         where_clauses.append(f"opponent_elo <= {int(opponent_elo_max)}")
     if date_from:
-        where_clauses.append(f"game_ended_at >= '{date_from}'")
+        where_clauses.append("CAST(game_ended_at AS DATE) >= @date_from")
+        query_parameters.append(bigquery.ScalarQueryParameter("date_from", "DATE", date_from))
     if date_to:
-        where_clauses.append(f"game_ended_at <= '{date_to}'")
+        where_clauses.append("CAST(game_ended_at AS DATE) <= @date_to")
+        query_parameters.append(bigquery.ScalarQueryParameter("date_to", "DATE", date_to))
     if end_game_triggered is True:
         where_clauses.append("end_game_triggered = TRUE")
     elif end_game_triggered is False:
@@ -383,7 +405,8 @@ def get_card_stats(request):
     # ── Run the query ──────────────────────────────────────────────────────────
     try:
         client = bigquery.Client(project='freestyle-190711')
-        results = client.query(query).result()
+        job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+        results = client.query(query, job_config=job_config).result()
 
         # Convert to list of dicts, filtering by requested card_types
         rows = []
