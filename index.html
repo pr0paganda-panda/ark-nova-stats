@@ -988,8 +988,9 @@
     .attr-tags-btn {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      min-width: 66px;
+      width: 66px;
       padding: 3px 12px;
       line-height: 1;
       border-radius: 20px;
@@ -999,8 +1000,9 @@
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: border-color 0.15s, color 0.15s, background-color 0.15s;
       font-family: 'Inter', sans-serif;
+      white-space: nowrap;
     }
 
     .attr-tags-btn:hover { border-color: var(--border-light); color: var(--text); }
@@ -1121,15 +1123,12 @@
     /* Abilities searchable multi-select dropdown */
     .abilities-dropdown {
       position: relative;
-      width: 100px;
     }
 
     .abilities-dropdown-btn {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 6px;
-      width: 100%;
       padding: 3px 12px;
       line-height: 1;
       border-radius: 20px;
