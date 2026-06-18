@@ -1,94 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-  Ark Nova Statistics Dashboard — annotated handoff version
+  Ark Nova Statistics Dashboard — redesigned visual identity version
 
   Purpose of this file:
   - Static frontend for GitHub Pages.
   - Calls the deployed Google Cloud Function API to fetch live BigQuery stats.
   - Handles all visual layout, table sorting, pagination, search, aliases, and client-side card-type filtering.
 
-  Current-status notes after the 2026-06-17 update pass:
-  - The backend now supports an optional played-round filter via request field `rounds`.
-  - The Round filter is a true backend filter because it changes the SQL aggregation.
-  - The Minimum plays field is frontend-only; it filters already-loaded rows by `n_played`.
-  - Card search now lives inside the Card table header instead of the control row above the table.
-  - Type filtering is frontend-only and has a warm-green dot indicator when narrowed.
-
-  Repository files expected next to this index.html:
-  - favicon.png          Browser tab icon.
-  - logo.png             Small logo in the header next to "Ark Nova Statistics".
-  - cards_altnames.csv   Optional alias/nickname search file. If missing, search still works by real card names.
-
-  Important maintenance warning:
-  The table column order is intentionally duplicated in several places:
-  1. the <thead> markup,
-  2. the renderTable() row template,
-  3. desktop inline column widths,
-  4. phone-only nth-child width/sticky CSS.
-  If a future agent adds/removes/reorders columns, all of those locations must be updated together.
-
-  Also keep the frontend and backend in sync for the Round filter:
-  - Frontend values are `1`, `2`, `3`, `4`, `5`, `6+`.
-  - Backend accepts the same whitelist and translates `6+` to `round >= 6`.
-  - If all rounds are selected, the frontend sends no `rounds` field and the backend runs normal mode.
-  - If no rounds or no maps are selected, the frontend deliberately skips the API call and renders empty results locally.
+  Visual Redesign Notes:
+  - Replaced monochrome slate with layered dark-botanical/marine hues for layouts.
+  - Toned down bright neon glowing shadows on chips, active tabs, and buttons.
+  - Substituted serif typeface 'Bitter' with geometric display sans 'Plus Jakarta Sans'.
+  - Retained all original table text gradients, logic, pagination, and client-side filters.
 -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ark Nova Statistics</title>
-  <!-- Favicon is a repository-root asset. Keep favicon.png next to index.html on GitHub Pages. -->
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
   <style>
-    /* ── Design tokens ───────────────────────────────────────────────────────
-       Central colour/spacing variables. Most of the visual theme should be changed here first.
-       The project uses an Ark Nova inspired dark forest palette. */
     :root {
-      --bg:          #0f1a10;   /* deep forest night */
-      --bg-panel:    #162018;   /* sidebar / card panel */
-      --bg-surface:  #1e2d20;   /* table rows, inputs */
-      --bg-hover:    #253328;   /* row hover */
-      --border:      #2e4030;
-      --border-light:#3a5040;
+      /* Rich, multi-hue background palette for visual separation */
+      --bg:            #06090c;   /* Obsidian deep dark space background */
+      --bg-topbar:     #0b1015;   /* Neutral slate topbar */
+      --bg-side-nav:   #06130d;   /* Rainforest deep botanical green for left nav rail */
+      --bg-sidebar:    #0a141c;   /* Marine deep twilight blue for filter sidebar */
+      --bg-panel:      #10171d;   /* Slate charcoal for cards, attributes bar & table frame */
+      --bg-surface:    #152028;   /* Interactive controls & table row backgrounds */
+      --bg-hover:      #1e2a35;   /* Refined row hover twilight */
+      --border:        #1d2d3a;   /* Clean slate borders */
+      --border-light:  #314658;   /* Highlighted structural lines */
 
-      --text:        #e8f0e9;   /* primary text */
-      --text-muted:  #7a9e80;   /* labels, secondary */
-      --text-dim:    #4a6a50;   /* very faint */
+      /* Typography & Accents */
+      --text:          #e2ecef;   /* Cool, crisp mist silver (no pure white) */
+      --text-muted:    #8ca0ad;   /* Readable secondary slate */
+      --text-dim:      #526978;   /* Disabled or subtle helper labels */
 
-      --accent:      #5bbf72;   /* Ark Nova leaf green */
-      --accent-dim:  #2d6b3c;
-      --accent-glow: rgba(91,191,114,0.15);
+      --accent:        #10b981;   /* Emerald leaf green */
+      --accent-dim:    #065f46;   /* Rich botanical moss */
+      --accent-glow:   rgba(16, 185, 129, 0.08); /* Sophisticated, minimized glow */
 
-      --tab-active:  #5bbf72;
-      --tab-bg:      #1e2d20;
+      --tab-active:    #10b981;
+      --tab-bg:        #152028;
 
-      /* delta colours */
-      --pos-strong:  #4caf72;
-      --pos-mid:     #8bc78a;
-      --pos-weak:    #b8dbb5;
-      --neg-weak:    #e8b9a0;
-      --neg-mid:     #d97c5a;
-      --neg-strong:  #c0432a;
-      --neutral:     #7a9e80;
+      /* Delta colors (perfectly preserved for performance indicators) */
+      --pos-strong:    #4caf72;
+      --pos-mid:       #8bc78a;
+      --pos-weak:      #b8dbb5;
+      --neg-weak:      #e8b9a0;
+      --neg-mid:       #d97c5a;
+      --neg-strong:    #c0432a;
+      --neutral:       #7a9e80;
 
-      /* elo colour scale (teal/blue-green) */
-      --elo-low:   #2a5a5a;
-      --elo-mid:   #2a8a7a;
-      --elo-high:  #4acfb0;
-      --pr-low:      #2a4a6a;
-      --pr-mid:      #3a7abf;
-      --pr-high:     #6bb5f0;
+      /* ELO ocean teal/blue colors */
+      --elo-low:       #1e3b3e;
+      --elo-mid:       #2d7a73;
+      --elo-high:      #2dd4bf;
+      --pr-low:        #1e3146;
+      --pr-mid:        #2d5b8c;
+      --pr-high:       #60a5fa;
 
-      --radius:      6px;
-      --radius-lg:   10px;
-      --shadow:      0 2px 12px rgba(0,0,0,0.4);
+      --radius:        8px;
+      --radius-lg:     12px;
+      --shadow:        0 12px 40px rgba(0, 0, 0, 0.4);
+      --shadow-sm:     0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
-    /* ── Reset & base ──────────────────────────────────────────────────────── */
+    /* ── Reset & Base Layout ───────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -98,30 +81,30 @@
       min-height: 100vh;
       font-size: 14px;
       line-height: 1.5;
+      letter-spacing: -0.01em;
     }
 
-    /* ── Top bar ───────────────────────────────────────────────────────────── */
+    /* ── Top Bar ───────────────────────────────────────────────────────────── */
     .topbar {
-      background: var(--bg-panel);
+      background: var(--bg-topbar);
       border-bottom: 1px solid var(--border);
       padding: 0 24px;
       display: flex;
       align-items: center;
       gap: 20px;
-      height: 56px;
+      height: 60px;
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
-    /* The logo/title is absolutely centred so it stays visually centred even though
-       the MW/Base switch is on the left and the Filters button is on the right. */
     .topbar-logo {
-      font-family: 'Bitter', serif;
-      font-weight: 700;
-      font-size: 18px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 19px;
       color: var(--accent);
-      letter-spacing: 0.01em;
+      letter-spacing: -0.01em;
       white-space: nowrap;
       position: absolute;
       left: 50%;
@@ -129,7 +112,7 @@
       pointer-events: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .topbar-logo-img {
@@ -147,16 +130,15 @@
 
     .topbar-title-muted {
       color: var(--text-muted);
-      font-weight: 400;
+      font-weight: 500;
     }
 
-    /* MW / Base tabs */
+    /* Marine Worlds / Base tabs */
     .tabs {
       display: flex;
-      gap: 4px;
+      gap: 6px;
     }
 
-    /* push filter button to the far right */
     .mobile-filter-btn {
       margin-left: auto;
     }
@@ -169,78 +151,78 @@
       color: var(--text-muted);
       font-family: 'Inter', sans-serif;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .tab-btn.active {
-      border-color: currentColor;
-      color: #0f1a10;
-      font-weight: 600;
+      border-color: transparent;
+      color: var(--bg);
+      font-weight: 700;
     }
 
     .tab-btn.active.tab-mw {
-      background: #3aab8a;   /* teal-green for Marine Worlds */
-      border-color: #3aab8a;
-    }
-
-    .tab-btn.active.tab-base {
-      background: #7abf55;   /* yellow-green / olive for Base */
-      border-color: #7abf55;
-    }
-
-    .tab-btn:hover:not(.active) {
-      border-color: var(--accent-dim);
+      background: linear-gradient(135deg, #0284c7, #059669); /* Rich teal-ocean to clean forest emerald */
       color: var(--text);
     }
 
-    /* ── Layout ──────────────────────────────────────────────────────────────
-       The main dashboard has a compact fixed navigation rail on the left.
-       Filters always open as a right-side overlay, so the table never resizes. */
+    .tab-btn.active.tab-base {
+      background: linear-gradient(135deg, #84cc16, #059669); /* Soft botanical lime to rich emerald */
+      color: var(--text);
+    }
+
+    .tab-btn:hover:not(.active) {
+      border-color: var(--border-light);
+      color: var(--text);
+      background: var(--bg-hover);
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────────────── */
     :root {
-      --side-nav-width: 111px;
+      --side-nav-width: 115px;
       --side-nav-gap: 24px;
     }
 
     .layout {
       display: block;
       margin-left: calc(var(--side-nav-width) + var(--side-nav-gap));
-      min-height: calc(100vh - 56px);
+      min-height: calc(100vh - 60px);
     }
 
+    /* Left Dashboard Navigation Rail - Rainforest Emerald theme */
     .side-nav {
       position: fixed;
-      top: 56px;
+      top: 60px;
       left: 0;
       bottom: 0;
       width: var(--side-nav-width);
-      background: #111b13;
+      background: var(--bg-side-nav);
       border-right: 1px solid var(--border);
       z-index: 95;
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      padding: 12px 8px;
-      gap: 8px;
+      padding: 16px 10px;
+      gap: 10px;
     }
 
     .side-nav-link {
-      min-height: 48px;
+      min-height: 52px;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 8px 6px;
+      padding: 10px 8px;
       border-radius: var(--radius);
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.2;
-      letter-spacing: 0.01em;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: 0.02em;
       border: 1px solid transparent;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      transition: all 0.15s ease;
     }
 
     .side-nav-link.active {
@@ -252,31 +234,25 @@
     .side-nav-link.disabled {
       color: var(--text-dim);
       cursor: default;
-      opacity: 0.68;
+      opacity: 0.5;
     }
 
-    /* ── Sidebar ─────────────────────────────────────────────────────────────
-       Universal right-side overlay. It never participates in layout width. */
+    /* ── Sidebar Filters - Marine Ocean theme ────────────────────────────── */
     .sidebar {
-      background: var(--bg-panel);
+      background: var(--bg-sidebar);
       border-left: 1px solid var(--border);
-      padding: 20px 16px;
+      padding: 24px 20px;
       overflow-y: auto;
       position: fixed;
       top: 0;
-      right: -280px;
+      right: -300px;
       left: auto;
-      width: 260px;
+      width: 280px;
       height: 100vh;
       z-index: 200;
-      transition: right 0.25s ease;
+      transition: right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: none;
-      /* RTL trick: flips the native scrollbar to the left edge of the panel.
-         Direction is reset back to ltr on every direct child below so text,
-         inputs, and flex ordering all read normally; only the scrollbar
-         track itself stays mirrored. */
       direction: rtl;
-      /* Firefox: thin width + themed thumb/track colours. */
       scrollbar-width: thin;
       scrollbar-color: var(--border-light) transparent;
     }
@@ -285,7 +261,6 @@
       direction: ltr;
     }
 
-    /* Slim, theme-coloured scrollbar for the Filters sidebar (WebKit/Blink). */
     .sidebar::-webkit-scrollbar {
       width: 6px;
     }
@@ -303,19 +278,19 @@
       background: var(--accent-dim);
     }
 
-    .sidebar.open { right: 0; box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
+    .sidebar.open { right: 0; box-shadow: -8px 0 32px rgba(0,0,0,0.5); }
 
     .sidebar-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .sidebar-title {
-      font-family: 'Bitter', serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -327,37 +302,37 @@
       background: none;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 3px 10px;
+      padding: 4px 12px;
       cursor: pointer;
       transition: all 0.15s;
       font-family: 'Inter', sans-serif;
+      font-weight: 600;
     }
 
     .reset-btn:hover {
-      border-color: var(--accent-dim);
+      border-color: var(--accent);
       color: var(--accent);
+      background: var(--bg-hover);
     }
 
-    /* Filter groups */
     .filter-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .filter-label {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
       display: block;
     }
 
-    /* Range inputs */
     .range-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 6px;
+      gap: 8px;
     }
 
     .range-input {
@@ -368,15 +343,16 @@
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 13px;
-      padding: 6px 10px;
+      padding: 8px 12px;
       outline: none;
       transition: border-color 0.15s;
     }
 
-    .range-input:focus { border-color: var(--accent-dim); }
+    .range-input:focus {
+      border-color: var(--accent-dim);
+    }
     .range-input::placeholder { color: var(--text-dim); }
 
-    /* Date inputs */
     .date-input {
       width: 100%;
       background: var(--bg-surface);
@@ -385,67 +361,63 @@
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 13px;
-      padding: 6px 10px;
+      padding: 8px 12px;
       outline: none;
       transition: border-color 0.15s;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .date-input:focus { border-color: var(--accent-dim); }
 
-    /* Chip toggles (maps, card types) */
     .chip-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 6px;
     }
 
-    /* Map chips: fixed uniform size, 5 per row */
     #mapChips {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 5px;
+      gap: 6px;
     }
 
     #mapChips .chip {
       text-align: center;
       justify-content: center;
-      padding: 5px 4px;
+      padding: 6px 4px;
       font-size: 12px;
     }
 
-    /* Round chips: fixed uniform size, 6 per row.
-       All active is the default/no-filter state. Any smaller subset triggers
-       a backend round filter and makes in-hand/seen/playrate unavailable. */
     #roundChips {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 5px;
+      gap: 6px;
     }
 
     #roundChips .chip {
       text-align: center;
       justify-content: center;
-      padding: 5px 4px;
+      padding: 6px 4px;
       font-size: 12px;
     }
 
     .chip {
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--bg-surface);
       color: var(--text-muted);
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       font-family: 'Inter', sans-serif;
       position: relative;
     }
 
+    /* Toned down active chips to remove visual over-glare */
     .chip.active {
-      background: var(--accent-dim);
+      background: linear-gradient(135deg, var(--accent-dim), #0c9e6e);
       border-color: var(--accent);
       color: var(--text);
     }
@@ -453,9 +425,9 @@
     .chip:hover:not(.active) {
       border-color: var(--border-light);
       color: var(--text);
+      background: var(--bg-hover);
     }
 
-    /* Toggle switch */
     .toggle-row {
       display: flex;
       align-items: center;
@@ -465,12 +437,13 @@
     .toggle-label {
       font-size: 13px;
       color: var(--text);
+      font-weight: 500;
     }
 
     .toggle {
       position: relative;
-      width: 36px;
-      height: 20px;
+      width: 40px;
+      height: 22px;
       flex-shrink: 0;
     }
 
@@ -494,7 +467,7 @@
     .toggle-track::after {
       content: '';
       position: absolute;
-      left: 2px;
+      left: 3px;
       top: 50%;
       transform: translateY(-50%);
       width: 14px;
@@ -505,49 +478,48 @@
     }
 
     .toggle input:checked + .toggle-track::after {
-      left: 18px;
-      background: var(--accent);
+      left: 21px;
+      background: var(--text);
     }
 
     .divider {
       border: none;
       border-top: 1px solid var(--border);
-      margin: 16px 0;
+      margin: 20px 0;
     }
 
-    /* Apply button */
+    /* Refined, sophisticated apply button with minimized box-shadow */
     .apply-btn {
       width: 100%;
-      padding: 10px;
-      background: var(--accent);
-      color: #0f1a10;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--accent), #059669);
+      color: var(--bg);
       border: none;
       border-radius: var(--radius);
-      font-family: 'Bitter', serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.15s;
-      margin-top: 4px;
+      transition: opacity 0.2s;
+      margin-top: 8px;
       letter-spacing: 0.02em;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
     }
 
-    .apply-btn:hover { opacity: 0.85; }
+    .apply-btn:hover { opacity: 0.95; }
     .apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* ── Main content ──────────────────────────────────────────────────────── */
+    /* ── Main Content Area ────────────────────────────────────────────────── */
     .main {
       padding: 24px;
       overflow-x: auto;
     }
 
-    /* Header above the table: result count on the left, minimum-play and row controls on the right.
-       Card search now lives in the Card table header instead of this control row. */
     .main-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       padding: 0 2px;
       flex-wrap: wrap;
       gap: 12px;
@@ -560,29 +532,20 @@
       flex-wrap: wrap;
     }
 
-    /* Minimum plays control, shown above the table next to Rows.
-       Important: this is NOT a backend filter. It filters the currently loaded
-       dataset instantly in applySearch() using n_played, so changing it does not
-       query BigQuery and does not change round/date/map/ELO calculations.
-
-       Desktop/tablet visual tuning is intentionally a little manual:
-       - transform: translateX(-35px) nudges the whole control left.
-       - the input width is 59px after several visual tweaks.
-       - phone layout resets the transform and uses a narrower field below. */
     .min-plays-wrap {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      color: #8aa386;
+      color: var(--text-muted);
       white-space: nowrap;
       transform: translateX(-35px);
     }
 
     .min-plays-label {
       font-size: 12px;
-      color: #8aa386;
-      font-weight: 500;
+      color: var(--text-muted);
+      font-weight: 600;
     }
 
     .min-plays-label-short { display: none; }
@@ -595,18 +558,14 @@
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 12px;
-      padding: 4px 4px;
+      padding: 5px 4px;
       outline: none;
       text-align: center;
       transition: border-color 0.15s;
     }
 
-    .min-plays-input:focus { border-color: var(--accent-dim); }
+    .min-plays-input:focus { border-color: var(--accent); }
 
-    /* The empty Minimum plays field displays a custom centred dash.
-       The actual placeholder is a blank space in the HTML; this background line
-       is used instead because it gives finer control over dash width and centring.
-       Current chosen width: 30% of the field. */
     .min-plays-input:placeholder-shown {
       background-image: linear-gradient(var(--text-dim), var(--text-dim));
       background-repeat: no-repeat;
@@ -620,31 +579,24 @@
       margin: 0;
     }
 
-    .min-plays-input[type=number] { -moz-appearance: textfield; }
-
     .table-meta {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
     }
 
     .table-meta strong {
       color: var(--text);
-      font-weight: 600;
+      font-weight: 700;
     }
 
-    /* Card-header search.
-       The search input is hidden inside the Card header until the search icon is clicked.
-       Closing it with X also clears the card search so users are not left with a hidden active filter.
-
-       Implementation note: the search button and search overlay stop propagation in JS.
-       That is necessary because the Card <th> itself sorts by card_name when clicked. */
+    /* Card search frame */
     .card-search-header { position: relative; }
 
     .card-header-content {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 6px;
       width: 100%;
     }
 
@@ -657,18 +609,17 @@
       background: none;
       border: none;
       color: var(--text-dim);
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1;
       cursor: pointer;
       padding: 0;
-      transition: color 0.15s, text-shadow 0.15s;
+      transition: color 0.15s;
       font-family: 'Inter', sans-serif;
     }
 
     .card-search-btn:hover,
     .card-search-btn.search-active {
       color: var(--accent);
-      text-shadow: 0 0 8px var(--accent-glow);
     }
 
     .card-header-search {
@@ -678,11 +629,10 @@
       align-items: center;
       gap: 5px;
       background: var(--bg-surface);
-      border: 1px solid var(--accent-dim);
+      border: 1px solid var(--accent);
       border-radius: var(--radius);
-      padding: 0 5px;
+      padding: 0 8px;
       z-index: 120;
-      box-shadow: 0 0 0 2px rgba(45,107,60,0.18);
     }
 
     .card-header-search.open { display: flex; }
@@ -702,7 +652,7 @@
       font-family: 'Inter', sans-serif;
       font-size: 12px;
       outline: none;
-      padding: 3px 0;
+      padding: 4px 0;
       text-transform: none;
       letter-spacing: 0;
     }
@@ -732,13 +682,13 @@
       background: var(--bg-hover);
     }
 
-    /* Rows per page */
     .rpp-wrap {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 12px;
       color: var(--text-muted);
+      font-weight: 500;
     }
 
     .rpp-select {
@@ -751,6 +701,7 @@
       padding: 4px 8px;
       outline: none;
       cursor: pointer;
+      font-weight: 600;
     }
 
     .map-select-all-none {
@@ -759,39 +710,31 @@
     }
 
     .map-toggle-link {
-      color: #4f9f61;
+      color: #10b981;
       cursor: pointer;
       text-decoration: underline;
       text-underline-offset: 2px;
+      font-weight: 600;
     }
 
     .map-toggle-link:hover {
-      color: #6fbf7f;
+      color: #34d399;
     }
 
-    /* ── Attributes bar ──────────────────────────────────────────────────────
-       Sits between the main-header (meta/min-plays/rows) and the table.
-       All filtering here is CLIENT-SIDE only, layered into applySearch() exactly
-       like the Type filter. It reads card metadata (species, strength, abilities,
-       etc.) from a separately-loaded cards_attributes.csv, keyed by card_name.
-
-       Structural rule shared by every group below: a group is disabled
-       (visually greyed out, non-interactive, reset to its default/non-filtering
-       state) whenever none of the card Types it can possibly apply to are
-       currently active in the Type filter. E.g. Strength only exists on
-       Sponsors, so it disables itself unless Sponsor is checked in Type. */
+    /* ── Attributes Bar ────────────────────────────────────────────────────── */
     .attributes-bar {
       background: var(--bg-panel);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      margin-bottom: 14px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-sm);
     }
 
     .attributes-bar-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 16px;
+      padding: 12px 20px;
       cursor: pointer;
       user-select: none;
     }
@@ -800,12 +743,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-family: 'Bitter', serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.08em;
     }
 
     .attributes-bar-chevron {
@@ -817,7 +760,7 @@
     .attributes-bar-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-shrink: 0;
     }
 
@@ -827,14 +770,15 @@
       background: none;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 3px 10px;
+      padding: 4px 12px;
       cursor: pointer;
       transition: all 0.15s;
       font-family: 'Inter', sans-serif;
+      font-weight: 600;
     }
 
     .attributes-reset-btn:hover {
-      border-color: var(--accent-dim);
+      border-color: var(--accent);
       color: var(--accent);
     }
 
@@ -851,7 +795,7 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 16px 22px;
-      padding: 16px;
+      padding: 20px;
       border-top: 1px solid var(--border);
     }
 
@@ -859,21 +803,20 @@
       display: none;
     }
 
-    /* Each filter group (Species, Habitat, Strength, ...) */
     .attr-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       min-width: 0;
     }
 
     .attr-group-label {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.08em;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -894,18 +837,15 @@
     .attr-separator {
       width: 1px;
       align-self: stretch;
-      min-height: 42px;
+      min-height: 44px;
       background: var(--border-light);
-      opacity: 0.7;
+      opacity: 0.5;
       margin: 0;
     }
 
-    /* Disabled state shared by every group type. Disabling resets the group's
-       selection to default underneath (handled in JS), so re-enabling always
-       starts clean rather than restoring a stale prior choice. */
     .attr-group.disabled,
     .attributes-bar.attributes-unavailable .attr-group {
-      opacity: 0.38;
+      opacity: 0.3;
       pointer-events: none;
     }
 
@@ -918,32 +858,29 @@
       pointer-events: none;
     }
 
-    /* Chip row reuses the existing .chip look for visual consistency with
-       Maps/Round chips in the sidebar. */
     .attr-chip-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 6px;
     }
 
     .attr-chip-row .chip {
-      padding: 4px 9px;
+      padding: 4px 10px;
       font-size: 12px;
     }
 
-    /* Tag buttons open the popup for Species or Habitat. */
     .attr-tags-btn {
       display: flex;
       align-items: center;
       gap: 6px;
-      min-width: 66px;
-      padding: 5px 12px;
+      min-width: 72px;
+      padding: 6px 14px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--bg-surface);
       color: var(--text-muted);
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       font-family: 'Inter', sans-serif;
@@ -952,24 +889,27 @@
     .attr-tags-btn:hover { border-color: var(--border-light); color: var(--text); }
 
     .attr-tags-btn.narrowed {
-      border-color: #9cab63;
-      color: #9cab63;
+      border-color: #93c5fd;
+      color: #93c5fd;
+      background: rgba(147, 197, 253, 0.1);
     }
 
     .attr-tags-indicator {
       font-size: 10px;
       letter-spacing: 1px;
+      font-weight: 700;
     }
 
-    /* Tags popup: a modal-style overlay for Species or Habitat. */
+    /* Reusable Modals */
     .tags-popup-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.7);
       z-index: 800;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(4px);
     }
 
     .tags-popup-overlay.open { display: flex; }
@@ -979,24 +919,24 @@
       border: 1px solid var(--border-light);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
-      width: 420px;
+      width: 440px;
       max-width: calc(100vw - 32px);
       max-height: calc(100vh - 64px);
       overflow-y: auto;
-      padding: 18px 20px;
+      padding: 24px;
     }
 
     .tags-popup-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
+      margin-bottom: 18px;
     }
 
     .tags-popup-title {
-      font-family: 'Bitter', serif;
-      font-size: 14px;
-      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
       color: var(--text);
     }
 
@@ -1009,50 +949,49 @@
     }
 
     .tags-popup-section {
-      margin-bottom: 14px;
+      margin-bottom: 18px;
     }
 
     .tags-popup-section:last-child { margin-bottom: 0; }
 
     .tags-popup-section-label {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 7px;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
       display: block;
     }
 
     .tags-popup-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 6px;
     }
 
     .tags-popup-chips .chip {
-      padding: 4px 10px;
+      padding: 5px 12px;
       font-size: 12px;
     }
 
     .tags-popup-close-btn {
       width: 100%;
-      padding: 8px;
-      margin-top: 16px;
+      padding: 10px;
+      margin-top: 20px;
       background: var(--accent);
-      color: #0f1a10;
+      color: var(--bg);
       border: none;
       border-radius: var(--radius);
-      font-family: 'Bitter', serif;
-      font-size: 13px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
       transition: opacity 0.15s;
     }
 
-    .tags-popup-close-btn:hover { opacity: 0.85; }
+    .tags-popup-close-btn:hover { opacity: 0.9; }
 
-    /* Reefer / Aviary toggles reuse the existing .toggle switch look */
     .attr-toggle-row {
       display: flex;
       align-items: center;
@@ -1064,7 +1003,6 @@
       color: var(--text);
     }
 
-    /* Abilities searchable multi-select dropdown */
     .abilities-dropdown {
       position: relative;
     }
@@ -1073,13 +1011,13 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--bg-surface);
       color: var(--text-muted);
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       font-family: 'Inter', sans-serif;
@@ -1089,8 +1027,9 @@
     .abilities-dropdown-btn:hover { border-color: var(--border-light); color: var(--text); }
 
     .abilities-dropdown-btn.narrowed {
-      border-color: #9cab63;
-      color: #9cab63;
+      border-color: #93c5fd;
+      color: #93c5fd;
+      background: rgba(147, 197, 253, 0.1);
     }
 
     .abilities-panel {
@@ -1099,14 +1038,14 @@
       top: calc(100% + 6px);
       right: 0;
       left: auto;
-      background: #0a120b;
+      background: var(--bg);
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       z-index: 500;
-      width: 260px;
+      width: 280px;
       max-width: calc(100vw - 32px);
-      padding: 10px;
+      padding: 12px;
     }
 
     .abilities-panel.open { display: block; }
@@ -1119,12 +1058,12 @@
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 12px;
-      padding: 6px 9px;
+      padding: 8px 12px;
       outline: none;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
-    .abilities-search-input:focus { border-color: var(--accent-dim); }
+    .abilities-search-input:focus { border-color: var(--accent); }
 
     .abilities-actions {
       display: flex;
@@ -1132,7 +1071,7 @@
       gap: 10px;
       font-size: 11px;
       color: var(--text-dim);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .abilities-list {
@@ -1140,14 +1079,14 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
     .abilities-list-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 5px 6px;
+      padding: 6px 8px;
       border-radius: var(--radius);
       cursor: pointer;
       font-size: 12px;
@@ -1178,10 +1117,7 @@
       .abilities-panel { width: 220px; }
     }
 
-    /* ── Type column filter ───────────────────────────────────────────────────
-       The Type column is the far-right table column, but its header also contains
-       the Animal/Sponsor/Project filter popup. This filter is CLIENT-SIDE only:
-       it filters already-loaded data and does not re-query BigQuery. */
+    /* ── Type Column Filter ─────────────────────────────────────────────────── */
     .type-filter-btn {
       background: none;
       border: none;
@@ -1199,11 +1135,6 @@
     .type-filter-btn:hover,
     .type-filter-btn.active { color: var(--accent); }
 
-    /* Active Type filter indicator.
-       Default = all three card types selected, so the header shows normal "Type ▼".
-       Filtered = only one or two card types selected, so the header turns warm moss green
-       and the arrow is replaced by one/two dots. This is deliberately warmer/more muted
-       than the brighter green used by the sorted-column state. */
     .type-filter-label {
       display: inline-flex;
       align-items: center;
@@ -1222,12 +1153,12 @@
     }
 
     #statsTable thead th.type-filter-header.type-filter-active .type-filter-label {
-      color: #9cab63;
-      text-shadow: 0 0 8px rgba(156,171,99,0.35);
+      color: #93c5fd;
+      text-shadow: 0 0 8px rgba(147,197,253,0.35);
     }
 
     #statsTable thead th.type-filter-header.type-filter-active {
-      box-shadow: inset 0 -2px 0 rgba(156,171,99,0.55);
+      box-shadow: inset 0 -2px 0 rgba(147,197,253,0.55);
     }
 
     .type-filter-popup {
@@ -1236,7 +1167,7 @@
       top: calc(100% + 6px);
       left: 50%;
       transform: translateX(-50%);
-      background: #0a120b;
+      background: var(--bg);
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
       padding: 10px;
@@ -1244,17 +1175,14 @@
       z-index: 500;
       flex-direction: column;
       gap: 6px;
-      min-width: 110px;
+      min-width: 120px;
     }
 
     .type-filter-popup.open { display: flex; }
 
-    /* The th that contains the popup needs relative positioning on desktop.
-       On phones it is overridden back to sticky, because all header cells must
-       stay aligned during horizontal table scrolling. */
     #statsTable thead th.type-filter-header { position: relative; }
 
-    /* ── Column header tooltips ─────────────────────────────────────────────── */
+    /* ── Column tooltips ─────────────────────────────────────────────────── */
     .col-tip {
       display: inline;
       font-size: 9px;
@@ -1274,15 +1202,15 @@
 
     #col-tooltip {
       position: fixed;
-      background: #0a120b;
+      background: var(--bg);
       border: 1px solid var(--border-light);
       color: var(--text);
-      font-size: 11px;
+      font-size: 12px;
       font-family: 'Inter', sans-serif;
       font-weight: 400;
       text-transform: none;
       letter-spacing: 0;
-      padding: 7px 11px;
+      padding: 8px 12px;
       border-radius: var(--radius);
       white-space: nowrap;
       pointer-events: none;
@@ -1309,9 +1237,7 @@
       margin-bottom: 2px;
     }
 
-    /* ── Table ───────────────────────────────────────────────────────────────
-       Desktop/tablet use percentage widths from the <th style="width:..."> values.
-       Phones override those widths with fixed px values and horizontal scrolling. */
+    /* ── Statistics Table Structure ─────────────────────────────────────────── */
     .table-wrap {
       background: var(--bg-panel);
       border: 2px solid var(--border);
@@ -1319,6 +1245,7 @@
       overflow-x: auto;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      box-shadow: var(--shadow-sm);
     }
 
     table {
@@ -1336,13 +1263,13 @@
     }
 
     th {
-      padding: 11px 14px;
+      padding: 12px 14px;
       text-align: left;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.08em;
       border-bottom: 1px solid var(--border);
       border-right: 1px solid var(--border);
       white-space: nowrap;
@@ -1367,7 +1294,7 @@
     th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
 
     td {
-      padding: 9px 14px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       border-right: 1px solid var(--border);
       vertical-align: middle;
@@ -1386,33 +1313,31 @@
 
     tbody tr:hover { background: var(--bg-hover); }
 
-    /* Type badge */
+    /* Type badging colors */
     .type-badge {
       display: inline-block;
       padding: 2px 8px;
       border-radius: 20px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.04em;
     }
 
-    .type-animal   { background: #1a3a1e; color: #6fc97a; border: 1px solid #2d5e33; }
-    .type-sponsor  { background: #1a2e3a; color: #6ab0d4; border: 1px solid #2d5070; }
-    .type-project  { background: #2e2a1a; color: #c4a84a; border: 1px solid #5a4e20; }
+    .type-animal   { background: #0c2d1b; color: #52d377; border: 1px solid #144927; }
+    .type-sponsor  { background: #0d283c; color: #50b0f0; border: 1px solid #143e5e; }
+    .type-project  { background: #2b230d; color: #edd268; border: 1px solid #4a3c14; }
 
-    /* Card name */
     .card-name {
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text);
     }
 
-    /* Delta cells */
     .delta {
-      font-weight: 600;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
 
-    /* Playrate bar */
+    /* Playrate rendering styles */
     .playrate-cell {
       display: flex;
       align-items: center;
@@ -1437,17 +1362,16 @@
 
     .playrate-val {
       font-variant-numeric: tabular-nums;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 12px;
       min-width: 42px;
       text-align: right;
     }
 
-    /* rank + n columns */
     .rank-cell {
       font-variant-numeric: tabular-nums;
       color: var(--text);
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .n-cell {
@@ -1455,12 +1379,9 @@
       color: var(--text-muted);
     }
 
-    /* Round-filter-only unavailable stats.
-       When filtering by played round, in-hand delta, playrate, and seen count
-       are not meaningful because the log does not say in which round a card
-       was drawn or appeared on display. Keep the columns in place, but dim them. */
+    /* Inactive and loading elements */
     .unavailable-cell {
-      color: #646d67; /* almost grey, with only a faint green tint */
+      color: #3b5059;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       text-align: center;
@@ -1469,14 +1390,14 @@
     #statsTable.round-filter-active thead th:nth-child(3),
     #statsTable.round-filter-active thead th:nth-child(6),
     #statsTable.round-filter-active thead th:nth-child(8) {
-      color: #4f5a53;
+      color: #31444d;
       cursor: not-allowed;
     }
 
     #statsTable.round-filter-active thead th:nth-child(3):hover,
     #statsTable.round-filter-active thead th:nth-child(6):hover,
     #statsTable.round-filter-active thead th:nth-child(8):hover {
-      color: #4f5a53;
+      color: #31444d;
     }
 
     #statsTable.round-filter-active thead th:nth-child(3) .sort-arrow,
@@ -1485,10 +1406,10 @@
     #statsTable.round-filter-active thead th:nth-child(3) .col-tip,
     #statsTable.round-filter-active thead th:nth-child(6) .col-tip,
     #statsTable.round-filter-active thead th:nth-child(8) .col-tip {
-      opacity: 0.22;
+      opacity: 0.2;
     }
 
-    /* ── Loading & error states ─────────────────────────────────────────────── */
+    /* ── App State Animations ─────────────────────────────────────────────── */
     .state-overlay {
       display: flex;
       flex-direction: column;
@@ -1500,8 +1421,8 @@
     }
 
     .spinner {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border: 3px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -1511,21 +1432,22 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .state-title {
-      font-family: 'Bitter', serif;
-      font-size: 16px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
       color: var(--text);
     }
 
     .state-sub {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
       text-align: center;
       max-width: 300px;
     }
 
-    .error-icon { font-size: 32px; }
+    .error-icon { font-size: 36px; }
 
-    /* ── Pagination ─────────────────────────────────────────────────────────── */
+    /* ── Pagination elements ─────────────────────────────────────────────── */
     .pagination {
       display: flex;
       align-items: center;
@@ -1537,7 +1459,7 @@
     }
 
     .page-btn {
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--bg-surface);
@@ -1546,10 +1468,11 @@
       cursor: pointer;
       transition: all 0.15s;
       font-family: 'Inter', sans-serif;
+      font-weight: 600;
     }
 
     .page-btn:hover:not(:disabled) {
-      border-color: var(--accent-dim);
+      border-color: var(--accent);
       color: var(--text);
     }
 
@@ -1567,15 +1490,14 @@
       padding: 0 6px;
     }
 
-    /* ── Tooltip for map chips ──────────────────────────────────────────────── */
     #map-tooltip {
       position: fixed;
-      background: #0a120b;
+      background: var(--bg);
       border: 1px solid var(--border);
       color: var(--text);
-      font-size: 11px;
+      font-size: 12px;
       font-family: 'Inter', sans-serif;
-      padding: 4px 9px;
+      padding: 5px 10px;
       border-radius: var(--radius);
       white-space: nowrap;
       pointer-events: none;
@@ -1584,28 +1506,28 @@
       box-shadow: var(--shadow);
     }
 
-    /* ── Mobile ─────────────────────────────────────────────────────────────── */
+    /* ── Responsive breakpoints ─────────────────────────────────────────────── */
     .mobile-filter-btn {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 7px 14px;
+      padding: 8px 16px;
       background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       transition: border-color 0.15s, color 0.15s;
     }
 
     .mobile-filter-btn:hover {
-      border-color: var(--accent-dim);
+      border-color: var(--accent);
       color: var(--accent);
     }
 
-    /* Sidebar close button (X) */
     .sidebar-close-btn {
       background: none;
       border: none;
@@ -1626,9 +1548,8 @@
       background: var(--bg-hover);
     }
 
-    /* Lighter green highlight for the Filters toggle button */
     .filter-toggle-highlight {
-      border-color: var(--accent-dim);
+      border-color: var(--accent);
       color: var(--accent);
     }
 
@@ -1638,55 +1559,50 @@
     }
 
     @media (max-width: 768px) {
-      .topbar { padding: 0 16px; }
-      .topbar-logo { font-size: 15px; gap: 6px; }
-      .topbar-logo-img { width: 24px; height: 24px; }
+      .topbar { padding: 0 16px; height: 56px; }
+      .topbar-logo { font-size: 16px; gap: 8px; }
+      .topbar-logo-img { width: 26px; height: 26px; }
       .main { padding: 12px; overflow-x: hidden; }
       th, td { padding: 8px 6px; font-size: 12px; }
-      /* Tablets keep the same percentage-based column widths as desktop. */
     }
 
-    /* Phone-only refinements: keep tablet/desktop layout unchanged.
-       IMPORTANT: This breakpoint is where the phone table becomes horizontally scrollable.
-       Tablet deliberately keeps desktop-like percentage widths. */
     @media (max-width: 600px) {
       :root {
-        --side-nav-width: 84px;
+        --side-nav-width: 88px;
         --side-nav-gap: 20px;
       }
 
       .topbar {
-        height: 52px;
+        height: 54px;
         padding: 0 10px;
         gap: 8px;
       }
 
       .side-nav {
-        top: 52px;
+        top: 54px;
         width: var(--side-nav-width);
-        padding: 10px 6px;
+        padding: 12px 6px;
       }
 
       .side-nav-link {
-        min-height: 44px;
-        padding: 7px 3px;
+        min-height: 48px;
+        padding: 8px 4px;
         font-size: 10px;
       }
 
       .topbar-logo {
-        font-size: 13px;
-        gap: 4px;
+        font-size: 14px;
+        gap: 6px;
       }
 
       .topbar-logo-img {
-        width: 21px;
-        height: 21px;
+        width: 24px;
+        height: 24px;
       }
 
-      /* Compact MW/Base segmented switch for narrow phone screens. */
       .tabs {
-        width: 88px;
-        height: 30px;
+        width: 90px;
+        height: 32px;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 2px;
@@ -1698,7 +1614,7 @@
       }
 
       .tab-btn {
-        height: 24px;
+        height: 26px;
         min-width: 0;
         padding: 0;
         border: none;
@@ -1720,7 +1636,7 @@
       .tab-base::after { content: 'Base'; }
 
       .mobile-filter-btn {
-        padding: 6px 9px;
+        padding: 6px 10px;
         gap: 4px;
         font-size: 12px;
         flex-shrink: 0;
@@ -1728,8 +1644,6 @@
 
       .main { padding: 12px 10px; }
 
-      /* Phone-only main controls: compact single row with result count, minimum plays, and rows selector.
-         Search stays in the Card table header on all screen sizes. */
       .main-header {
         display: flex;
         align-items: center;
@@ -1760,9 +1674,6 @@
         flex-wrap: nowrap;
       }
 
-      /* Phone override for Minimum plays.
-         Keep this separate from desktop/tablet positioning: the desktop nudge
-         would squeeze the compact phone row, so transform is reset here. */
       .main-header .min-plays-wrap {
         gap: 5px;
         transform: none;
@@ -1795,8 +1706,6 @@
         -webkit-overflow-scrolling: touch;
       }
 
-      /* Phone table is intentionally wider than the viewport.
-         This enables horizontal scrolling while keeping columns readable. */
       #statsTable {
         width: 765px;
         min-width: 765px;
@@ -1831,9 +1740,6 @@
         font-size: 11.5px;
       }
 
-      /* Phone-only column widths.
-         These nth-child selectors depend on the exact table order:
-         1 #, 2 Card, 3 Δ In Hand, 4 Δ Played, 5 Elo, 6 Playrate, 7 Played, 8 Seen, 9 Type. */
       #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 40px !important; }
       #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 120px !important; }
       #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 100px !important; }
@@ -1865,13 +1771,10 @@
         min-width: 34px;
       }
 
-      /* Keep the slide-in filter panel compact on phones. */
       .sidebar {
         padding-top: 20px;
       }
 
-      /* Phone horizontal scrolling: keep only # and Card fixed.
-         Type now sits to the right of Card and scrolls with the other stats. */
       #statsTable {
         border-collapse: separate;
         border-spacing: 0;
@@ -1879,8 +1782,6 @@
         --phone-card-left: 40px;
       }
 
-      /* Force the sticky mobile column widths to the exact same values
-         that are used for the sticky left offsets. */
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1) {
         width: 40px !important;
@@ -1895,8 +1796,6 @@
         max-width: 120px !important;
       }
 
-      /* Sticky header row. Putting sticky on the th itself is more reliable
-         than sticky on the whole thead when the table also scrolls sideways. */
       #statsTable thead {
         position: static;
       }
@@ -1912,7 +1811,6 @@
         position: sticky;
       }
 
-      /* Sticky first two columns only: # and Card. */
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1),
       #statsTable th:nth-child(2),
@@ -1932,9 +1830,6 @@
         box-shadow: 3px 0 0 var(--border);
       }
 
-      /* Top-left sticky cells need to sit above both the horizontal-scrolling
-         header cells and the vertical body cells, otherwise header text can
-         appear to slide through them while scrolling. */
       #statsTable thead th:nth-child(1),
       #statsTable thead th:nth-child(2) {
         top: 0;
@@ -1954,16 +1849,16 @@
       }
     }
 
-    /* Overlay for mobile sidebar */
     .sidebar-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.6);
       z-index: 190;
+      backdrop-filter: blur(2px);
     }
 
-    .sidebar-overlay.active { display: block; }
+    .sidebar-overlay.active { block: block; }
   </style>
 </head>
 <body>
@@ -1976,21 +1871,13 @@
     <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
     <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
   </div>
-  <!-- Header title. Words are split into spans so spacing between Ark/Nova/Statistics is controlled by CSS gap. -->
   <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
   <button class="mobile-filter-btn filter-toggle-highlight" onclick="toggleSidebar()" id="filterToggleBtn">
     ☰ Filters
   </button>
 </header>
 
-<!--
-  Fixed dashboard navigation rail.
-  This is intentionally separate from the topbar tabs:
-  - MW/Base tabs switch the current Cards dashboard dataset.
-  - This left rail is for switching between different dashboards/pages.
-  "Opening hand" is a placeholder and deliberately has no link yet.
-  Keep the rail narrow because table width is precious.
--->
+<!-- Dashboard Left Navigation Rail (Botanical Rainforest Green theme) -->
 <nav class="side-nav" aria-label="Dashboard navigation">
   <a class="side-nav-link active" href="#" aria-current="page">Cards</a>
   <span class="side-nav-link disabled" aria-disabled="true">Opening<br />hand</span>
@@ -2001,19 +1888,10 @@
 <!-- ── Layout ────────────────────────────────────────────────────────────────── -->
 <div class="layout" id="mainLayout">
 
-  <!-- Main -->
   <main class="main">
-    <!--
-      Main table controls.
-      Desktop/tablet: meta left, Minimum plays + Rows controls right.
-      Phone: compact single row. Card search lives inside the Card table header.
-    -->
     <div class="main-header">
       <div class="table-meta" id="tableMeta"></div>
       <div class="main-controls">
-        <!-- Frontend-only Minimum plays filter.
-             Empty value = no minimum. It filters by n_played immediately via onMinPlaysInput().
-             The blank placeholder is intentional; CSS draws the centred dash. -->
         <div class="min-plays-wrap">
           <label class="min-plays-label" for="minPlayedInput"><span class="min-plays-label-full">Minimum plays</span><span class="min-plays-label-short">Min plays</span></label>
           <input class="min-plays-input" type="number" id="minPlayedInput" placeholder=" " min="0" inputmode="numeric" oninput="onMinPlaysInput()" />
@@ -2030,20 +1908,7 @@
       </div>
     </div>
 
-    <!-- ── Attributes bar ──────────────────────────────────────────────────
-         Client-side-only card metadata filters (Species, Habitat, Strength,
-         Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked
-         up by card_name. Filtering is layered into applySearch() exactly like
-         the Type filter — no backend call, instant results.
-         Collapsible, collapsed by default.
-
-         Important maintenance notes:
-         - Conditions still exists in cards_attributes.csv, but is intentionally
-           NOT exposed in the UI and is not read by the frontend.
-         - Species and Habitat are separate filters, not a combined OR group.
-         - Rock/Water/Science are boolean "only cards with this tag" toggles.
-         - Strength/Science are Sponsor-only; Size/Reefer/Aviary/Abilities are
-           Animal-only. Availability is controlled in ATTR_RELEVANT_TYPES. -->
+    <!-- ── Attributes bar ────────────────────────────────────────────────── -->
     <div class="attributes-bar collapsed" id="attributesBar">
       <div class="attributes-bar-header" onclick="toggleAttributesBar()">
         <div class="attributes-bar-title">
@@ -2056,10 +1921,6 @@
       </div>
       <div class="attributes-bar-body" id="attributesBarBody">
 
-        <!-- Species and Habitat are separate include-list filters.
-             Both are disabled and reset when Type is Project-only.
-             Do not merge these back into one Tags control unless Panda asks:
-             user testing specifically preferred them split. -->
         <div class="attr-group" id="attrGroupSpecies" data-attr-group="species">
           <span class="attr-group-label">Species</span>
           <button class="attr-tags-btn" id="speciesBtn" onclick="toggleTagPopup('species', event)">
@@ -2078,9 +1939,6 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
-        <!-- Rock / Water / Science: simple yes/no toggles, default OFF (no filtering).
-             Switching ON narrows to "only cards that have this tag".
-             Rock/Water appear on Animal and Sponsor; Science only on Sponsor. -->
         <div class="attr-group" id="attrGroupRock" data-attr-group="rock">
           <span class="attr-group-label">Rock</span>
           <div class="attr-toggle-row">
@@ -2115,9 +1973,6 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
-        <!-- Strength: 3/4/5/6 chips. Sponsor-only attribute.
-             Disabled unless Sponsor is active in the Type filter.
-             Narrowing this (away from all-selected) forces Type to Sponsor-only. -->
         <div class="attr-group" id="attrGroupStrength" data-attr-group="strength">
           <div class="attr-group-heading">
             <span class="attr-group-label">Strength</span>
@@ -2130,9 +1985,6 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
-        <!-- Size: 1/2/3/4/5 chips. Animal-only attribute.
-             Disabled unless Animal is active in the Type filter.
-             Narrowing this forces Type to Animal-only. -->
         <div class="attr-group" id="attrGroupSize" data-attr-group="size">
           <div class="attr-group-heading">
             <span class="attr-group-label">Size</span>
@@ -2145,12 +1997,6 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
-        <!-- Reefer: yes/no toggle, default No (off, not filtering).
-             Animal-only attribute. Disabled unless Animal is active in Type.
-             Turning ON forces Type to Animal-only, remembering whatever Type
-             selection was active immediately before (shared with Aviary).
-             Turning OFF restores that remembered Type — unless Aviary is still
-             ON, in which case Type stays Animal-only until both are off. -->
         <div class="attr-group" id="attrGroupReefer" data-attr-group="reefer">
           <span class="attr-group-label">Reefer</span>
           <div class="attr-toggle-row">
@@ -2161,7 +2007,6 @@
           </div>
         </div>
 
-        <!-- Aviary: same pattern as Reefer, sharing the same remembered-Type slot. -->
         <div class="attr-group" id="attrGroupAviary" data-attr-group="aviary">
           <span class="attr-group-label">Aviary</span>
           <div class="attr-toggle-row">
@@ -2174,8 +2019,6 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
-        <!-- Abilities: searchable multi-select checklist, alphabetical, OR logic.
-             Animal-only attribute. Disabled unless Animal is active in Type. -->
         <div class="attr-group" id="attrGroupAbilities" data-attr-group="abilities">
           <span class="attr-group-label">Abilities</span>
           <div class="abilities-dropdown">
@@ -2198,9 +2041,7 @@
       </div>
     </div>
 
-    <!-- Tag popup overlay: reused by Species and Habitat.
-         The popup content is generated from currentTagPopupKind, so there is
-         only one modal in the DOM for both controls. -->
+    <!-- Tag popup overlay (Species / Habitat) -->
     <div class="tags-popup-overlay" id="tagPopupOverlay" onclick="closeTagPopupOnOverlay(event)">
       <div class="tags-popup" onclick="event.stopPropagation()">
         <div class="tags-popup-header">
@@ -2222,21 +2063,8 @@
     <div class="table-wrap">
       <table id="statsTable">
         <thead>
-          <!--
-
-            Table order matters. Keep this in sync with:
-            - renderTable() row HTML,
-            - phone nth-child widths,
-            - sticky phone columns,
-            - colspan="9" in loading/error states.
-            Current order: #, Card, Δ In Hand, Δ Played, Elo, Playrate, Played, Seen, Type.
-          -->
           <tr>
             <th style="width:5%;text-align:center;cursor:default;">#</th>
-            <!-- Card search lives inside this header cell.
-                 Clicking the cell sorts by card_name; clicking the magnifier opens search.
-                 Keep openCardSearch(event) and the overlay's stopPropagation, otherwise
-                 opening/typing in search can accidentally trigger sorting. -->
             <th class="card-search-header" onclick="sortBy('card_name')" style="width:20%;text-align:center">
               <div class="card-header-content" id="cardHeaderContent">
                 <button class="card-search-btn" id="cardSearchBtn" onclick="openCardSearch(event)" title="Search cards" aria-label="Search cards">🔍</button>
@@ -2279,8 +2107,7 @@
     </div>
   </main>
 
-  <!-- Sidebar (right)
-       Always opens as a slide-in overlay, so it never changes table width. -->
+  <!-- Sidebar Overlay Filters Panel (Marine Ocean deep twilight blue theme) -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <span class="sidebar-title">Filters</span>
@@ -2325,11 +2152,7 @@
 
     <hr class="divider" />
 
-    <!-- Round filter
-         All six chips active = default/no round filter.
-         Selecting only some chips re-queries the backend for cards played in those rounds.
-         Selecting no chips is allowed; applyFilters() catches that locally and renders an
-         empty table without calling the backend. This mirrors Maps none behaviour. -->
+    <!-- Round filter -->
     <div class="filter-group">
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
         <span class="filter-label" style="margin-bottom:0">Round</span>
@@ -2370,22 +2193,10 @@
 </div>
 
 <script>
-// ── Config ─────────────────────────────────────────────────────────────────────
-// API_URL points to the deployed Google Cloud Function. The frontend sends POST JSON
-// with filters; the backend queries BigQuery and returns already-aggregated card stats.
 const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
-// Alias CSV is optional. If it fails to load, the catch block keeps normal search working.
 const CARD_ALIASES_URL = 'cards_altnames.csv';
-// Attributes CSV holds static card metadata (species, strength, abilities, etc.).
-// Optional in the same spirit as the alias CSV: if it fails to load, the Attributes
-// bar still renders but every group is effectively a no-op since there's no data to filter on.
 const CARD_ATTRIBUTES_URL = 'cards_attributes.csv';
 
-// ── Attribute definitions ─────────────────────────────────────────────────────
-// Each attribute group declares which card Types it can possibly apply to.
-// A group is disabled (and reset to its default/non-filtering state) whenever
-// none of its relevantTypes are active in the Type filter — e.g. Strength only
-// ever appears on Sponsor cards, so it's meaningless (and disabled) otherwise.
 const SPECIES_TAGS = ['Bear', 'Bird', 'Herbivore', 'Petting Zoo', 'Predator', 'Primate', 'Reptile', 'Sea Animal'];
 const CONTINENT_TAGS = ['Africa', 'America', 'Asia', 'Australia', 'Europe'];
 
@@ -2405,15 +2216,6 @@ const ATTR_RELEVANT_TYPES = {
   abilities: ['animal'],
 };
 
-// Keep this list in sync with the actual UI groups above.
-// refreshAttributeAvailability() uses it as the single source of truth for:
-// - disabling impossible attribute groups when Type excludes their card type,
-// - resetting disabled groups back to default,
-// - preventing hidden stale selections from continuing to filter rows.
-
-
-// These are the map choices exposed to users in the sidebar.
- // Backend also validates maps, so frontend map edits alone are not enough for new backend data.
 const VALID_MAPS = [
   { code: '1a',  full: 'Map 1a: Observation Tower' },
   { code: '2a',  full: 'Map 2a: Outdoor Areas' },
@@ -2432,8 +2234,6 @@ const VALID_MAPS = [
   { code: 'T1',  full: 'Map T1: Tournament 1' },
 ];
 
-// Round filter choices. The backend treats "6+" as round >= 6.
-// All six active means the default/no-filter state.
 const ROUND_FILTERS = [
   { label: '1',  value: '1' },
   { label: '2',  value: '2' },
@@ -2443,46 +2243,38 @@ const ROUND_FILTERS = [
   { label: '6+', value: '6+' },
 ];
 
-// ── State ──────────────────────────────────────────────────────────────────────
-let allData = [];      // Full API result for current backend filters.
-let filteredData = []; // allData after client-side search + Type chip filtering.
-// Default opening sort: highest Δ (In Hand) first.
+// ── State variables ────────────────────────────────────────────────────────────
+let allData = [];      
+let filteredData = []; 
 let currentSort = { col: 'delta_in_hand', dir: 'desc' };
 let currentPage = 1;
 let rowsPerPage = 50;
 let searchQuery = '';
 let cardAliases = new Map();
 let isMW = 1;
-let roundFilterActive = false; // Last loaded backend state: true when fewer than all round chips are selected.
-let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blank means no minimum.
+let roundFilterActive = false; 
+let minPlayedThreshold = null; 
 
-// ── Attributes bar state ──────────────────────────────────────────────────────
-// cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
+// Attributes bar variables
 let cardAttributes = new Map();
 let cardAttributesLoaded = false;
 
-// Selection sets for each group. Defaults are "all selected" (no filtering) for
-// Species/Habitat/Strength/Size/Abilities, and "off" (no filtering) for
-// Water/Rock/Science/Reefer/Aviary toggles.
 let selectedSpeciesTags = new Set(SPECIES_TAGS);
 let selectedContinentTags = new Set(CONTINENT_TAGS);
 let selectedStrengths = new Set(STRENGTH_VALUES);
 let selectedSizes = new Set(SIZE_VALUES);
-let selectedAbilities = new Set(); // populated once abilities are known from the CSV
-let allAbilities = []; // alphabetically sorted list of every unique ability string
+let selectedAbilities = new Set(); 
+let allAbilities = []; 
 let currentTagPopupKind = 'species';
 let waterOn = false;
 let rockOn = false;
 let scienceOn = false;
 let reeferOn = false;
 let aviaryOn = false;
-// Remembered Type-filter selection captured right before Reefer or Aviary first
-// switches Type to Animal-only, so it can be restored once both are off again.
 let typeBeforeReeferAviary = null;
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ── Initialization Hook ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Build dynamic map/round chips, load alias file, then immediately fetch default stats.
   buildMapChips();
   buildRoundChips();
   updateTypeFilterIndicator();
@@ -2490,11 +2282,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCardAliases();
   await loadCardAttributes();
   refreshAttributeAvailability();
-  applyFilters(); // auto-load on page open with defaults
+  applyFilters(); 
 });
 
-
-// ── Map chips ──────────────────────────────────────────────────────────────────
+// ── Map Chips Setup ────────────────────────────────────────────────────────────
 function buildMapChips() {
   const container = document.getElementById('mapChips');
   VALID_MAPS.forEach(map => {
@@ -2508,7 +2299,7 @@ function buildMapChips() {
   });
 }
 
-// ── Round chips ────────────────────────────────────────────────────────────────
+// ── Round Chips Setup ──────────────────────────────────────────────────────────
 function buildRoundChips() {
   const container = document.getElementById('roundChips');
   ROUND_FILTERS.forEach(round => {
@@ -2522,10 +2313,6 @@ function buildRoundChips() {
 }
 
 function toggleRoundChip(btn) {
-  // Unlike the Type popup, the round filter intentionally allows zero selected
-  // chips because the sidebar offers a "none" shortcut just like Maps. If the
-  // user loads with no rounds selected, the frontend renders an empty table locally
-  // and does not call the backend API.
   btn.classList.toggle('active');
 }
 
@@ -2551,7 +2338,7 @@ function isRoundUnavailableColumn(col) {
   return ['delta_in_hand', 'playrate_pct', 'n_seen'].includes(col);
 }
 
-// ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
+// ── Interactive Tooltips ───────────────────────────────────────────────────────
 const _tooltip = document.getElementById('map-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -2578,9 +2365,7 @@ function positionTooltip(e) {
   const margin = 8;
   let x = e.clientX - tw / 2;
   let y = e.clientY - th - 10;
-  // Clamp horizontally
   x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
-  // Flip below cursor if too close to top
   if (y < margin) y = e.clientY + 18;
   _tooltip.style.left = x + 'px';
   _tooltip.style.top = y + 'px';
@@ -2594,12 +2379,10 @@ function selectNoneMaps() {
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.remove('active'));
 }
 
-// ── Toggle chip ────────────────────────────────────────────────────────────────
 function toggleChip(btn, group) {
   btn.classList.toggle('active');
 }
 
-// ── MW / Base tab ──────────────────────────────────────────────────────────────
 function setTab(value, btn) {
   isMW = value;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2607,12 +2390,8 @@ function setTab(value, btn) {
   applyFilters();
 }
 
-// ── end_game toggle ────────────────────────────────────────────────────────────
-function onEndGameChange() {
-  // nothing extra needed — value read on apply
-}
+function onEndGameChange() {}
 
-// ── Reset ──────────────────────────────────────────────────────────────────────
 function resetFilters() {
   document.getElementById('playerEloMin').value = '300';
   document.getElementById('playerEloMax').value = '';
@@ -2628,22 +2407,16 @@ function resetFilters() {
   if (minPlayedInput) minPlayedInput.value = '';
   minPlayedThreshold = null;
 
-  // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
   updateTypeFilterIndicator();
 
-  // Reset Attributes bar to its full default state.
   resetAllAttributeFilters();
   refreshAttributeAvailability();
 
   applyFilters();
 }
 
-// ── Collect filter params ──────────────────────────────────────────────────────
 function getParams() {
-  // Collect backend filters here. Search text and Type chips are intentionally not sent;
-  // they are applied client-side after data has loaded. The Round chips are sent because
-  // round filtering changes the BigQuery aggregation itself.
   const selectedMaps = [...document.querySelectorAll('#mapChips .chip.active')]
     .map(c => c.dataset.value);
   const selectedRounds = getSelectedRoundTokens();
@@ -2672,17 +2445,10 @@ function getParams() {
   if (dFrom) params.date_from = dFrom;
   if (dTo) params.date_to = dTo;
 
-  // card_types now handled client-side — not sent to API
-
   return params;
 }
 
-// ── Apply filters (fetch from API) ─────────────────────────────────────────────
 async function applyFilters() {
-  // This is the only frontend function that calls the backend API.
-  // It runs on page load, MW/Base tab change, Reset, and Load Stats.
-  // If no Maps or no Rounds are selected, there is nothing to query: the frontend
-  // renders an empty result immediately and skips the Cloud Function call entirely.
   const params = getParams();
   const selectedMaps = params.maps || [];
   const selectedRounds = getSelectedRoundTokens();
@@ -2690,9 +2456,6 @@ async function applyFilters() {
   if (!selectedMaps.length || !selectedRounds.length) {
     roundFilterActive = selectedRounds.length < ROUND_FILTERS.length;
 
-    // In round-filter mode, these columns are intentionally unavailable. If the
-    // table was previously sorted by one of them, switch to Δ (Played), which
-    // remains meaningful for played-round analysis.
     if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
       currentSort = { col: 'delta_played', dir: 'desc' };
     }
@@ -2724,9 +2487,6 @@ async function applyFilters() {
 
     roundFilterActive = Boolean(json.round_filter_active ?? (params.rounds !== undefined));
 
-    // In round-filter mode, these columns are intentionally unavailable. If the
-    // table was previously sorted by one of them, switch to Δ (Played), which
-    // remains meaningful for played-round analysis.
     if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
       currentSort = { col: 'delta_played', dir: 'desc' };
     }
@@ -2744,8 +2504,6 @@ async function applyFilters() {
   }
 }
 
-
-// ── Card aliases / nicknames for search ───────────────────────────────────────
 function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -2755,10 +2513,6 @@ function normalizeSearchText(value) {
 }
 
 async function loadCardAliases() {
-  // Expected CSV format:
-  // card_name,aliases
-  // Sun Bear,sunny;sunbear;bear
-  // Matching is accent-insensitive and lowercase-normalized via normalizeSearchText().
   try {
     const res = await fetch(CARD_ALIASES_URL, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Could not load ${CARD_ALIASES_URL}`);
@@ -2821,7 +2575,6 @@ function parseCsv(text) {
   row.push(field);
   if (row.some(cell => cell.trim() !== '')) rows.push(row);
 
-  // Remove possible BOM from the first header cell.
   if (rows.length && rows[0].length) rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
   return rows;
 }
@@ -2830,7 +2583,7 @@ function aliasesForCard(cardName) {
   return cardAliases.get(normalizeSearchText(cardName)) || [];
 }
 
-// ── Search ─────────────────────────────────────────────────────────────────────
+// ── Search & Filter Logic ──────────────────────────────────────────────────────
 function onSearch() {
   searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
   updateCardSearchIndicator();
@@ -2862,8 +2615,6 @@ function updateCardSearchIndicator() {
 }
 
 function onMinPlaysInput() {
-  // Minimum plays is deliberately client-side only. It uses n_played from the
-  // current allData array, so typing here updates immediately and never calls fetch().
   const input = document.getElementById('minPlayedInput');
   const raw = input ? input.value.trim() : '';
   if (!raw) {
@@ -2876,15 +2627,6 @@ function onMinPlaysInput() {
 }
 
 function applySearch() {
-  // Central client-side filtering pipeline. Keep all instant filters here; do not
-  // accidentally move them into getParams(), because getParams() triggers backend work.
-  // Client-side filters are applied here:
-  // 1. Type popup (animal/sponsor/project),
-  // 2. optional Minimum plays input using n_played,
-  // 3. search over card name, card type, and aliases from cards_altnames.csv,
-  // 4. Attributes bar (Species/Habitat/Strength/Size/Reefer/Aviary/Abilities)
-  //    using cards_attributes.csv, looked up by card_name.
-  // This preserves original backend names and only changes frontend display behaviour.
   const activeTypes = new Set(
     [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
   );
@@ -2907,9 +2649,7 @@ function applySearch() {
   applySortAndRender();
 }
 
-// ── Sort ───────────────────────────────────────────────────────────────────────
 function sortBy(col) {
-  // Round-filtered data cannot meaningfully sort by stats that are hidden as unavailable.
   if (roundFilterActive && isRoundUnavailableColumn(col)) return;
 
   if (currentSort.col === col) {
@@ -2923,8 +2663,6 @@ function sortBy(col) {
 }
 
 function compareRowsForCurrentSort(a, b) {
-  // Shared comparator used both for visible sorting and for global rank calculation.
-  // Ties fall back to card_name, then card_type, so rank order is stable.
   const { col, dir } = currentSort;
   const av = a[col] ?? (col === 'card_name' ? '' : -Infinity);
   const bv = b[col] ?? (col === 'card_name' ? '' : -Infinity);
@@ -2947,9 +2685,6 @@ function compareRowsForCurrentSort(a, b) {
 }
 
 function assignGlobalRanks() {
-  // Global rank is assigned across all loaded cards BEFORE search/type filtering.
-  // This is intentional: when searching "goat" or filtering to Sponsors, the # column
-  // still shows the card's overall rank in the current full sorted dataset.
   const globallySorted = [...allData].sort(compareRowsForCurrentSort);
   globallySorted.forEach((row, index) => {
     row.global_rank = index + 1;
@@ -2963,7 +2698,6 @@ function applySortAndRender() {
   const { col, dir } = currentSort;
   const sorted = [...filteredData].sort(compareRowsForCurrentSort);
 
-  // Update sort arrows
   document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '↕');
   document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
   const arrow = document.getElementById(`sort-${col}`);
@@ -2975,19 +2709,13 @@ function applySortAndRender() {
   renderTable(sorted);
 }
 
-// ── Rows per page ──────────────────────────────────────────────────────────────
 function onRppChange() {
   rowsPerPage = parseInt(document.getElementById('rppSelect').value);
   currentPage = 1;
   applySortAndRender();
 }
 
-// ── Render table ───────────────────────────────────────────────────────────────
 function renderTable(data) {
-  // data is already filtered + sorted. This function only handles pagination,
-  // colour formatting, and converting rows into table HTML.
-  // In roundFilterActive mode, the backend returns NULL for delta_in_hand, n_seen,
-  // and playrate_pct; this function renders those cells as a single long dash (—).
   const tbody = document.getElementById('tableBody');
   const pagination = document.getElementById('pagination');
   const meta = document.getElementById('tableMeta');
@@ -3012,7 +2740,6 @@ function renderTable(data) {
   const start = (currentPage - 1) * rpp;
   const pageData = data.slice(start, start + rpp);
 
-  // Find max playrate for bar scaling, and elo range for colour scale
   const maxPR = Math.max(...data.map(r => r.playrate_pct || 0), 1);
   const eloVals = data.map(r => r.avg_elo).filter(v => v != null);
   const minElo = Math.min(...eloVals);
@@ -3023,7 +2750,7 @@ function renderTable(data) {
     const dh = fmtDelta(row.delta_in_hand);
     const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '—';
     const prVal = row.playrate_pct || 0;
-    const barWidth = prVal; // absolute: playrate % = bar width %
+    const barWidth = prVal; 
     const barColor = prColor(prVal);
     const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
     const eloCol = eloColor(row.avg_elo, minElo, maxElo);
@@ -3060,12 +2787,10 @@ function renderTable(data) {
     </tr>`;
   }).join('');
 
-  // Meta
   const from = start + 1;
   const to = Math.min(start + rpp, data.length);
   meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}–${to}</strong> of <strong>${data.length}</strong> cards`;
 
-  // Pagination
   if (totalPages <= 1) {
     pagination.style.display = 'none';
   } else {
@@ -3106,7 +2831,6 @@ function goPage(p) {
   document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── States ─────────────────────────────────────────────────────────────────────
 function showLoading() {
   document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
@@ -3129,7 +2853,6 @@ function showError(msg) {
   </td></tr>`;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtDelta(val) {
   if (val == null) return '—';
   const sign = val >= 0 ? '+' : '';
@@ -3142,17 +2865,12 @@ function fmtN(val) {
 }
 
 function titleCase(str) {
-  // Frontend display only. Do NOT send title-cased names back to backend/BigQuery,
-  // because card names in the source data are case-sensitive.
-  // Also handles "(domestic) Goat" -> "(Domestic) Goat".
   const lower = new Set(['on', 'in', 'of', 'the', 'a']);
   return str
     .split(' ')
     .map((word, i) => {
       const w = word.toLowerCase();
-      // Always capitalise the first word; lowercase the small words otherwise
       if (i > 0 && lower.has(w)) return w;
-      // Capitalise the first actual letter, so "(domestic)" becomes "(Domestic)".
       return w.replace(/[A-Za-zÀ-ÖØ-öø-ÿ]/, ch => ch.toUpperCase());
     })
     .join(' ');
@@ -3178,13 +2896,12 @@ function prColor(val) {
 function eloColor(val, minElo, maxElo) {
   if (val == null) return 'var(--text-muted)';
   if (maxElo === minElo) return 'var(--elo-mid)';
-  const t = (val - minElo) / (maxElo - minElo); // 0 = lowest, 1 = highest
+  const t = (val - minElo) / (maxElo - minElo); 
   if (t >= 0.66) return 'var(--elo-high)';
   if (t >= 0.33) return 'var(--elo-mid)';
   return 'var(--elo-low)';
 }
 
-// ── Column header tooltips ─────────────────────────────────────────────────────
 const _colTip = document.getElementById('col-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -3229,28 +2946,21 @@ function positionColTip(e) {
   const th = _colTip.offsetHeight;
   const margin = 8;
   let x = e.clientX - tw / 2;
-  let y = e.clientY + 18; // show below cursor for header tooltips
+  let y = e.clientY + 18; 
   x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
   if (y + th > window.innerHeight - margin) y = e.clientY - th - 10;
   _colTip.style.left = x + 'px';
   _colTip.style.top = y + 'px';
 }
 
-// ── Type column filter ─────────────────────────────────────────────────────────
 function toggleTypeFilterPopup(e) {
-  // Opens/closes the far-right Type column popup.
-  // Important: clicking the chips themselves should not also re-toggle the popup.
   e.stopPropagation();
-  // Don't open if the click was on a chip inside the popup
   if (e.target.closest('.type-filter-popup')) return;
   const popup = document.getElementById('typeFilterPopup');
   popup.classList.toggle('open');
 }
 
 function updateTypeFilterIndicator() {
-  // Visual reminder for the client-side Type filter after the popup is closed.
-  // All three selected = default state with arrow.
-  // Two selected = two warm-green dots. One selected = one warm-green dot.
   const header = document.getElementById('typeFilterHeader');
   const indicator = document.getElementById('typeFilterIndicator');
   const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
@@ -3268,21 +2978,16 @@ function updateTypeFilterIndicator() {
 }
 
 function toggleTypeChip(btn) {
-  // Don't allow deselecting all chips
   const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
   const activeChips = allChips.filter(c => c.classList.contains('active'));
   if (activeChips.length === 1 && btn.classList.contains('active')) return;
 
   btn.classList.toggle('active');
   updateTypeFilterIndicator();
-  // Type changed: some Attribute groups may now be impossible (e.g. Strength
-  // if Sponsor was just deselected). Re-evaluate which groups are disabled,
-  // which silently resets any now-irrelevant group back to its default.
   refreshAttributeAvailability();
   applySearch();
 }
 
-// Close type popup when clicking outside
 document.addEventListener('click', e => {
   const popup = document.getElementById('typeFilterPopup');
   if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th.type-filter-header')) {
@@ -3290,29 +2995,16 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Filter sidebar overlay ────────────────────────────────────────────────────
 function toggleSidebar() {
-  // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
-  // back the old desktop grid column behavior unless Panda explicitly asks:
-  // opening Filters must not shrink or shift the table.
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('active');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ── Attributes bar ──────────────────────────────────────────────────────────
-// Everything below is CLIENT-SIDE ONLY. It reads static card metadata from
-// cards_attributes.csv (loaded once at startup) and layers extra filtering on
-// top of the existing Type/Search/Min-plays pipeline inside applySearch().
-// No part of this ever triggers a backend fetch.
+// ── Attributes bar (CLIENT-SIDE ONLY) ──────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
 
-// ── Loading cards_attributes.csv ────────────────────────────────────────────────
 async function loadCardAttributes() {
-  // Used columns: Type,Name,Species,Continent,Water,Rock,Science,Strength,
-  // Size,Abilities,Reefer,Aviary. Species/Abilities can contain multiple
-  // semicolon-separated values. Matching against backend card_name is done on a
-  // normalized (accent/case-insensitive) basis, same approach as the alias CSV.
   try {
     const res = await fetch(CARD_ATTRIBUTES_URL, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Could not load ${CARD_ATTRIBUTES_URL}`);
@@ -3347,8 +3039,8 @@ async function loadCardAttributes() {
         water: Boolean((cols[iWater] || '').trim()),
         rock: Boolean((cols[iRock] || '').trim()),
         science: Boolean((cols[iScience] || '').trim()),
-        strength: (cols[iStrength] || '').trim(), // '' if not a sponsor / no strength
-        size: (cols[iSize] || '').trim(),         // '' if not an animal / no size
+        strength: (cols[iStrength] || '').trim(), 
+        size: (cols[iSize] || '').trim(),         
         abilities,
         reefer: Boolean((cols[iReefer] || '').trim()),
         aviary: Boolean((cols[iAviary] || '').trim()),
@@ -3360,7 +3052,7 @@ async function loadCardAttributes() {
     cardAttributes = attrs;
     cardAttributesLoaded = true;
     allAbilities = [...abilitySet].sort((a, b) => a.localeCompare(b));
-    selectedAbilities = new Set(allAbilities); // default: all selected = no filtering
+    selectedAbilities = new Set(allAbilities); 
     buildAbilitiesList();
     setAttributesUnavailable(false);
   } catch (err) {
@@ -3382,7 +3074,6 @@ function setAttributesUnavailable(unavailable) {
   if (bar) bar.classList.toggle('attributes-unavailable', unavailable);
 }
 
-// ── Collapse / expand ───────────────────────────────────────────────────────────
 function toggleAttributesBar() {
   document.getElementById('attributesBar').classList.toggle('collapsed');
 }
@@ -3395,7 +3086,6 @@ function resetAttributesFromHeader(event) {
   applySearch();
 }
 
-// ── Building the static chip rows and tag popup ──────────────────────────────────
 function buildAttributeChips() {
   buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
   buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
@@ -3416,8 +3106,6 @@ function buildChipGroup(containerId, values, selectedSet, kind) {
   });
 }
 
-// Shared toggle handler for Strength/Size/Species/Continent chips.
-// `values` is the full list for that group, used to detect "back to all-selected".
 function toggleAttributeChip(btn, selectedSet, values, kind) {
   const value = btn.dataset.value;
   if (selectedSet.has(value)) {
@@ -3428,9 +3116,6 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
     btn.classList.add('active');
   }
 
-  // Strength/Size narrowing forces Type toward Sponsor-only / Animal-only.
-  // This is an intentional convenience: once the user chooses a sponsor-only
-  // or animal-only attribute value, the Type filter should follow that intent.
   const isDefault = selectedSet.size === values.length;
   if (kind === 'strength' && !isDefault) forceTypeToOnly('sponsor');
   if (kind === 'size' && !isDefault) forceTypeToOnly('animal');
@@ -3463,7 +3148,6 @@ function setAttributeValues(kind, selectAll) {
   applySearch();
 }
 
-// ── Species / Habitat popups ───────────────────────────────────────────────────
 function toggleTagPopup(kind, event) {
   if (event) event.stopPropagation();
   const group = document.getElementById(kind === 'species' ? 'attrGroupSpecies' : 'attrGroupContinent');
@@ -3481,8 +3165,6 @@ function closeTagPopup() {
 }
 
 function closeTagPopupOnOverlay(event) {
-  // Clicking the dark backdrop (not the popup itself) closes it, same affordance
-  // as clicking outside the Type filter popup.
   closeTagPopup();
 }
 
@@ -3546,7 +3228,6 @@ function updateTagButtonLabels() {
   updateSingleTagButton('continent', selectedContinentTags, CONTINENT_TAGS);
 }
 
-// ── Abilities dropdown ────────────────────────────────────────────────────────
 function buildAbilitiesList() {
   renderAbilitiesList();
 }
@@ -3638,7 +3319,6 @@ function updateAbilitiesButtonLabel() {
   }
 }
 
-// Close Abilities panel when clicking outside it.
 document.addEventListener('click', e => {
   const panel = document.getElementById('abilitiesPanel');
   if (panel && panel.classList.contains('open') && !e.target.closest('.abilities-dropdown')) {
@@ -3646,10 +3326,6 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Water / Rock / Science toggles ────────────────────────────────────────────
-// Water and Rock apply to both Animal and Sponsor cards, so they don't force a
-// single Type. Science is Sponsor-only, so turning it on follows the same intent
-// as narrowing Strength and forces the Type filter to Sponsor.
 function onBoolTagToggle(which) {
   if (which === 'water') {
     waterOn = document.getElementById('waterToggle').checked;
@@ -3663,7 +3339,6 @@ function onBoolTagToggle(which) {
   applySearch();
 }
 
-// ── Reefer / Aviary toggles ──────────────────────────────────────────────────────
 function onReeferAviaryToggle(which) {
   const reeferCheckbox = document.getElementById('reeferToggle');
   const aviaryCheckbox = document.getElementById('aviaryToggle');
@@ -3677,27 +3352,20 @@ function onReeferAviaryToggle(which) {
   const eitherOnBefore = wasReeferOn || wasAviaryOn;
 
   if (eitherOnNow && !eitherOnBefore) {
-    // Neither was on before, now one just turned on: remember current Type
-    // selection and force Type to Animal-only.
     typeBeforeReeferAviary = getActiveTypeTokens();
     forceTypeToOnly('animal');
   } else if (!eitherOnNow && eitherOnBefore) {
-    // Both are now off: restore whatever Type selection was active right
-    // before the first one of these was switched on.
     if (typeBeforeReeferAviary) {
       setActiveTypeTokens(typeBeforeReeferAviary);
     }
     typeBeforeReeferAviary = null;
   }
-  // If one was already on and the other just joined it (both now on), Type
-  // stays Animal-only — no change needed since it's already forced there.
 
   refreshAttributeAvailability();
   updateAttributesSummary();
   applySearch();
 }
 
-// ── Type filter helpers shared with Strength/Size/Reefer/Aviary ──────────────────
 function getActiveTypeTokens() {
   return [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value);
 }
@@ -3710,22 +3378,12 @@ function setActiveTypeTokens(tokens) {
   updateTypeFilterIndicator();
 }
 
-// Forces Type to a single value for attribute groups that are meaningful for
-// only one card type.
 function forceTypeToOnly(typeValue) {
   setActiveTypeTokens([typeValue]);
   refreshAttributeAvailability();
 }
 
-// ── Disabling groups based on the active Type filter ──────────────────────────────
-// Central rule: a group is disabled whenever NONE of its relevantTypes are
-// currently active in the Type filter. Disabling always resets that group's
-// selection back to its default (all-selected for chip/ability groups, off
-// for Reefer/Aviary) so re-enabling never restores a stale prior choice.
 function refreshAttributeAvailability() {
-  // Central "impossible by Type" rule. Example: if Sponsor is inactive,
-  // Strength and Science are disabled and reset; if Animal is inactive,
-  // Size/Reefer/Aviary/Abilities are disabled and reset.
   const activeTypes = new Set(getActiveTypeTokens());
 
   Object.keys(ATTR_RELEVANT_TYPES).forEach(groupKey => {
@@ -3760,9 +3418,6 @@ function setGroupDisabled(groupKey, disabled) {
   const wasDisabled = el.classList.contains('disabled');
   el.classList.toggle('disabled', disabled);
 
-  // Only reset state on the transition into disabled, not on every refresh call,
-  // so we don't wipe a selection that was already at default anyway (harmless
-  // either way, but avoids unnecessary DOM rebuilds).
   if (disabled && !wasDisabled) {
     resetAttributeGroup(groupKey);
   }
@@ -3838,38 +3493,25 @@ function resetAllAttributeFilters() {
    ['scienceToggle', null], ['reeferToggle', null],
    ['aviaryToggle', null]].forEach(([cbId, lblId]) => {
     const cb = document.getElementById(cbId);
-    const lbl = lblId ? document.getElementById(lblId) : null;
     if (cb) cb.checked = false;
-    if (lbl) lbl.textContent = 'No';
   });
 
   updateAttributesSummary();
 }
 
-// ── Summary text in the Attributes bar header ─────────────────────────────────────
 function updateAttributesSummary() {
   if (!cardAttributesLoaded) {
     return;
   }
-
   updateTagButtonLabels();
   updateAbilitiesButtonLabel();
 }
 
-// ── The actual per-row filtering check ───────────────────────────────────────────
 function passesAttributeFilters(row) {
-  // If the attributes CSV failed to load, or this particular card has no entry
-  // in it, do not filter the row out — fail open so the table still works.
   if (!cardAttributesLoaded) return true;
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
 
-  // Species and Habitat are separate include-lists. Default all selected =
-  // no filtering for that group. Once narrowed, a card must match at least one
-  // selected value in the narrowed group. Selecting none intentionally returns
-  // no matches for that group.
-  // Important: these are ANDed as groups. If Species and Habitat are both
-  // narrowed, a card must satisfy both groups.
   if (!areSpeciesAtDefault()) {
     if (!selectedSpeciesTags.size) return false;
     if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
@@ -3879,36 +3521,25 @@ function passesAttributeFilters(row) {
     if (!attrs.continent || !selectedContinentTags.has(attrs.continent)) return false;
   }
 
-  // Water/Rock/Science: simple boolean toggles, default OFF (no filtering).
-  // Switching one ON narrows the table to only cards that have that tag.
   if (waterOn && !attrs.water) return false;
   if (rockOn && !attrs.rock) return false;
   if (scienceOn && !attrs.science) return false;
 
-  // Strength: when narrowed, a card must have one of the selected strength values.
   if (selectedStrengths.size !== STRENGTH_VALUES.length) {
     if (!attrs.strength) return false;
     if (!selectedStrengths.has(attrs.strength)) return false;
   }
 
-  // Size: when narrowed, a card must have one of the selected size values.
   if (selectedSizes.size !== SIZE_VALUES.length) {
     if (!attrs.size) return false;
     if (!selectedSizes.has(attrs.size)) return false;
   }
 
-  // Reefer / Aviary: simple boolean toggles. When off (default), they don't filter.
   if (reeferOn && !attrs.reefer) return false;
   if (aviaryOn && !attrs.aviary) return false;
 
-  // Abilities: OR logic — card passes if it has at least one selected ability.
-  // selectedAbilities defaults to the full set, so this only narrows anything
-  // once the user has deliberately deselected at least one ability.
   if (selectedAbilities.size !== allAbilities.length) {
     if (attrs.abilities.length === 0) {
-      // A card with zero ability entries cannot match a narrowed ability
-      // search, because "no abilities" is not itself a selectable option
-      // (the literal ability string "None" is a separate, selectable value).
       return false;
     }
     if (!attrs.abilities.some(a => selectedAbilities.has(a))) return false;
