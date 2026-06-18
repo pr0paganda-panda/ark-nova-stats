@@ -263,14 +263,44 @@
       padding: 20px 16px;
       overflow-y: auto;
       position: fixed;
-      top: 56px;
+      top: 0;
       right: -280px;
       left: auto;
       width: 260px;
-      height: calc(100vh - 56px);
+      height: 100vh;
       z-index: 200;
       transition: right 0.25s ease;
       box-shadow: none;
+      /* RTL trick: flips the native scrollbar to the left edge of the panel.
+         Direction is reset back to ltr on every direct child below so text,
+         inputs, and flex ordering all read normally; only the scrollbar
+         track itself stays mirrored. */
+      direction: rtl;
+      /* Firefox: thin width + themed thumb/track colours. */
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-light) transparent;
+    }
+
+    .sidebar > * {
+      direction: ltr;
+    }
+
+    /* Slim, theme-coloured scrollbar for the Filters sidebar (WebKit/Blink). */
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 3px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-dim);
     }
 
     .sidebar.open { right: 0; box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
@@ -1067,13 +1097,15 @@
       display: none;
       position: absolute;
       top: calc(100% + 6px);
-      left: 0;
+      right: 0;
+      left: auto;
       background: #0a120b;
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       z-index: 500;
       width: 260px;
+      max-width: calc(100vw - 32px);
       padding: 10px;
     }
 
@@ -1639,11 +1671,6 @@
         min-height: 44px;
         padding: 7px 3px;
         font-size: 10px;
-      }
-
-      .sidebar {
-        top: 52px;
-        height: calc(100vh - 52px);
       }
 
       .topbar-logo {
