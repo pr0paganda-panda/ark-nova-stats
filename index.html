@@ -1119,10 +1119,9 @@
 
     .abilities-panel {
       display: none;
-      position: absolute;
-      top: calc(100% + 6px);
-      right: 0;
-      left: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
       background: var(--bg-deep);
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
@@ -3621,9 +3620,28 @@ function toggleAbilitiesPanel(event) {
   const panel = document.getElementById('abilitiesPanel');
   panel.classList.toggle('open');
   if (panel.classList.contains('open')) {
+    positionAbilitiesPanel();
     const input = document.getElementById('abilitiesSearchInput');
     if (input) input.focus();
   }
+}
+
+function positionAbilitiesPanel() {
+  // The panel is fixed-positioned so a short filtered table cannot clip it.
+  // Keep it visually anchored to the Abilities button and clamp it inside the viewport.
+  const btn = document.getElementById('abilitiesBtn');
+  const panel = document.getElementById('abilitiesPanel');
+  if (!btn || !panel || !panel.classList.contains('open')) return;
+
+  const margin = 16;
+  const gap = 8;
+  const rect = btn.getBoundingClientRect();
+  const panelWidth = panel.offsetWidth || 260;
+  const left = Math.max(margin, Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - margin));
+  const top = Math.max(margin, Math.min(rect.bottom + gap, window.innerHeight - panel.offsetHeight - margin));
+
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
 }
 
 function renderAbilitiesList() {
@@ -3635,6 +3653,7 @@ function renderAbilitiesList() {
 
   if (!matches.length) {
     list.innerHTML = '<div class="abilities-list-empty">No abilities match.</div>';
+    positionAbilitiesPanel();
     return;
   }
 
@@ -3655,10 +3674,16 @@ function renderAbilitiesList() {
     label.appendChild(document.createTextNode(` ${ability}`));
     list.appendChild(label);
   });
+  positionAbilitiesPanel();
 }
 
 function toggleAbility(ability, checkbox) {
-  if (checkbox.checked) {
+  if (selectedAbilities.size === allAbilities.length && !checkbox.checked) {
+    // UX shortcut: from the default all-selected state, clicking one ability
+    // means "only this ability". After that, ability checkboxes toggle normally.
+    selectedAbilities = new Set([ability]);
+    renderAbilitiesList();
+  } else if (checkbox.checked) {
     selectedAbilities.add(ability);
   } else {
     selectedAbilities.delete(ability);
@@ -3708,6 +3733,9 @@ document.addEventListener('click', e => {
     panel.classList.remove('open');
   }
 });
+
+window.addEventListener('resize', positionAbilitiesPanel);
+window.addEventListener('scroll', positionAbilitiesPanel, true);
 
 // ── Water / Rock / Science toggles ────────────────────────────────────────────
 // Water and Rock apply to both Animal and Sponsor cards. Turning either on
