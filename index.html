@@ -150,10 +150,20 @@
       font-weight: 400;
     }
 
-    /* MW / Base tabs */
+    /* MW / Base segmented switch.
+       This uses the compact MW/Base switch on every viewport, not only phone.
+       On desktop/tablet its width matches the left navigation rail. */
     .tabs {
-      display: flex;
-      gap: 4px;
+      width: var(--side-nav-width);
+      height: 34px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      padding: 2px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      flex-shrink: 0;
     }
 
     /* push filter button to the far right */
@@ -162,17 +172,31 @@
     }
 
     .tab-btn {
-      padding: 6px 18px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--tab-bg);
+      height: 28px;
+      min-width: 0;
+      padding: 0;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
       color: var(--text-muted);
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
+      font-size: 0;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+
+    .tab-btn::after {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .tab-mw::after { content: 'MW'; }
+    .tab-base::after { content: 'Base'; }
 
     .tab-btn.active {
       border-color: currentColor;
@@ -199,13 +223,14 @@
        The main dashboard has a compact fixed navigation rail on the left.
        Filters always open as a right-side overlay, so the table never resizes. */
     :root {
-      --side-nav-width: 111px;
+      --side-nav-width: 151px;
       --side-nav-gap: 24px;
+      --content-left-offset: 135px;
     }
 
     .layout {
       display: block;
-      margin-left: calc(var(--side-nav-width) + var(--side-nav-gap));
+      margin-left: var(--content-left-offset);
       min-height: calc(100vh - 56px);
     }
 
@@ -263,44 +288,14 @@
       padding: 20px 16px;
       overflow-y: auto;
       position: fixed;
-      top: 0;
+      top: 56px;
       right: -280px;
       left: auto;
       width: 260px;
-      height: 100vh;
+      height: calc(100vh - 56px);
       z-index: 200;
       transition: right 0.25s ease;
       box-shadow: none;
-      /* RTL trick: flips the native scrollbar to the left edge of the panel.
-         Direction is reset back to ltr on every direct child below so text,
-         inputs, and flex ordering all read normally; only the scrollbar
-         track itself stays mirrored. */
-      direction: rtl;
-      /* Firefox: thin width + themed thumb/track colours. */
-      scrollbar-width: thin;
-      scrollbar-color: var(--border-light) transparent;
-    }
-
-    .sidebar > * {
-      direction: ltr;
-    }
-
-    /* Slim, theme-coloured scrollbar for the Filters sidebar (WebKit/Blink). */
-    .sidebar::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .sidebar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb {
-      background: var(--border-light);
-      border-radius: 3px;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb:hover {
-      background: var(--accent-dim);
     }
 
     .sidebar.open { right: 0; box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
@@ -849,9 +844,8 @@
     .attributes-bar-body {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
       gap: 16px 22px;
-      padding: 16px;
+      padding: 4px 16px 16px;
       border-top: 1px solid var(--border);
     }
 
@@ -863,7 +857,6 @@
     .attr-group {
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 6px;
       min-width: 0;
     }
@@ -889,6 +882,10 @@
       font-size: 11px;
       color: var(--text-dim);
       white-space: nowrap;
+    }
+
+    #attrGroupSize {
+      margin-left: 10px;
     }
 
     .attr-separator {
@@ -1097,15 +1094,13 @@
       display: none;
       position: absolute;
       top: calc(100% + 6px);
-      right: 0;
-      left: auto;
+      left: 0;
       background: #0a120b;
       border: 1px solid var(--border-light);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       z-index: 500;
       width: 260px;
-      max-width: calc(100vw - 32px);
       padding: 10px;
     }
 
@@ -1653,6 +1648,7 @@
       :root {
         --side-nav-width: 84px;
         --side-nav-gap: 20px;
+        --content-left-offset: 104px;
       }
 
       .topbar {
@@ -1673,6 +1669,11 @@
         font-size: 10px;
       }
 
+      .sidebar {
+        top: 52px;
+        height: calc(100vh - 52px);
+      }
+
       .topbar-logo {
         font-size: 13px;
         gap: 4px;
@@ -1683,31 +1684,14 @@
         height: 21px;
       }
 
-      /* Compact MW/Base segmented switch for narrow phone screens. */
+      /* Phone only compacts the universal MW/Base switch; width still follows the rail. */
       .tabs {
-        width: 88px;
+        width: var(--side-nav-width);
         height: 30px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2px;
-        padding: 2px;
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        flex-shrink: 0;
       }
 
       .tab-btn {
         height: 24px;
-        min-width: 0;
-        padding: 0;
-        border: none;
-        border-radius: 999px;
-        background: transparent;
-        font-size: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
 
       .tab-btn::after {
