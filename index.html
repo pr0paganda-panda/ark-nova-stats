@@ -2550,6 +2550,8 @@ function toggleRoundChip(btn) {
   // chips because the sidebar offers a "none" shortcut just like Maps. If the
   // user loads with no rounds selected, the frontend renders an empty table locally
   // and does not call the backend API.
+  // UX shortcut: when all rounds are selected, clicking one round means
+  // "only this round" instead of "all except this round".
   if (isAllSelectedChipClick(btn, '#roundChips .chip')) return;
   btn.classList.toggle('active');
 }
@@ -2621,11 +2623,15 @@ function selectNoneMaps() {
 
 // ── Toggle chip ────────────────────────────────────────────────────────────────
 function toggleChip(btn, group) {
+  // Maps use the same "all selected -> clicked chip only" shortcut as Rounds.
   if (group === 'map' && isAllSelectedChipClick(btn, '#mapChips .chip')) return;
   btn.classList.toggle('active');
 }
 
 function isAllSelectedChipClick(btn, selector) {
+  // Shared DOM-only helper for Maps/Rounds. It intentionally runs only when
+  // every chip in the group is active. Once a group is narrowed, normal
+  // select/deselect toggling resumes so users can refine incrementally.
   const chips = [...document.querySelectorAll(selector)];
   if (!chips.length || chips.some(c => !c.classList.contains('active'))) return false;
 
@@ -3452,6 +3458,10 @@ function buildChipGroup(containerId, values, selectedSet, kind) {
 
 // Shared toggle handler for Strength/Size/Species/Continent chips.
 // `values` is the full list for that group, used to detect "back to all-selected".
+// UX shortcut: from the default all-selected state, the first chip click means
+// "only this chip". After that, clicks behave as normal toggles. This mirrors
+// Maps/Rounds, but must also update the selected Set because Attribute chips
+// are rebuilt from state whenever their popup/group is re-rendered.
 function toggleAttributeChip(btn, selectedSet, values, kind) {
   const value = btn.dataset.value;
   if (selectedSet.size === values.length) {
@@ -3475,7 +3485,7 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
   if (kind === 'strength' && !isDefault) forceTypeToOnly('sponsor');
   if (kind === 'size' && !isDefault) forceTypeToOnly('animal');
   if (kind === 'species' || kind === 'continent') {
-    syncSpeciesHabitatTypeFilter();
+    syncSharedAnimalSponsorTypeFilter();
     updateTagButtonLabels();
   }
 
@@ -3545,7 +3555,7 @@ function selectAllCurrentTagPopup() {
   } else {
     selectedContinentTags = new Set(CONTINENT_TAGS);
   }
-  syncSpeciesHabitatTypeFilter();
+  syncSharedAnimalSponsorTypeFilter();
   renderCurrentTagPopup();
   updateTagButtonLabels();
 }
@@ -3556,7 +3566,7 @@ function selectNoneCurrentTagPopup() {
   } else {
     selectedContinentTags = new Set();
   }
-  syncSpeciesHabitatTypeFilter();
+  syncSharedAnimalSponsorTypeFilter();
   renderCurrentTagPopup();
   updateTagButtonLabels();
 }
@@ -3692,14 +3702,16 @@ document.addEventListener('click', e => {
 });
 
 // ── Water / Rock / Science toggles ────────────────────────────────────────────
-// Water and Rock apply to both Animal and Sponsor cards, so they don't force a
-// single Type. Science is Sponsor-only, so turning it on follows the same intent
-// as narrowing Strength and forces the Type filter to Sponsor.
+// Water and Rock apply to both Animal and Sponsor cards. Turning either on
+// visibly narrows Type to Animal + Sponsor, just like Species/Habitat. Science
+// is Sponsor-only, so turning it on follows Strength and forces Sponsor-only.
 function onBoolTagToggle(which) {
   if (which === 'water') {
     waterOn = document.getElementById('waterToggle').checked;
+    syncSharedAnimalSponsorTypeFilter();
   } else if (which === 'rock') {
     rockOn = document.getElementById('rockToggle').checked;
+    syncSharedAnimalSponsorTypeFilter();
   } else if (which === 'science') {
     scienceOn = document.getElementById('scienceToggle').checked;
     if (scienceOn) forceTypeToOnly('sponsor');
@@ -3762,18 +3774,26 @@ function forceTypeToOnly(typeValue) {
   refreshAttributeAvailability();
 }
 
-function syncSpeciesHabitatTypeFilter() {
-  const bothDefault = areSpeciesAtDefault() && areContinentsAtDefault();
+function syncSharedAnimalSponsorTypeFilter() {
+  // Species, Habitat, Rock, and Water can only match Animal/Sponsor cards.
+  // Whenever any of them is narrowed/on, mirror that effective constraint in
+  // the Type header and popup by deselecting Project. Once all four are back
+  // at default/off, restore Type to all three if it is in this automatic state.
+  const allSharedAnimalSponsorFiltersDefault =
+    areSpeciesAtDefault() &&
+    areContinentsAtDefault() &&
+    !waterOn &&
+    !rockOn;
   const activeTypes = getActiveTypeTokens();
-  const isAutoSpeciesHabitatTypeState =
+  const isAutoSharedAnimalSponsorTypeState =
     activeTypes.length === 2 &&
     activeTypes.includes('animal') &&
     activeTypes.includes('sponsor');
 
-  if (!bothDefault) {
+  if (!allSharedAnimalSponsorFiltersDefault) {
     setActiveTypeTokens(['animal', 'sponsor']);
     refreshAttributeAvailability();
-  } else if (isAutoSpeciesHabitatTypeState) {
+  } else if (isAutoSharedAnimalSponsorTypeState) {
     setActiveTypeTokens(['animal', 'sponsor', 'project']);
     refreshAttributeAvailability();
   }
