@@ -2550,6 +2550,7 @@ function toggleRoundChip(btn) {
   // chips because the sidebar offers a "none" shortcut just like Maps. If the
   // user loads with no rounds selected, the frontend renders an empty table locally
   // and does not call the backend API.
+  if (isAllSelectedChipClick(btn, '#roundChips .chip')) return;
   btn.classList.toggle('active');
 }
 
@@ -2620,7 +2621,16 @@ function selectNoneMaps() {
 
 // ── Toggle chip ────────────────────────────────────────────────────────────────
 function toggleChip(btn, group) {
+  if (group === 'map' && isAllSelectedChipClick(btn, '#mapChips .chip')) return;
   btn.classList.toggle('active');
+}
+
+function isAllSelectedChipClick(btn, selector) {
+  const chips = [...document.querySelectorAll(selector)];
+  if (!chips.length || chips.some(c => !c.classList.contains('active'))) return false;
+
+  chips.forEach(c => c.classList.toggle('active', c === btn));
+  return true;
 }
 
 // ── MW / Base tab ──────────────────────────────────────────────────────────────
@@ -3444,7 +3454,13 @@ function buildChipGroup(containerId, values, selectedSet, kind) {
 // `values` is the full list for that group, used to detect "back to all-selected".
 function toggleAttributeChip(btn, selectedSet, values, kind) {
   const value = btn.dataset.value;
-  if (selectedSet.has(value)) {
+  if (selectedSet.size === values.length) {
+    selectedSet.clear();
+    selectedSet.add(value);
+    btn.parentElement.querySelectorAll('.chip').forEach(c => {
+      c.classList.toggle('active', c === btn);
+    });
+  } else if (selectedSet.has(value)) {
     selectedSet.delete(value);
     btn.classList.remove('active');
   } else {
