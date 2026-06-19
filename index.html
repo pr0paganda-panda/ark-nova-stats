@@ -2763,16 +2763,23 @@ let aviaryOn = false;
 let typeBeforeReeferAviary = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-  // Build dynamic map/round chips, load alias file, then immediately fetch default stats.
+document.addEventListener('DOMContentLoaded', () => {
+  // Build dynamic map/round chips, fetch default stats immediately, then let
+  // optional CSV metadata load in parallel without blocking the first table.
   buildMapChips();
   buildRoundChips();
   updateTypeFilterIndicator();
   buildAttributeChips();
-  await loadCardAliases();
-  await loadCardAttributes();
-  refreshAttributeAvailability();
   applyFilters(); // auto-load on page open with defaults
+
+  loadCardAliases().then(() => {
+    if (allData.length) applySearch();
+  });
+
+  loadCardAttributes().then(() => {
+    refreshAttributeAvailability();
+    if (allData.length) applySearch();
+  });
 });
 
 
@@ -3346,6 +3353,55 @@ function onRppChange() {
   applySortAndRender();
 }
 
+function appendCell(rowEl, className, text, color) {
+  const cell = document.createElement('td');
+  if (className) cell.className = className;
+  if (color) cell.style.color = color;
+  cell.textContent = text;
+  rowEl.appendChild(cell);
+  return cell;
+}
+
+function appendUnavailableCell(rowEl) {
+  appendCell(rowEl, 'unavailable-cell', '—');
+}
+
+function appendPlayrateCell(rowEl, pr, prVal, barWidth, barColor) {
+  const cell = document.createElement('td');
+  const wrap = document.createElement('div');
+  wrap.className = 'playrate-cell';
+
+  const barWrap = document.createElement('div');
+  barWrap.className = 'playrate-bar-wrap';
+
+  const bar = document.createElement('div');
+  bar.className = 'playrate-bar';
+  bar.style.width = barWidth + '%';
+  bar.style.background = barColor;
+
+  const value = document.createElement('span');
+  value.className = 'playrate-val';
+  value.style.color = barColor;
+  value.textContent = pr;
+
+  barWrap.appendChild(bar);
+  wrap.appendChild(barWrap);
+  wrap.appendChild(value);
+  cell.appendChild(wrap);
+  rowEl.appendChild(cell);
+}
+
+function appendTypeCell(rowEl, rawType) {
+  const typeText = rawType == null ? '' : String(rawType);
+  const normalizedType = ['animal', 'sponsor', 'project'].includes(typeText) ? typeText : 'unknown';
+  const cell = document.createElement('td');
+  const badge = document.createElement('span');
+  badge.className = `type-badge type-${normalizedType}`;
+  badge.textContent = typeText ? typeText.charAt(0).toUpperCase() + typeText.slice(1) : 'Unknown';
+  cell.appendChild(badge);
+  rowEl.appendChild(cell);
+}
+
 // ── Render table ───────────────────────────────────────────────────────────────
 function renderTable(data) {
   // data is already filtered + sorted. This function only handles pagination,
@@ -3382,7 +3438,8 @@ function renderTable(data) {
   const minElo = Math.min(...eloVals);
   const maxElo = Math.max(...eloVals);
 
-  tbody.innerHTML = pageData.map(row => {
+  tbody.replaceChildren();
+  pageData.forEach(row => {
     const dp = fmtDelta(row.delta_played);
     const dh = fmtDelta(row.delta_in_hand);
     const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '—';
@@ -3392,37 +3449,21 @@ function renderTable(data) {
     const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
     const eloCol = eloColor(row.avg_elo, minElo, maxElo);
 
-    const inHandCell = roundFilterActive
-      ? '<td class="unavailable-cell">—</td>'
-      : `<td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>`;
-
-    const playrateCell = roundFilterActive
-      ? '<td class="unavailable-cell">—</td>'
-      : `<td>
-        <div class="playrate-cell">
-          <div class="playrate-bar-wrap">
-            <div class="playrate-bar" style="width:${barWidth}%;background:${barColor}"></div>
-          </div>
-          <span class="playrate-val" style="color:${barColor}">${pr}</span>
-        </div>
-      </td>`;
-
-    const seenCell = roundFilterActive
-      ? '<td class="unavailable-cell">—</td>'
-      : `<td class="n-cell">${fmtN(row.n_seen)}</td>`;
-
-    return `<tr>
-      <td class="rank-cell">${row.global_rank ?? '—'}</td>
-      <td class="card-name">${titleCase(row.card_name)}</td>
-      ${inHandCell}
-      <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
-      <td class="n-cell" style="color:${eloCol}">${eloDisplay}</td>
-      ${playrateCell}
-      <td class="n-cell">${fmtN(row.n_played)}</td>
-      ${seenCell}
-      <td><span class="type-badge type-${row.card_type}">${row.card_type.charAt(0).toUpperCase() + row.card_type.slice(1)}</span></td>
-    </tr>`;
-  }).join('');
+    const tr = document.createElement('tr');
+    appendCell(tr, 'rank-cell', row.global_rank ?? '—');
+    appendCell(tr, 'card-name', titleCase(row.card_name));
+    if (roundFilterActive) appendUnavailableCell(tr);
+    else appendCell(tr, 'delta', dh, deltaColor(row.delta_in_hand));
+    appendCell(tr, 'delta', dp, deltaColor(row.delta_played));
+    appendCell(tr, 'n-cell', eloDisplay, eloCol);
+    if (roundFilterActive) appendUnavailableCell(tr);
+    else appendPlayrateCell(tr, pr, prVal, barWidth, barColor);
+    appendCell(tr, 'n-cell', fmtN(row.n_played));
+    if (roundFilterActive) appendUnavailableCell(tr);
+    else appendCell(tr, 'n-cell', fmtN(row.n_seen));
+    appendTypeCell(tr, row.card_type);
+    tbody.appendChild(tr);
+  });
 
   // Meta
   const from = start + 1;
@@ -3489,13 +3530,30 @@ function showLoading(mode = 'query') {
 }
 
 function showError(msg) {
-  document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
-    <div class="state-overlay">
-      <div class="error-icon">⚠️</div>
-      <div class="state-title">Something went wrong</div>
-      <div class="state-sub">${msg}</div>
-    </div>
-  </td></tr>`;
+  const tbody = document.getElementById('tableBody');
+  const tr = document.createElement('tr');
+  const td = document.createElement('td');
+  const overlay = document.createElement('div');
+  const icon = document.createElement('div');
+  const title = document.createElement('div');
+  const sub = document.createElement('div');
+
+  td.colSpan = 9;
+  overlay.className = 'state-overlay';
+  icon.className = 'error-icon';
+  title.className = 'state-title';
+  sub.className = 'state-sub';
+
+  icon.textContent = '⚠️';
+  title.textContent = 'Something went wrong';
+  sub.textContent = msg;
+
+  overlay.appendChild(icon);
+  overlay.appendChild(title);
+  overlay.appendChild(sub);
+  td.appendChild(overlay);
+  tr.appendChild(td);
+  tbody.replaceChildren(tr);
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
