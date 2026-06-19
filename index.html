@@ -7,17 +7,54 @@
   - Static frontend for GitHub Pages.
   - Calls the deployed Google Cloud Function API to fetch live BigQuery stats.
   - Handles all visual layout, table sorting, pagination, search, aliases, and client-side card-type filtering.
+
+  Current-status notes after the 2026-06-17 update pass:
+  - The backend now supports an optional played-round filter via request field `rounds`.
+  - The Round filter is a true backend filter because it changes the SQL aggregation.
+  - The Minimum plays field is frontend-only; it filters already-loaded rows by `n_played`.
+  - Card search now lives inside the Card table header instead of the control row above the table.
+  - Type filtering is frontend-only and has a warm-green dot indicator when narrowed.
+
+  Repository files expected next to this index.html:
+  - favicon.png          Browser tab icon.
+  - logo.png             Small logo in the header next to "Ark Nova Statistics".
+  - cards_altnames.csv   Optional alias/nickname search file. If missing, search still works by real card names.
+
+  Important maintenance warning:
+  The table column order is intentionally duplicated in several places:
+  1. the <thead> markup,
+  2. the renderTable() row template,
+  3. desktop inline column widths,
+  4. phone-only nth-child width/sticky CSS.
+  If a future agent adds/removes/reorders columns, all of those locations must be updated together.
+
+  Also keep the frontend and backend in sync for the Round filter:
+  - Frontend values are `1`, `2`, `3`, `4`, `5`, `6+`.
+  - Backend accepts the same whitelist and translates `6+` to `round >= 6`.
+  - If all rounds are selected, the frontend sends no `rounds` field and the backend runs normal mode.
+  - If no rounds or no maps are selected, the frontend deliberately skips the API call and renders empty results locally.
 -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ark Nova Statistics</title>
+  <!-- Favicon is a repository-root asset. Keep favicon.png next to index.html on GitHub Pages. -->
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  
   <style>
+    /* ── Design tokens ───────────────────────────────────────────────────────
+       Central colour/spacing variables. Most of the visual theme should be changed here first.
+       Redesigned 2026-06-18: moved the dark base from a yellow-green "forest"
+       cast to a cooler deep-marine teal-black. This gives the emerald accent
+       real contrast to pop against (rather than green-on-khaki-green), while
+       staying on-theme — Ark Nova's own box/board palette is dark teal, not
+       olive. Two secondary accents were added for variety: a marine teal
+       (Marine Worlds tab) and a warm gold (Base tab, "narrowed filter"
+       highlights, echoing the sponsorship/conservation gold already used on
+       the Project type badge in the table). The table's own value-driven
+       colours (delta/elo/playrate gradients, type badges) are NOT touched. */
     :root {
       --bg:          #0a1614;   /* deep marine-black, cool undertone */
       --bg-panel:    #0e1f1c;   /* sidebar / card panel */
@@ -72,9 +109,12 @@
       --shadow:      0 2px 12px rgba(0,0,0,0.4);
     }
 
+    /* ── Reset & base ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html {
+      /* Reserve page-scrollbar space even when short filtered result sets do not
+         need scrolling, preventing the table from shifting horizontally. */
       scrollbar-gutter: stable;
       scrollbar-color: var(--accent-dim) var(--bg);
     }
@@ -112,6 +152,7 @@
       line-height: 1.5;
     }
 
+    /* ── Top bar ───────────────────────────────────────────────────────────── */
     .topbar {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
@@ -125,6 +166,8 @@
       z-index: 100;
     }
 
+    /* The logo/title is absolutely centred so it stays visually centred even though
+       the MW/Base switch is on the left and the Filters button is on the right. */
     .topbar-logo {
       font-family: 'Bitter', serif;
       font-weight: 700;
@@ -159,11 +202,13 @@
       font-weight: 400;
     }
 
+    /* MW / Base tabs */
     .tabs {
       display: flex;
       gap: 4px;
     }
 
+    /* push filter button to the far right */
     .mobile-filter-btn {
       margin-left: auto;
     }
@@ -188,12 +233,12 @@
     }
 
     .tab-btn.active.tab-mw {
-      background: var(--accent-teal);
+      background: var(--accent-teal);   /* marine teal for Marine Worlds */
       border-color: var(--accent-teal);
     }
 
     .tab-btn.active.tab-base {
-      background: var(--accent-gold);
+      background: var(--accent-gold);   /* warm gold for Base — replaces the old olive/khaki tone */
       border-color: var(--accent-gold);
     }
 
@@ -202,9 +247,12 @@
       color: var(--text);
     }
 
+    /* ── Layout ──────────────────────────────────────────────────────────────
+       The main dashboard has a compact, elegant navigation rail on the left.
+       Filters always open as a right-side overlay, so the table never resizes. */
     :root {
-      --side-nav-width: 111px;
-      --side-nav-gap: 24px;
+      --side-nav-width: 111px; /* Reverted back to the spacious original width */
+      --side-nav-gap: 24px;    /* Reverted back to the original layout spacing */
     }
 
     .layout {
@@ -213,29 +261,37 @@
       min-height: calc(100vh - 56px);
     }
 
+    /* Redesigned Navigation Sidebar: Minimalist Indicator Rail
+       Transforms block-like enclosures into outline SVG glyphs, spacious uppercase 
+       tracking, and a sharp, scaling emerald blade at the left edge.
+       The width is reverted to the original sidebar proportions, and elements
+       are beautifully balanced as horizontal rectangular cards. */
     .side-nav {
       position: fixed;
       top: 56px;
       left: 0;
       bottom: 0;
       width: var(--side-nav-width);
-      background: #050d0c;
-      border-right: 1px solid rgba(52, 211, 153, 0.06);
+      background: #050d0c; /* step darker than main canvas to establish deep visual recession */
+      border-right: 1px solid rgba(52, 211, 153, 0.06); /* razor-thin sub-border outline */
       z-index: 95;
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      padding: 24px 0px;
+      padding: 24px 0px; /* generous structural spacing */
       gap: 16px;
     }
 
+    /* Elegant, solid ("durchgezogen") separator line with high visibility */
     .nav-divider {
       height: 1.5px;
-      background: rgba(52, 211, 153, 0.35);
-      margin: 0px 14px;
+      background: rgba(52, 211, 153, 0.35); /* Solid visible emerald color */
+      margin: 0px 14px; /* Inset from the sidebar outer edges */
       flex-shrink: 0;
     }
 
+    /* Formatting: Fixed vertical cells matching 75px on desktop, while retaining 
+       the spacious 111px layout width. Inner content is perfectly aligned. */
     .side-nav-link {
       position: relative;
       display: flex;
@@ -244,8 +300,8 @@
       justify-content: center;
       text-align: center;
       width: 100%;
-      height: 75px;
-      color: #4a5e5a;
+      height: 75px; /* Fixed height for desktop cells */
+      color: #4a5e5a; /* Desaturated teal-grey default state */
       text-decoration: none;
       font-size: 10px;
       font-weight: 500;
@@ -268,6 +324,7 @@
       transition: stroke 0.3s ease, filter 0.3s ease, transform 0.3s ease;
     }
 
+    /* Active vertical green glow strip (Expanding Indicator Blade) */
     .side-nav-link::before {
       content: '';
       position: absolute;
@@ -296,6 +353,7 @@
       filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.3));
     }
 
+    /* Fluid Micro-interactions */
     .side-nav-link:hover:not(.disabled) {
       color: var(--text);
       transform: translateY(-2px);
@@ -306,6 +364,7 @@
       filter: drop-shadow(0 0 4px rgba(109, 245, 184, 0.2));
     }
 
+    /* Muted and non-interactive disabled items */
     .side-nav-link.disabled {
       color: rgba(74, 94, 90, 0.3);
       cursor: not-allowed;
@@ -317,6 +376,8 @@
       opacity: 0.35;
     }
 
+    /* ── Sidebar ─────────────────────────────────────────────────────────────
+       Universal right-side overlay. It never participates in layout width. */
     .sidebar {
       background: var(--bg-panel);
       border-left: 1px solid var(--border);
@@ -331,7 +392,12 @@
       z-index: 200;
       transition: right 0.25s ease;
       box-shadow: none;
+      /* RTL trick: flips the native scrollbar to the left edge of the panel.
+         Direction is reset back to ltr on every direct child below so text,
+         inputs, and flex ordering all read normally; only the scrollbar
+         track itself stays mirrored. */
       direction: rtl;
+      /* Firefox: thin width + themed thumb/track colours. */
       scrollbar-width: thin;
       scrollbar-color: var(--border-light) transparent;
     }
@@ -340,6 +406,7 @@
       direction: ltr;
     }
 
+    /* Slim, theme-coloured scrollbar for the Filters sidebar (WebKit/Blink). */
     .sidebar::-webkit-scrollbar {
       width: 6px;
     }
@@ -392,6 +459,7 @@
       color: var(--accent);
     }
 
+    /* Filter groups */
     .filter-group {
       margin-bottom: 20px;
     }
@@ -406,6 +474,7 @@
       display: block;
     }
 
+    /* Range inputs */
     .range-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -428,6 +497,7 @@
     .range-input:focus { border-color: var(--accent-dim); }
     .range-input::placeholder { color: var(--text-dim); }
 
+    /* Date inputs */
     .date-input {
       width: 100%;
       background: var(--bg-surface);
@@ -444,12 +514,14 @@
 
     .date-input:focus { border-color: var(--accent-dim); }
 
+    /* Chip toggles (maps, card types) */
     .chip-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
     }
 
+    /* Map chips: fixed uniform size, 5 per row */
     #mapChips {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -463,6 +535,9 @@
       font-size: 12px;
     }
 
+    /* Round chips: fixed uniform size, 6 per row.
+       All active is the default/no-filter state. Any smaller subset triggers
+       a backend round filter and makes in-hand/seen/playrate unavailable. */
     #roundChips {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -501,6 +576,7 @@
       color: var(--text);
     }
 
+    /* Toggle switch */
     .toggle-row {
       display: flex;
       align-items: center;
@@ -560,6 +636,7 @@
       margin: 16px 0;
     }
 
+    /* Apply button */
     .apply-btn {
       width: 100%;
       padding: 10px;
@@ -579,11 +656,14 @@
     .apply-btn:hover { opacity: 0.85; }
     .apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* ── Main content ──────────────────────────────────────────────────────── */
     .main {
       padding: 24px;
       overflow-x: auto;
     }
 
+    /* Header above the table: result count on the left, minimum-play and row controls on the right.
+       Card search now lives in the Card table header instead of this control row. */
     .main-header {
       display: flex;
       align-items: center;
@@ -601,6 +681,15 @@
       flex-wrap: wrap;
     }
 
+    /* Minimum plays control, shown above the table next to Rows.
+       Important: this is NOT a backend filter. It filters the currently loaded
+       dataset instantly in applySearch() using n_played, so changing it does not
+       query BigQuery and does not change round/date/map/ELO calculations.
+
+       Desktop/tablet visual tuning is intentionally a little manual:
+       - transform: translateX(-35px) nudges the whole control left.
+       - the input width is 59px after several visual tweaks.
+       - phone layout resets the transform and uses a narrower field below. */
     .min-plays-wrap {
       display: flex;
       align-items: center;
@@ -635,6 +724,10 @@
 
     .min-plays-input:focus { border-color: var(--accent-dim); }
 
+    /* The empty Minimum plays field displays a custom centred dash.
+       The actual placeholder is a blank space in the HTML; this background line
+       is used instead because it gives finer control over dash width and centring.
+       Current chosen width: 30% of the field. */
     .min-plays-input:placeholder-shown {
       background-image: linear-gradient(var(--text-dim), var(--text-dim));
       background-repeat: no-repeat;
@@ -660,6 +753,12 @@
       font-weight: 600;
     }
 
+    /* Card-header search.
+       The search input is hidden inside the Card header until the search icon is clicked.
+       Closing it with X also clears the card search so users are not left with a hidden active filter.
+
+       Implementation note: the search button and search overlay stop propagation in JS.
+       That is necessary because the Card <th> itself sorts by card_name when clicked. */
     .card-search-header { position: relative; }
 
     .card-header-content {
@@ -754,6 +853,7 @@
       background: var(--bg-hover);
     }
 
+    /* Rows per page */
     .rpp-wrap {
       display: flex;
       align-items: center;
@@ -790,6 +890,17 @@
       color: var(--accent-bright);
     }
 
+    /* ── Attributes bar ──────────────────────────────────────────────────────
+       Sits between the main-header (meta/min-plays/rows) and the table.
+       All filtering here is CLIENT-SIDE only, layered into applySearch() exactly
+       like the Type filter. It reads card metadata (species, strength, abilities,
+       etc.) from a separately-loaded cards_attributes.csv, keyed by card_name.
+
+       Structural rule shared by every group below: a group is disabled
+       (visually greyed out, non-interactive, reset to its default/non-filtering
+       state) whenever none of the card Types it can possibly apply to are
+       currently active in the Type filter. E.g. Strength only exists on
+       Sponsors, so it disables itself unless Sponsor is checked in Type. */
     .attributes-bar {
       background: var(--bg-panel);
       border: 1px solid var(--border);
@@ -869,6 +980,7 @@
       display: none;
     }
 
+    /* Each filter group (Species, Habitat, Strength, ...) */
     .attr-group {
       display: flex;
       flex-direction: column;
@@ -909,6 +1021,9 @@
       margin: 0;
     }
 
+    /* Disabled state shared by every group type. Disabling resets the group's
+       selection to default underneath (handled in JS), so re-enabling always
+       starts clean rather than restoring a stale prior choice. */
     .attr-group.disabled,
     .attributes-bar.attributes-unavailable .attr-group {
       opacity: 0.38;
@@ -924,6 +1039,8 @@
       pointer-events: none;
     }
 
+    /* Chip row reuses the existing .chip look for visual consistency with
+       Maps/Round chips in the sidebar. */
     .attr-chip-row {
       display: flex;
       flex-wrap: wrap;
@@ -936,6 +1053,7 @@
       line-height: 1;
     }
 
+    /* Tag buttons open the popup for Species or Habitat. */
     .attr-tags-btn {
       display: flex;
       align-items: center;
@@ -968,6 +1086,7 @@
       letter-spacing: 1px;
     }
 
+    /* Tags popup: a modal-style overlay for Species or Habitat. */
     .tags-popup-overlay {
       display: none;
       position: fixed;
@@ -1058,6 +1177,7 @@
 
     .tags-popup-close-btn:hover { opacity: 0.85; }
 
+    /* Reefer / Aviary toggles reuse the existing .toggle switch look */
     .attr-toggle-row {
       display: flex;
       align-items: center;
@@ -1069,6 +1189,7 @@
       color: var(--text);
     }
 
+    /* Abilities searchable multi-select dropdown */
     .abilities-dropdown {
       position: relative;
     }
@@ -1174,6 +1295,10 @@
       .attributes-bar-body { gap: 14px 18px; }
     }
 
+    /* ── Type column filter ───────────────────────────────────────────────────
+       The Type column is the far-right table column, but its header also contains
+       the Animal/Sponsor/Project filter popup. This filter is CLIENT-SIDE only:
+       it filters already-loaded data and does not re-query BigQuery. */
     .type-filter-btn {
       background: none;
       border: none;
@@ -1191,6 +1316,11 @@
     .type-filter-btn:hover,
     .type-filter-btn.active { color: var(--accent); }
 
+    /* Active Type filter indicator.
+       Default = all three card types selected, so the header shows normal "Type ▼".
+       Filtered = only one or two card types selected, so the header turns warm moss green
+       and the arrow is replaced by one/two dots. This is deliberately warmer/more muted
+       than the brighter green used by the sorted-column state. */
     .type-filter-label {
       display: inline-flex;
       align-items: center;
@@ -1236,8 +1366,12 @@
 
     .type-filter-popup.open { display: flex; }
 
+    /* The th that contains the popup needs relative positioning on desktop.
+       On phones it is overridden back to sticky, because all header cells must
+       stay aligned during horizontal table scrolling. */
     #statsTable thead th.type-filter-header { position: relative; }
 
+    /* ── Column header tooltips ─────────────────────────────────────────────── */
     .col-tip {
       display: inline;
       font-size: 9px;
@@ -1292,6 +1426,9 @@
       margin-bottom: 2px;
     }
 
+    /* ── Table ───────────────────────────────────────────────────────────────
+       Desktop/tablet use percentage widths from the <th style="width:..."> values.
+       Phones override those widths with fixed px values and horizontal scrolling. */
     .table-wrap {
       background: var(--bg-panel);
       border: 2px solid var(--border);
@@ -1366,6 +1503,7 @@
 
     tbody tr:hover { background: var(--bg-hover); }
 
+    /* Type badge */
     .type-badge {
       display: inline-block;
       padding: 2px 8px;
@@ -1379,16 +1517,19 @@
     .type-sponsor  { background: #211f3f; color: #8ea2f2; border: 1px solid #3f4d8a; }
     .type-project  { background: #1a3a1e; color: #6fc97a; border: 1px solid #2d5e33; }
 
+    /* Card name */
     .card-name {
       font-weight: 500;
       color: var(--text);
     }
 
+    /* Delta cells */
     .delta {
       font-weight: 600;
       font-variant-numeric: tabular-nums;
     }
 
+    /* Playrate bar */
     .playrate-cell {
       display: flex;
       align-items: center;
@@ -1419,6 +1560,7 @@
       text-align: right;
     }
 
+    /* rank + n columns */
     .rank-cell {
       font-variant-numeric: tabular-nums;
       color: var(--text);
@@ -1430,8 +1572,12 @@
       color: var(--text-muted);
     }
 
+    /* Round-filter-only unavailable stats.
+       When filtering by played round, in-hand delta, playrate, and seen count
+       are not meaningful because the log does not say in which round a card
+       was drawn or appeared on display. Keep the columns in place, but dim them. */
     .unavailable-cell {
-      color: #646d67;
+      color: #646d67; /* almost grey, with only a faint green tint */
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       text-align: center;
@@ -1459,6 +1605,7 @@
       opacity: 0.22;
     }
 
+    /* ── Loading & error states ─────────────────────────────────────────────── */
     .state-overlay {
       display: flex;
       flex-direction: column;
@@ -1495,6 +1642,7 @@
 
     .error-icon { font-size: 32px; }
 
+    /* ── Pagination ─────────────────────────────────────────────────────────── */
     .pagination {
       display: flex;
       align-items: center;
@@ -1536,6 +1684,7 @@
       padding: 0 6px;
     }
 
+    /* ── Tooltip for map chips ──────────────────────────────────────────────── */
     #map-tooltip {
       position: fixed;
       background: var(--bg-deep);
@@ -1552,6 +1701,7 @@
       box-shadow: var(--shadow);
     }
 
+    /* ── Mobile ─────────────────────────────────────────────────────────────── */
     .mobile-filter-btn {
       display: flex;
       align-items: center;
@@ -1572,6 +1722,7 @@
       color: var(--accent);
     }
 
+    /* Sidebar close button (X) */
     .sidebar-close-btn {
       background: none;
       border: none;
@@ -1592,6 +1743,7 @@
       background: var(--bg-hover);
     }
 
+    /* Lighter green highlight for the Filters toggle button */
     .filter-toggle-highlight {
       border-color: var(--accent-dim);
       color: var(--accent);
@@ -1608,12 +1760,16 @@
       .topbar-logo-img { width: 24px; height: 24px; }
       .main { padding: 12px; overflow-x: hidden; }
       th, td { padding: 8px 6px; font-size: 12px; }
+      /* Tablets keep the same percentage-based column widths as desktop. */
     }
 
+    /* Phone-only refinements: keep tablet/desktop layout unchanged.
+       IMPORTANT: This breakpoint is where the phone table becomes horizontally scrollable.
+       Tablet deliberately keeps desktop-like percentage widths. */
     @media (max-width: 600px) {
       :root {
-        --side-nav-width: 84px;
-        --side-nav-gap: 20px;
+        --side-nav-width: 84px; /* Reverted back to the original 84px mobile width */
+        --side-nav-gap: 20px;   /* Reverted back to the original layout spacing */
       }
 
       .topbar {
@@ -1625,24 +1781,25 @@
       .side-nav {
         top: 52px;
         width: var(--side-nav-width);
-        padding: 0px 0px;
+        padding: 0px 0px; /* Completely removed top padding on mobile */
         gap: 0px;
       }
 
       .nav-divider {
-        margin: 0px 10px;
+        margin: 0px 10px; /* Slightly tighter inset margins on mobile */
       }
 
+      /* Compact horizontal rectangular element configuration on mobile */
       .side-nav-link {
-        height: 50px;
-        font-size: 8px;
+        height: 50px; /* Locked height of rectangular mobile cells */
+        font-size: 8px; /* Micro text scale */
         letter-spacing: 0.05em;
-        gap: 4px;
+        gap: 4px; /* Reduced layout spacing to maximize vertical breathing room */
         line-height: 1.25;
       }
 
       .nav-icon {
-        width: 16px;
+        width: 16px; /* Scaled icon optimized for the 50px mobile height boundary */
         height: 16px;
       }
 
@@ -1656,6 +1813,7 @@
         height: 21px;
       }
 
+      /* Compact MW/Base segmented switch for narrow phone screens. */
       .tabs {
         width: 88px;
         height: 30px;
@@ -1700,6 +1858,8 @@
 
       .main { padding: 12px 10px; }
 
+      /* Phone-only main controls: compact single row with result count, minimum plays, and rows selector.
+         Search stays in the Card table header on all screen sizes. */
       .main-header {
         display: flex;
         align-items: center;
@@ -1730,6 +1890,9 @@
         flex-wrap: nowrap;
       }
 
+      /* Phone override for Minimum plays.
+         Keep this separate from desktop/tablet positioning: the desktop nudge
+         would squeeze the compact phone row, so transform is reset here. */
       .main-header .min-plays-wrap {
         gap: 5px;
         transform: none;
@@ -1762,6 +1925,8 @@
         -webkit-overflow-scrolling: touch;
       }
 
+      /* Phone table is intentionally wider than the viewport.
+         This enables horizontal scrolling while keeping columns readable. */
       #statsTable {
         width: 765px;
         min-width: 765px;
@@ -1796,6 +1961,9 @@
         font-size: 11.5px;
       }
 
+      /* Phone-only column widths.
+         These nth-child selectors depend on the exact table order:
+         1 #, 2 Card, 3 Δ In Hand, 4 Δ Played, 5 Elo, 6 Playrate, 7 Played, 8 Seen, 9 Type. */
       #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 40px !important; }
       #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 120px !important; }
       #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 100px !important; }
@@ -1827,10 +1995,13 @@
         min-width: 34px;
       }
 
+      /* Keep the slide-in filter panel compact on phones. */
       .sidebar {
         padding-top: 20px;
       }
 
+      /* Phone horizontal scrolling: keep only # and Card fixed.
+         Type now sits to the right of Card and scrolls with the other stats. */
       #statsTable {
         border-collapse: separate;
         border-spacing: 0;
@@ -1838,6 +2009,8 @@
         --phone-card-left: 40px;
       }
 
+      /* Force the sticky mobile column widths to the exact same values
+         that are used for the sticky left offsets. */
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1) {
         width: 40px !important;
@@ -1852,6 +2025,8 @@
         max-width: 120px !important;
       }
 
+      /* Sticky header row. Putting sticky on the th itself is more reliable
+         than sticky on the whole thead when the table also scrolls sideways. */
       #statsTable thead {
         position: static;
       }
@@ -1867,6 +2042,7 @@
         position: sticky;
       }
 
+      /* Sticky first two columns only: # and Card. */
       #statsTable th:nth-child(1),
       #statsTable td:nth-child(1),
       #statsTable th:nth-child(2),
@@ -1886,6 +2062,9 @@
         box-shadow: 3px 0 0 var(--border);
       }
 
+      /* Top-left sticky cells need to sit above both the horizontal-scrolling
+         header cells and the vertical body cells, otherwise header text can
+         appear to slide through them while scrolling. */
       #statsTable thead th:nth-child(1),
       #statsTable thead th:nth-child(2) {
         top: 0;
@@ -1905,6 +2084,7 @@
       }
     }
 
+    /* Overlay for mobile sidebar */
     .sidebar-overlay {
       display: none;
       position: fixed;
@@ -1926,12 +2106,24 @@
     <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
     <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
   </div>
+  <!-- Header title. Words are split into spans so spacing between Ark/Nova/Statistics is controlled by CSS gap. -->
   <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
   <button class="mobile-filter-btn filter-toggle-highlight" onclick="toggleSidebar()" id="filterToggleBtn">
     ☰ Filters
   </button>
 </header>
 
+<!--
+  Fixed dashboard navigation rail.
+  This is intentionally separate from the topbar tabs:
+  - MW/Base tabs switch the current Cards dashboard dataset.
+  - This left rail is for switching between different dashboards/pages.
+
+  REDESIGNED: The block-containment look is replaced with inline outline-based SVGs,
+  elegant tracking/typography spacing, and a sharp expanding emerald glow line at the edge.
+  The width is reverted to the original sidebar proportions, and elements
+  are beautifully balanced as horizontal rectangular cards.
+-->
 <nav class="side-nav" aria-label="Dashboard navigation">
   <a class="side-nav-link active" href="#" aria-current="page">
     <svg class="nav-icon" viewBox="0 0 24 24">
@@ -1942,42 +2134,11 @@
     <span>Cards</span>
   </a>
   <div class="nav-divider"></div>
-  
-  <!-- "Opening hand" containing the updated high-fidelity SVG representation of opening-hand-icon.png -->
   <a class="side-nav-link" href="#">
-    <svg class="nav-icon" viewBox="0 0 100 100" style="width: 26px; height: 26px; overflow: visible;">
-      <defs>
-        <!-- Custom SVG filters to recreate the premium neon drop-shadow glow from the image -->
-        <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        <filter id="glow-teal" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      
-      <!-- Fanned Cards (Neon Green) -->
-      <g opacity="0.85" style="transition: opacity 0.3s;">
-        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(-36 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
-        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(-18 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
-        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(0 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
-        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(18 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
-        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(36 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
-      </g>
-      
-      <!-- Vector-traced Human Hand Outline (Neon Teal) -->
-      <path d="M 48 88 C 47 78, 38 72, 31 63 C 26 57, 28 52, 34 55 C 40 58, 41 52, 40 44 C 39 37, 39 33, 40 28 C 41 24, 44 24, 45 28 C 46 33, 46 43, 47 48 C 47 38, 47 29, 48 22 C 49 18, 52 18, 53 22 C 54 29, 54 39, 55 45 C 55 38, 56 31, 57 26 C 58 22, 61 22, 62 26 C 63 31, 63 43, 64 50 C 65 52, 67 54, 67 58 C 67 66, 68 76, 65 86" fill="none" stroke="#5de2e7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-teal)" />
-      
-      <!-- Selection Pointer Arrow (Neon Teal with matching transparent inner color fill) -->
-      <path d="M 71 46 L 88 53 L 81 52 L 79 60 Z" fill="rgba(93, 226, 231, 0.15)" stroke="#5de2e7" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-teal)" />
+    <svg class="nav-icon" viewBox="0 0 24 24">
+      <path d="M4.5 18l4-14a1 1 0 0 1 1.3-.7l3.8 1.1a1 1 0 0 1 .7 1.3l-4 14" opacity="0.6" />
+      <rect x="9" y="3" width="6" height="15" rx="1" transform="rotate(5 12 10.5)" />
+      <path d="M19.5 18l-4-14a1 1 0 0 0-1.3-.7l-3.8 1.1a1 1 0 0 0-.7 1.3l4 14" opacity="0.6" />
     </svg>
     <span>Opening<br />hand</span>
   </a>
@@ -1986,13 +2147,22 @@
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
+<!-- ── Layout ────────────────────────────────────────────────────────────────── -->
 <div class="layout" id="mainLayout">
 
   <!-- Main -->
   <main class="main">
+    <!--
+      Main table controls.
+      Desktop/tablet: meta left, Minimum plays + Rows controls right.
+      Phone: compact single row. Card search lives inside the Card table header.
+    -->
     <div class="main-header">
       <div class="table-meta" id="tableMeta"></div>
       <div class="main-controls">
+        <!-- Frontend-only Minimum plays filter.
+             Empty value = no minimum. It filters by n_played immediately via onMinPlaysInput().
+             The blank placeholder is intentional; CSS draws the centred dash. -->
         <div class="min-plays-wrap">
           <label class="min-plays-label" for="minPlayedInput"><span class="min-plays-label-full">Minimum plays</span><span class="min-plays-label-short">Min plays</span></label>
           <input class="min-plays-input" type="number" id="minPlayedInput" placeholder=" " min="0" inputmode="numeric" oninput="onMinPlaysInput()" />
@@ -2009,7 +2179,20 @@
       </div>
     </div>
 
-    <!-- ── Attributes bar ────────────────────────────────────────────────── -->
+    <!-- ── Attributes bar ──────────────────────────────────────────────────
+         Client-side-only card metadata filters (Species, Habitat, Strength,
+         Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked
+         up by card_name. Filtering is layered into applySearch() exactly like
+         the Type filter — no backend call, instant results.
+         Collapsible, collapsed by default.
+
+         Important maintenance notes:
+         - Conditions still exists in cards_attributes.csv, but is intentionally
+           NOT exposed in the UI and is not read by the frontend.
+         - Species and Habitat are separate filters, not a combined OR group.
+         - Rock/Water/Science are boolean "only cards with this tag" toggles.
+         - Strength/Science are Sponsor-only; Size/Reefer/Aviary/Abilities are
+           Animal-only. Availability is controlled in ATTR_RELEVANT_TYPES. -->
     <div class="attributes-bar collapsed" id="attributesBar">
       <div class="attributes-bar-header" onclick="toggleAttributesBar()">
         <div class="attributes-bar-title">
@@ -2022,6 +2205,10 @@
       </div>
       <div class="attributes-bar-body" id="attributesBarBody">
 
+        <!-- Species and Habitat are separate include-list filters.
+             Both are disabled and reset when Type is Project-only.
+             Do not merge these back into one Tags control unless Panda asks:
+             user testing specifically preferred them split. -->
         <div class="attr-group" id="attrGroupSpecies" data-attr-group="species">
           <span class="attr-group-label">Species</span>
           <button class="attr-tags-btn" id="speciesBtn" onclick="toggleTagPopup('species', event)">
@@ -2040,6 +2227,9 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
+        <!-- Rock / Water / Science: simple yes/no toggles, default OFF (no filtering).
+             Switching ON narrows to "only cards that have this tag".
+             Rock/Water appear on Animal and Sponsor; Science only on Sponsor. -->
         <div class="attr-group" id="attrGroupRock" data-attr-group="rock">
           <span class="attr-group-label">Rock</span>
           <div class="attr-toggle-row">
@@ -2074,6 +2264,9 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
+        <!-- Strength: 3/4/5/6 chips. Sponsor-only attribute.
+             Disabled unless Sponsor is active in the Type filter.
+             Narrowing this (away from all-selected) forces Type to Sponsor-only. -->
         <div class="attr-group" id="attrGroupStrength" data-attr-group="strength">
           <div class="attr-group-heading">
             <span class="attr-group-label">Strength</span>
@@ -2086,6 +2279,9 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
+        <!-- Size: 1/2/3/4/5 chips. Animal-only attribute.
+             Disabled unless Animal is active in the Type filter.
+             Narrowing this forces Type to Animal-only. -->
         <div class="attr-group" id="attrGroupSize" data-attr-group="size">
           <div class="attr-group-heading">
             <span class="attr-group-label">Size</span>
@@ -2098,6 +2294,12 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
+        <!-- Reefer: yes/no toggle, default No (off, not filtering).
+             Animal-only attribute. Disabled unless Animal is active in Type.
+             Turning ON forces Type to Animal-only, remembering whatever Type
+             selection was active immediately before (shared with Aviary).
+             Turning OFF restores that remembered Type — unless Aviary is still
+             ON, in which case Type stays Animal-only until both are off. -->
         <div class="attr-group" id="attrGroupReefer" data-attr-group="reefer">
           <span class="attr-group-label">Reefer</span>
           <div class="attr-toggle-row">
@@ -2108,6 +2310,7 @@
           </div>
         </div>
 
+        <!-- Aviary: same pattern as Reefer, sharing the same remembered-Type slot. -->
         <div class="attr-group" id="attrGroupAviary" data-attr-group="aviary">
           <span class="attr-group-label">Aviary</span>
           <div class="attr-toggle-row">
@@ -2120,6 +2323,8 @@
 
         <div class="attr-separator" aria-hidden="true"></div>
 
+        <!-- Abilities: searchable multi-select checklist, alphabetical, OR logic.
+             Animal-only attribute. Disabled unless Animal is active in Type. -->
         <div class="attr-group" id="attrGroupAbilities" data-attr-group="abilities">
           <span class="attr-group-label">Abilities</span>
           <div class="abilities-dropdown">
@@ -2142,6 +2347,9 @@
       </div>
     </div>
 
+    <!-- Tag popup overlay: reused by Species and Habitat.
+         The popup content is generated from currentTagPopupKind, so there is
+         only one modal in the DOM for both controls. -->
     <div class="tags-popup-overlay" id="tagPopupOverlay" onclick="closeTagPopupOnOverlay(event)">
       <div class="tags-popup" onclick="event.stopPropagation()">
         <div class="tags-popup-header">
@@ -2163,8 +2371,21 @@
     <div class="table-wrap">
       <table id="statsTable">
         <thead>
+          <!--
+
+            Table order matters. Keep this in sync with:
+            - renderTable() row HTML,
+            - phone nth-child widths,
+            - sticky phone columns,
+            - colspan="9" in loading/error states.
+            Current order: #, Card, Δ In Hand, Δ Played, Elo, Playrate, Played, Seen, Type.
+          -->
           <tr>
             <th style="width:5%;text-align:center;cursor:default;">#</th>
+            <!-- Card search lives inside this header cell.
+                 Clicking the cell sorts by card_name; clicking the magnifier opens search.
+                 Keep openCardSearch(event) and the overlay's stopPropagation, otherwise
+                 opening/typing in search can accidentally trigger sorting. -->
             <th class="card-search-header" onclick="sortBy('card_name')" style="width:20%;text-align:center">
               <div class="card-header-content" id="cardHeaderContent">
                 <button class="card-search-btn" id="cardSearchBtn" onclick="openCardSearch(event)" title="Search cards" aria-label="Search cards">🔍</button>
@@ -2207,7 +2428,8 @@
     </div>
   </main>
 
-  <!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
+  <!-- Sidebar (right)
+       Always opens as a slide-in overlay, so it never changes table width. -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <span class="sidebar-title">Filters</span>
@@ -2219,6 +2441,7 @@
 
     <hr class="divider" />
 
+    <!-- Player ELO -->
     <div class="filter-group">
       <span class="filter-label">Player ELO</span>
       <div class="range-row">
@@ -2227,6 +2450,7 @@
       </div>
     </div>
 
+    <!-- Opponent ELO -->
     <div class="filter-group">
       <span class="filter-label">Opponent ELO</span>
       <div class="range-row">
@@ -2237,6 +2461,7 @@
 
     <hr class="divider" />
 
+    <!-- Maps -->
     <div class="filter-group">
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
         <span class="filter-label" style="margin-bottom:0">Maps</span>
@@ -2249,6 +2474,11 @@
 
     <hr class="divider" />
 
+    <!-- Round filter
+         All six chips active = default/no round filter.
+         Selecting only some chips re-queries the backend for cards played in those rounds.
+         Selecting no chips is allowed; applyFilters() catches that locally and renders an
+         empty table without calling the backend. This mirrors Maps none behaviour. -->
     <div class="filter-group">
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
         <span class="filter-label" style="margin-bottom:0">Round</span>
@@ -2261,6 +2491,7 @@
 
     <hr class="divider" />
 
+    <!-- Date range -->
     <div class="filter-group">
       <span class="filter-label">Date Range</span>
       <input class="date-input" type="date" id="dateFrom" value="2025-01-01" />
@@ -2269,6 +2500,7 @@
 
     <hr class="divider" />
 
+    <!-- End game triggered -->
     <div class="filter-group">
       <div class="toggle-row">
         <span class="toggle-label">Completed games only</span>
@@ -2288,11 +2520,21 @@
 
 <script>
 // ── Config ─────────────────────────────────────────────────────────────────────
+// API_URL points to the deployed Google Cloud Function. The frontend sends POST JSON
+// with filters; the backend queries BigQuery and returns already-aggregated card stats.
 const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
+// Alias CSV is optional. If it fails to load, the catch block keeps normal search working.
 const CARD_ALIASES_URL = 'cards_altnames.csv';
+// Attributes CSV holds static card metadata (species, strength, abilities, etc.).
+// Optional in the same spirit as the alias CSV: if it fails to load, the Attributes
+// bar still renders but every group is effectively a no-op since there's no data to filter on.
 const CARD_ATTRIBUTES_URL = 'cards_attributes.csv';
 
 // ── Attribute definitions ─────────────────────────────────────────────────────
+// Each attribute group declares which card Types it can possibly apply to.
+// A group is disabled (and reset to its default/non-filtering state) whenever
+// none of its relevantTypes are active in the Type filter — e.g. Strength only
+// ever appears on Sponsor cards, so it's meaningless (and disabled) otherwise.
 const SPECIES_TAGS = ['Bear', 'Bird', 'Herbivore', 'Petting Zoo', 'Predator', 'Primate', 'Reptile', 'Sea Animal'];
 const CONTINENT_TAGS = ['Africa', 'America', 'Asia', 'Australia', 'Europe'];
 
@@ -2312,6 +2554,15 @@ const ATTR_RELEVANT_TYPES = {
   abilities: ['animal'],
 };
 
+// Keep this list in sync with the actual UI groups above.
+// refreshAttributeAvailability() uses it as the single source of truth for:
+// - disabling impossible attribute groups when Type excludes their card type,
+// - resetting disabled groups back to default,
+// - preventing hidden stale selections from continuing to filter rows.
+
+
+// These are the map choices exposed to users in the sidebar.
+ // Backend also validates maps, so frontend map edits alone are not enough for new backend data.
 const VALID_MAPS = [
   { code: '1a',  full: 'Map 1a: Observation Tower' },
   { code: '2a',  full: 'Map 2a: Outdoor Areas' },
@@ -2330,6 +2581,8 @@ const VALID_MAPS = [
   { code: 'T1',  full: 'Map T1: Tournament 1' },
 ];
 
+// Round filter choices. The backend treats "6+" as round >= 6.
+// All six active means the default/no-filter state.
 const ROUND_FILTERS = [
   { label: '1',  value: '1' },
   { label: '2',  value: '2' },
@@ -2340,35 +2593,45 @@ const ROUND_FILTERS = [
 ];
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let allData = [];
-let filteredData = [];
+let allData = [];      // Full API result for current backend filters.
+let filteredData = []; // allData after client-side search + Type chip filtering.
+// Default opening sort: highest Δ (In Hand) first.
 let currentSort = { col: 'delta_in_hand', dir: 'desc' };
 let currentPage = 1;
 let rowsPerPage = 50;
 let searchQuery = '';
 let cardAliases = new Map();
 let isMW = 1;
-let roundFilterActive = false;
-let minPlayedThreshold = null;
+let roundFilterActive = false; // Last loaded backend state: true when fewer than all round chips are selected.
+let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blank means no minimum.
 
+// ── Attributes bar state ──────────────────────────────────────────────────────
+// cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
 let cardAttributes = new Map();
 let cardAttributesLoaded = false;
 
+// Selection sets for each group. Defaults are "all selected" (no filtering) for
+// Species/Habitat/Strength/Size/Abilities, and "off" (no filtering) for
+// Water/Rock/Science/Reefer/Aviary toggles.
 let selectedSpeciesTags = new Set(SPECIES_TAGS);
 let selectedContinentTags = new Set(CONTINENT_TAGS);
 let selectedStrengths = new Set(STRENGTH_VALUES);
 let selectedSizes = new Set(SIZE_VALUES);
-let selectedAbilities = new Set();
-let allAbilities = [];
+let selectedAbilities = new Set(); // populated once abilities are known from the CSV
+let allAbilities = []; // alphabetically sorted list of every unique ability string
 let currentTagPopupKind = 'species';
 let waterOn = false;
 let rockOn = false;
 let scienceOn = false;
 let reeferOn = false;
 let aviaryOn = false;
+// Remembered Type-filter selection captured right before Reefer or Aviary first
+// switches Type to Animal-only, so it can be restored once both are off again.
 let typeBeforeReeferAviary = null;
 
+// ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Build dynamic map/round chips, load alias file, then immediately fetch default stats.
   buildMapChips();
   buildRoundChips();
   updateTypeFilterIndicator();
@@ -2376,9 +2639,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCardAliases();
   await loadCardAttributes();
   refreshAttributeAvailability();
-  applyFilters();
+  applyFilters(); // auto-load on page open with defaults
 });
 
+
+// ── Map chips ──────────────────────────────────────────────────────────────────
 function buildMapChips() {
   const container = document.getElementById('mapChips');
   VALID_MAPS.forEach(map => {
@@ -2392,6 +2657,7 @@ function buildMapChips() {
   });
 }
 
+// ── Round chips ────────────────────────────────────────────────────────────────
 function buildRoundChips() {
   const container = document.getElementById('roundChips');
   ROUND_FILTERS.forEach(round => {
@@ -2405,6 +2671,12 @@ function buildRoundChips() {
 }
 
 function toggleRoundChip(btn) {
+  // Unlike the Type popup, the round filter intentionally allows zero selected
+  // chips because the sidebar offers a "none" shortcut just like Maps. If the
+  // user loads with no rounds selected, the frontend renders an empty table locally
+  // and does not call the backend API.
+  // UX shortcut: when all rounds are selected, clicking one round means
+  // "only this round" instead of "all except this round".
   if (isAllSelectedChipClick(btn, '#roundChips .chip')) return;
   btn.classList.toggle('active');
 }
@@ -2431,6 +2703,7 @@ function isRoundUnavailableColumn(col) {
   return ['delta_in_hand', 'playrate_pct', 'n_seen'].includes(col);
 }
 
+// ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
 const _tooltip = document.getElementById('map-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -2457,7 +2730,9 @@ function positionTooltip(e) {
   const margin = 8;
   let x = e.clientX - tw / 2;
   let y = e.clientY - th - 10;
+  // Clamp horizontally
   x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
+  // Flip below cursor if too close to top
   if (y < margin) y = e.clientY + 18;
   _tooltip.style.left = x + 'px';
   _tooltip.style.top = y + 'px';
@@ -2471,12 +2746,18 @@ function selectNoneMaps() {
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.remove('active'));
 }
 
+// ── Toggle chip ────────────────────────────────────────────────────────────────
 function toggleChip(btn, group) {
+  // Maps use the same "all selected -> clicked chip only" shortcut as Rounds.
   if (group === 'map' && isAllSelectedChipClick(btn, '#mapChips .chip')) return;
   btn.classList.toggle('active');
 }
 
+// ── Filter sidebar overlay ────────────────────────────────────────────────────
 function isAllSelectedChipClick(btn, selector) {
+  // Shared DOM-only helper for Maps/Rounds. It intentionally runs only when
+  // every chip in the group is active. Once a group is narrowed, normal
+  // select/deselect toggling resumes so users can refine incrementally.
   const chips = [...document.querySelectorAll(selector)];
   if (!chips.length || chips.some(c => !c.classList.contains('active'))) return false;
 
@@ -2484,6 +2765,7 @@ function isAllSelectedChipClick(btn, selector) {
   return true;
 }
 
+// ── MW / Base tab ──────────────────────────────────────────────────────────────
 function setTab(value, btn) {
   isMW = value;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2491,10 +2773,12 @@ function setTab(value, btn) {
   applyFilters();
 }
 
+// ── end_game toggle ────────────────────────────────────────────────────────────
 function onEndGameChange() {
-  // no-op hook
+  // nothing extra needed — value read on apply
 }
 
+// ── Reset ──────────────────────────────────────────────────────────────────────
 function resetFilters() {
   document.getElementById('playerEloMin').value = '300';
   document.getElementById('playerEloMax').value = '';
@@ -2510,16 +2794,22 @@ function resetFilters() {
   if (minPlayedInput) minPlayedInput.value = '';
   minPlayedThreshold = null;
 
+  // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
   updateTypeFilterIndicator();
 
+  // Reset Attributes bar to its full default state.
   resetAllAttributeFilters();
   refreshAttributeAvailability();
 
   applyFilters();
 }
 
+// ── Collect filter params ──────────────────────────────────────────────────────
 function getParams() {
+  // Collect backend filters here. Search text and Type chips are intentionally not sent;
+  // they are applied client-side after data has loaded. The Round chips are sent because
+  // round filtering changes the BigQuery aggregation itself.
   const selectedMaps = [...document.querySelectorAll('#mapChips .chip.active')]
     .map(c => c.dataset.value);
   const selectedRounds = getSelectedRoundTokens();
@@ -2548,10 +2838,17 @@ function getParams() {
   if (dFrom) params.date_from = dFrom;
   if (dTo) params.date_to = dTo;
 
+  // card_types now handled client-side — not sent to API
+
   return params;
 }
 
+// ── Apply filters (fetch from API) ─────────────────────────────────────────────
 async function applyFilters() {
+  // This is the only frontend function that calls the backend API.
+  // It runs on page load, MW/Base tab change, Reset, and Load Stats.
+  // If no Maps or no Rounds are selected, there is nothing to query: the frontend
+  // renders an empty result immediately and skips the Cloud Function call entirely.
   const params = getParams();
   const selectedMaps = params.maps || [];
   const selectedRounds = getSelectedRoundTokens();
@@ -2559,6 +2856,9 @@ async function applyFilters() {
   if (!selectedMaps.length || !selectedRounds.length) {
     roundFilterActive = selectedRounds.length < ROUND_FILTERS.length;
 
+    // In round-filter mode, these columns are intentionally unavailable. If the
+    // table was previously sorted by one of them, switch to Δ (Played), which
+    // remains meaningful for played-round analysis.
     if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
       currentSort = { col: 'delta_played', dir: 'desc' };
     }
@@ -2590,6 +2890,9 @@ async function applyFilters() {
 
     roundFilterActive = Boolean(json.round_filter_active ?? (params.rounds !== undefined));
 
+    // In round-filter mode, these columns are intentionally unavailable. If the
+    // table was previously sorted by one of them, switch to Δ (Played), which
+    // remains meaningful for played-round analysis.
     if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
       currentSort = { col: 'delta_played', dir: 'desc' };
     }
@@ -2607,6 +2910,8 @@ async function applyFilters() {
   }
 }
 
+
+// ── Card aliases / nicknames for search ───────────────────────────────────────
 function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -2616,6 +2921,10 @@ function normalizeSearchText(value) {
 }
 
 async function loadCardAliases() {
+  // Expected CSV format:
+  // card_name,aliases
+  // Sun Bear,sunny;sunbear;bear
+  // Matching is accent-insensitive and lowercase-normalized via normalizeSearchText().
   try {
     const res = await fetch(CARD_ALIASES_URL, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Could not load ${CARD_ALIASES_URL}`);
@@ -2678,6 +2987,7 @@ function parseCsv(text) {
   row.push(field);
   if (row.some(cell => cell.trim() !== '')) rows.push(row);
 
+  // Remove possible BOM from the first header cell.
   if (rows.length && rows[0].length) rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
   return rows;
 }
@@ -2686,6 +2996,8 @@ function aliasesForCard(cardName) {
   return cardAliases.get(normalizeSearchText(cardName)) || [];
 }
 
+// ── Search ─────────────────────────────────────────────────────────────────────
+// Invoked on search query update.
 function onSearch() {
   searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
   updateCardSearchIndicator();
@@ -2717,6 +3029,8 @@ function updateCardSearchIndicator() {
 }
 
 function onMinPlaysInput() {
+  // Minimum plays is deliberately client-side only. It uses n_played from the
+  // current allData array, so typing here updates immediately and never calls fetch().
   const input = document.getElementById('minPlayedInput');
   const raw = input ? input.value.trim() : '';
   if (!raw) {
@@ -2729,6 +3043,15 @@ function onMinPlaysInput() {
 }
 
 function applySearch() {
+  // Central client-side filtering pipeline. Keep all instant filters here; do not
+  // accidentally move them into getParams(), because getParams() triggers backend work.
+  // Client-side filters are applied here:
+  // 1. Type popup (animal/sponsor/project),
+  // 2. optional Minimum plays input using n_played,
+  // 3. search over card name, card type, and aliases from cards_altnames.csv,
+  // 4. Attributes bar (Species/Habitat/Strength/Size/Reefer/Aviary/Abilities)
+  //    using cards_attributes.csv, looked up by card_name.
+  // This preserves original backend names and only changes frontend display behaviour.
   const activeTypes = new Set(
     [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
   );
@@ -2751,7 +3074,9 @@ function applySearch() {
   applySortAndRender();
 }
 
+// ── Sort ───────────────────────────────────────────────────────────────────────
 function sortBy(col) {
+  // Round-filtered data cannot meaningfully sort by stats that are hidden as unavailable.
   if (roundFilterActive && isRoundUnavailableColumn(col)) return;
 
   if (currentSort.col === col) {
@@ -2765,6 +3090,8 @@ function sortBy(col) {
 }
 
 function compareRowsForCurrentSort(a, b) {
+  // Shared comparator used both for visible sorting and for global rank calculation.
+  // Ties fall back to card_name, then card_type, so rank order is stable.
   const { col, dir } = currentSort;
   const av = a[col] ?? (col === 'card_name' ? '' : -Infinity);
   const bv = b[col] ?? (col === 'card_name' ? '' : -Infinity);
@@ -2786,7 +3113,11 @@ function compareRowsForCurrentSort(a, b) {
   return dir === 'asc' ? result : -result;
 }
 
+// Assigns globally sorted rank indices for stable, non-filtered indexing in standard lists.
 function assignGlobalRanks() {
+  // Global rank is assigned across all loaded cards BEFORE search/type filtering.
+  // This is intentional: when searching "goat" or filtering to Sponsors, the # column
+  // still shows the card's overall rank in the current full sorted dataset.
   const globallySorted = [...allData].sort(compareRowsForCurrentSort);
   globallySorted.forEach((row, index) => {
     row.global_rank = index + 1;
@@ -2800,6 +3131,7 @@ function applySortAndRender() {
   const { col, dir } = currentSort;
   const sorted = [...filteredData].sort(compareRowsForCurrentSort);
 
+  // Update sort arrows
   document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '↕');
   document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
   const arrow = document.getElementById(`sort-${col}`);
@@ -2811,13 +3143,19 @@ function applySortAndRender() {
   renderTable(sorted);
 }
 
+// ── Rows per page ──────────────────────────────────────────────────────────────
 function onRppChange() {
   rowsPerPage = parseInt(document.getElementById('rppSelect').value);
   currentPage = 1;
   applySortAndRender();
 }
 
+// ── Render table ───────────────────────────────────────────────────────────────
 function renderTable(data) {
+  // data is already filtered + sorted. This function only handles pagination,
+  // colour formatting, and converting rows into table HTML.
+  // In roundFilterActive mode, the backend returns NULL for delta_in_hand, n_seen,
+  // and playrate_pct; this function renders those cells as a single long dash (—).
   const tbody = document.getElementById('tableBody');
   const pagination = document.getElementById('pagination');
   const meta = document.getElementById('tableMeta');
@@ -2842,6 +3180,7 @@ function renderTable(data) {
   const start = (currentPage - 1) * rpp;
   const pageData = data.slice(start, start + rpp);
 
+  // Find max playrate for bar scaling, and elo range for colour scale
   const maxPR = Math.max(...data.map(r => r.playrate_pct || 0), 1);
   const eloVals = data.map(r => r.avg_elo).filter(v => v != null);
   const minElo = Math.min(...eloVals);
@@ -2852,7 +3191,7 @@ function renderTable(data) {
     const dh = fmtDelta(row.delta_in_hand);
     const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '—';
     const prVal = row.playrate_pct || 0;
-    const barWidth = prVal;
+    const barWidth = prVal; // absolute: playrate % = bar width %
     const barColor = prColor(prVal);
     const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
     const eloCol = eloColor(row.avg_elo, minElo, maxElo);
@@ -2889,10 +3228,12 @@ function renderTable(data) {
     </tr>`;
   }).join('');
 
+  // Meta
   const from = start + 1;
   const to = Math.min(start + rpp, data.length);
   meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}–${to}</strong> of <strong>${data.length}</strong> cards`;
 
+  // Pagination
   if (totalPages <= 1) {
     pagination.style.display = 'none';
   } else {
@@ -2933,6 +3274,7 @@ function goPage(p) {
   document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// ── States ─────────────────────────────────────────────────────────────────────
 function showLoading() {
   document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
@@ -2955,24 +3297,31 @@ function showError(msg) {
   </td></tr>`;
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtDelta(val) {
   if (val == null) return '—';
   const sign = val >= 0 ? '+' : '';
   return `${sign}${val.toFixed(3)}`;
 }
 
+// Formats big number digits nicely.
 function fmtN(val) {
   if (val == null) return '—';
   return val.toLocaleString('en-US');
 }
 
 function titleCase(str) {
+  // Frontend display only. Do NOT send title-cased names back to backend/BigQuery,
+  // because card names in the source data are case-sensitive.
+  // Also handles "(domestic) Goat" -> "(Domestic) Goat".
   const lower = new Set(['on', 'in', 'of', 'the', 'a']);
   return str
     .split(' ')
     .map((word, i) => {
       const w = word.toLowerCase();
+      // Always capitalise the first word; lowercase the small words otherwise
       if (i > 0 && lower.has(w)) return w;
+      // Capitalise the first actual letter, so "(domestic)" becomes "(Domestic)".
       return w.replace(/[A-Za-zÀ-ÖØ-öø-ÿ]/, ch => ch.toUpperCase());
     })
     .join(' ');
@@ -2998,12 +3347,13 @@ function prColor(val) {
 function eloColor(val, minElo, maxElo) {
   if (val == null) return 'var(--text-muted)';
   if (maxElo === minElo) return 'var(--elo-mid)';
-  const t = (val - minElo) / (maxElo - minElo);
+  const t = (val - minElo) / (maxElo - minElo); // 0 = lowest, 1 = highest
   if (t >= 0.66) return 'var(--elo-high)';
   if (t >= 0.33) return 'var(--elo-mid)';
   return 'var(--elo-low)';
 }
 
+// ── Column header tooltips ─────────────────────────────────────────────────────
 const _colTip = document.getElementById('col-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -3048,21 +3398,28 @@ function positionColTip(e) {
   const th = _colTip.offsetHeight;
   const margin = 8;
   let x = e.clientX - tw / 2;
-  let y = e.clientY + 18;
+  let y = e.clientY + 18; // show below cursor for header tooltips
   x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
   if (y + th > window.innerHeight - margin) y = e.clientY - th - 10;
   _colTip.style.left = x + 'px';
   _colTip.style.top = y + 'px';
 }
 
+// ── Type column filter ─────────────────────────────────────────────────────────
 function toggleTypeFilterPopup(e) {
+  // Opens/closes the far-right Type column popup.
+  // Important: clicking the chips themselves should not also re-toggle the popup.
   e.stopPropagation();
+  // Don't open if the click was on a chip inside the popup
   if (e.target.closest('.type-filter-popup')) return;
   const popup = document.getElementById('typeFilterPopup');
   popup.classList.toggle('open');
 }
 
 function updateTypeFilterIndicator() {
+  // Visual reminder for the client-side Type filter after the popup is closed.
+  // All three selected = default state with arrow.
+  // Two selected = two warm-green dots. One selected = one warm-green dot.
   const header = document.getElementById('typeFilterHeader');
   const indicator = document.getElementById('typeFilterIndicator');
   const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
@@ -3080,16 +3437,21 @@ function updateTypeFilterIndicator() {
 }
 
 function toggleTypeChip(btn) {
+  // Don't allow deselecting all chips
   const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
   const activeChips = allChips.filter(c => c.classList.contains('active'));
   if (activeChips.length === 1 && btn.classList.contains('active')) return;
 
   btn.classList.toggle('active');
   updateTypeFilterIndicator();
+  // Type changed: some Attribute groups may now be impossible (e.g. Strength
+  // if Sponsor was just deselected). Re-evaluate which groups are disabled,
+  // which silently resets any now-irrelevant group back to its default.
   refreshAttributeAvailability();
   applySearch();
 }
 
+// Close type popup when clicking outside
 document.addEventListener('click', e => {
   const popup = document.getElementById('typeFilterPopup');
   if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th.type-filter-header')) {
@@ -3097,12 +3459,29 @@ document.addEventListener('click', e => {
   }
 });
 
+// ── Toggle sidebar ────────────────────────────────────────────────────────────
 function toggleSidebar() {
+  // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
+  // back the old desktop grid column behavior unless Panda explicitly asks:
+  // opening Filters must not shrink or shift the table.
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('active');
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Attributes bar ──────────────────────────────────────────────────────────
+// Everything below is CLIENT-SIDE ONLY. It reads static card metadata from
+// cards_attributes.csv (loaded once at startup) and layers extra filtering on
+// top of the existing Type/Search/Min-plays pipeline inside applySearch().
+// No part of this ever triggers a backend fetch.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Loading cards_attributes.csv ────────────────────────────────────────────────
 async function loadCardAttributes() {
+  // Used columns: Type,Name,Species,Continent,Water,Rock,Science,Strength,
+  // Size,Abilities,Reefer,Aviary. Species/Abilities can contain multiple
+  // semicolon-separated values. Matching against backend card_name is done on a
+  // normalized (accent/case-insensitive) basis, same approach as the alias CSV.
   try {
     const res = await fetch(CARD_ATTRIBUTES_URL, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Could not load ${CARD_ATTRIBUTES_URL}`);
@@ -3137,8 +3516,8 @@ async function loadCardAttributes() {
         water: Boolean((cols[iWater] || '').trim()),
         rock: Boolean((cols[iRock] || '').trim()),
         science: Boolean((cols[iScience] || '').trim()),
-        strength: (cols[iStrength] || '').trim(),
-        size: (cols[iSize] || '').trim(),
+        strength: (cols[iStrength] || '').trim(), // '' if not a sponsor / no strength
+        size: (cols[iSize] || '').trim(),         // '' if not an animal / no size
         abilities,
         reefer: Boolean((cols[iReefer] || '').trim()),
         aviary: Boolean((cols[iAviary] || '').trim()),
@@ -3150,7 +3529,7 @@ async function loadCardAttributes() {
     cardAttributes = attrs;
     cardAttributesLoaded = true;
     allAbilities = [...abilitySet].sort((a, b) => a.localeCompare(b));
-    selectedAbilities = new Set(allAbilities);
+    selectedAbilities = new Set(allAbilities); // default: all selected = no filtering
     buildAbilitiesList();
     setAttributesUnavailable(false);
   } catch (err) {
@@ -3172,6 +3551,7 @@ function setAttributesUnavailable(unavailable) {
   if (bar) bar.classList.toggle('attributes-unavailable', unavailable);
 }
 
+// ── Collapse / expand ───────────────────────────────────────────────────────────
 function toggleAttributesBar() {
   document.getElementById('attributesBar').classList.toggle('collapsed');
 }
@@ -3184,6 +3564,7 @@ function resetAttributesFromHeader(event) {
   applySearch();
 }
 
+// ── Building the static chip rows and tag popup ──────────────────────────────────
 function buildAttributeChips() {
   buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
   buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
@@ -3204,6 +3585,12 @@ function buildChipGroup(containerId, values, selectedSet, kind) {
   });
 }
 
+// Shared toggle handler for Strength/Size/Species/Continent chips.
+// `values` is the full list for that group, used to detect "back to all-selected".
+// UX shortcut: from the default all-selected state, the first chip click means
+// "only this chip". After that, clicks behave as normal toggles. This mirrors
+// Maps/Rounds, but must also update the selected Set because Attribute chips
+// are rebuilt from state whenever their popup/group is re-rendered.
 function toggleAttributeChip(btn, selectedSet, values, kind) {
   const value = btn.dataset.value;
   if (selectedSet.size === values.length) {
@@ -3220,6 +3607,9 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
     btn.classList.add('active');
   }
 
+  // Attribute narrowing forces the Type filter toward the card types that can
+  // actually carry that attribute, so the Type header and popup reflect the
+  // effective filtering users see in the table.
   const isDefault = selectedSet.size === values.length;
   if (kind === 'strength') {
     if (!isDefault) forceTypeToOnly('sponsor');
@@ -3263,6 +3653,7 @@ function setAttributeValues(kind, selectAll) {
   applySearch();
 }
 
+// ── Species / Habitat popups ───────────────────────────────────────────────────
 function toggleTagPopup(kind, event) {
   if (event) event.stopPropagation();
   const group = document.getElementById(kind === 'species' ? 'attrGroupSpecies' : 'attrGroupContinent');
@@ -3280,6 +3671,8 @@ function closeTagPopup() {
 }
 
 function closeTagPopupOnOverlay(event) {
+  // Clicking the dark backdrop (not the popup itself) closes it, same affordance
+  // as clicking outside the Type filter popup.
   closeTagPopup();
 }
 
@@ -3345,6 +3738,7 @@ function updateTagButtonLabels() {
   updateSingleTagButton('continent', selectedContinentTags, CONTINENT_TAGS);
 }
 
+// ── Abilities dropdown ────────────────────────────────────────────────────────
 function buildAbilitiesList() {
   renderAbilitiesList();
 }
@@ -3370,6 +3764,8 @@ function toggleAbilitiesPanel(event) {
 }
 
 function positionAbilitiesPanel() {
+  // The panel is fixed-positioned so a short filtered table cannot clip it.
+  // Keep it visually anchored to the Abilities button and clamp it inside the viewport.
   const btn = document.getElementById('abilitiesBtn');
   const panel = document.getElementById('abilitiesPanel');
   if (!btn || !panel || !panel.classList.contains('open')) return;
@@ -3418,6 +3814,8 @@ function renderAbilitiesList() {
 
 function toggleAbility(ability, checkbox) {
   if (selectedAbilities.size === allAbilities.length && !checkbox.checked) {
+    // UX shortcut: from the default all-selected state, clicking one ability
+    // means "only this ability". After that, ability checkboxes toggle normally.
     selectedAbilities = new Set([ability]);
     renderAbilitiesList();
   } else if (checkbox.checked) {
@@ -3446,6 +3844,7 @@ function selectNoneAbilities() {
   applySearch();
 }
 
+// Update the label on the abilities drop button.
 function updateAbilitiesButtonLabel() {
   const btn = document.getElementById('abilitiesBtn');
   const label = document.getElementById('abilitiesBtnLabel');
@@ -3463,6 +3862,7 @@ function updateAbilitiesButtonLabel() {
   }
 }
 
+// Close Abilities panel when clicking outside it.
 document.addEventListener('click', e => {
   const panel = document.getElementById('abilitiesPanel');
   if (panel && panel.classList.contains('open') && !e.target.closest('.abilities-dropdown')) {
@@ -3472,6 +3872,10 @@ document.addEventListener('click', e => {
 
 window.addEventListener('resize', positionAbilitiesPanel);
 
+// ── Water / Rock / Science toggles ────────────────────────────────────────────
+// Water and Rock apply to both Animal and Sponsor cards. Turning either on
+// visibly narrows Type to Animal + Sponsor, just like Species/Habitat. Science
+// is Sponsor-only, so turning it on follows Strength and forces Sponsor-only.
 function onBoolTagToggle(which) {
   if (which === 'water') {
     waterOn = document.getElementById('waterToggle').checked;
@@ -3488,6 +3892,7 @@ function onBoolTagToggle(which) {
   applySearch();
 }
 
+// ── Reefer / Aviary toggles ──────────────────────────────────────────────────────
 function onReeferAviaryToggle(which) {
   const reeferCheckbox = document.getElementById('reeferToggle');
   const aviaryCheckbox = document.getElementById('aviaryToggle');
@@ -3501,20 +3906,27 @@ function onReeferAviaryToggle(which) {
   const eitherOnBefore = wasReeferOn || wasAviaryOn;
 
   if (eitherOnNow && !eitherOnBefore) {
+    // Neither was on before, now one just turned on: remember current Type
+    // selection and force Type to Animal-only.
     typeBeforeReeferAviary = getActiveTypeTokens();
     forceTypeToOnly('animal');
   } else if (!eitherOnNow && eitherOnBefore) {
+    // Both are now off: restore whatever Type selection was active right
+    // before the first one of these was switched on.
     if (typeBeforeReeferAviary) {
       setActiveTypeTokens(typeBeforeReeferAviary);
     }
     typeBeforeReeferAviary = null;
   }
+  // If one was already on and the other just joined it (both now on), Type
+  // stays Animal-only — no change needed since it's already forced there.
 
   refreshAttributeAvailability();
   updateAttributesSummary();
   applySearch();
 }
 
+// ── Type filter helpers shared with Strength/Size/Reefer/Aviary ──────────────────
 function getActiveTypeTokens() {
   return [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value);
 }
@@ -3527,12 +3939,18 @@ function setActiveTypeTokens(tokens) {
   updateTypeFilterIndicator();
 }
 
+// Forces Type to a single value for attribute groups that are meaningful for
+// only one card type.
 function forceTypeToOnly(typeValue) {
   setActiveTypeTokens([typeValue]);
   refreshAttributeAvailability();
 }
 
 function syncSharedAnimalSponsorTypeFilter() {
+  // Species, Habitat, Rock, and Water can only match Animal/Sponsor cards.
+  // Whenever any of them is narrowed/on, mirror that effective constraint in
+  // the Type header and popup by deselecting Project. Once all four are back
+  // at default/off, restore Type to all three if it is in this automatic state.
   const allSharedAnimalSponsorFiltersDefault =
     areSpeciesAtDefault() &&
     areContinentsAtDefault() &&
@@ -3554,6 +3972,8 @@ function syncSharedAnimalSponsorTypeFilter() {
 }
 
 function syncSponsorOnlyTypeFilter() {
+  // Science and narrowed Strength are Sponsor-only. If both return to default
+  // while Type is still in the automatic Sponsor-only state, restore all Types.
   const allSponsorOnlyFiltersDefault =
     !scienceOn &&
     selectedStrengths.size === STRENGTH_VALUES.length;
@@ -3566,6 +3986,8 @@ function syncSponsorOnlyTypeFilter() {
 }
 
 function syncAnimalOnlyTypeFilter() {
+  // Narrowed Size is Animal-only. If it returns to default while Type is still
+  // in the automatic Animal-only state, restore all Types.
   const allAnimalOnlyFiltersDefault = selectedSizes.size === SIZE_VALUES.length;
   const activeTypes = getActiveTypeTokens();
 
@@ -3575,7 +3997,15 @@ function syncAnimalOnlyTypeFilter() {
   }
 }
 
+// ── Disabling groups based on the active Type filter ──────────────────────────────
+// Central rule: a group is disabled whenever NONE of its relevantTypes are
+// currently active in the Type filter. Disabling always resets that group's
+// selection back to its default (all-selected for chip/ability groups, off
+// for Reefer/Aviary) so re-enabling never restores a stale prior choice.
 function refreshAttributeAvailability() {
+  // Central "impossible by Type" rule. Example: if Sponsor is inactive,
+  // Strength and Science are disabled and reset; if Animal is inactive,
+  // Size/Reefer/Aviary/Abilities are disabled and reset.
   const activeTypes = new Set(getActiveTypeTokens());
 
   Object.keys(ATTR_RELEVANT_TYPES).forEach(groupKey => {
@@ -3610,6 +4040,9 @@ function setGroupDisabled(groupKey, disabled) {
   const wasDisabled = el.classList.contains('disabled');
   el.classList.toggle('disabled', disabled);
 
+  // Only reset state on the transition into disabled, not on every refresh call,
+  // so we don't wipe a selection that was already at default anyway (harmless
+  // either way, but avoids unnecessary DOM rebuilds).
   if (disabled && !wasDisabled) {
     resetAttributeGroup(groupKey);
   }
@@ -3685,12 +4118,15 @@ function resetAllAttributeFilters() {
    ['scienceToggle', null], ['reeferToggle', null],
    ['aviaryToggle', null]].forEach(([cbId, lblId]) => {
     const cb = document.getElementById(cbId);
+    const lbl = lblId ? document.getElementById(lblId) : null;
     if (cb) cb.checked = false;
+    if (lbl) lbl.textContent = 'No';
   });
 
   updateAttributesSummary();
 }
 
+// Summary text in the Attributes bar header.
 function updateAttributesSummary() {
   if (!cardAttributesLoaded) {
     return;
@@ -3700,11 +4136,20 @@ function updateAttributesSummary() {
   updateAbilitiesButtonLabel();
 }
 
+// ── The actual per-row filtering check ───────────────────────────────────────────
 function passesAttributeFilters(row) {
+  // If the attributes CSV failed to load, or this particular card has no entry
+  // in it, do not filter the row out — fail open so the table still works.
   if (!cardAttributesLoaded) return true;
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
 
+  // Species and Habitat are separate include-lists. Default all selected =
+  // no filtering for that group. Once narrowed, a card must match at least one
+  // selected value in the narrowed group. Selecting none intentionally returns
+  // no matches for that group.
+  // Important: these are ANDed as groups. If Species and Habitat are both
+  // narrowed, a card must satisfy both groups.
   if (!areSpeciesAtDefault()) {
     if (!selectedSpeciesTags.size) return false;
     if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
@@ -3714,25 +4159,36 @@ function passesAttributeFilters(row) {
     if (!attrs.continent || !selectedContinentTags.has(attrs.continent)) return false;
   }
 
+  // Water/Rock/Science: simple boolean toggles, default OFF (no filtering).
+  // Switching one ON narrows the table to only cards that have that tag.
   if (waterOn && !attrs.water) return false;
   if (rockOn && !attrs.rock) return false;
   if (scienceOn && !attrs.science) return false;
 
+  // Strength: when narrowed, a card must have one of the selected strength values.
   if (selectedStrengths.size !== STRENGTH_VALUES.length) {
     if (!attrs.strength) return false;
     if (!selectedStrengths.has(attrs.strength)) return false;
   }
 
+  // Size: when narrowed, a card must have one of the selected size values.
   if (selectedSizes.size !== SIZE_VALUES.length) {
     if (!attrs.size) return false;
     if (!selectedSizes.has(attrs.size)) return false;
   }
 
+  // Reefer / Aviary: simple boolean toggles. When off (default), they don't filter.
   if (reeferOn && !attrs.reefer) return false;
   if (aviaryOn && !attrs.aviary) return false;
 
+  // Abilities: OR logic — card passes if it has at least one selected ability.
+  // selectedAbilities defaults to the full set, so this only narrows anything
+  // once the user has deliberately deselected at least one ability.
   if (selectedAbilities.size !== allAbilities.length) {
     if (attrs.abilities.length === 0) {
+      // A card with zero ability entries cannot match a narrowed ability
+      // search, because "no abilities" is not itself a selectable option
+      // (the literal ability string "None" is a separate, selectable value).
       return false;
     }
     if (!attrs.abilities.some(a => selectedAbilities.has(a))) return false;
