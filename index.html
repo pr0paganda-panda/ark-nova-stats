@@ -676,6 +676,12 @@
       margin: 16px 0;
     }
 
+    .filter-action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     /* Apply button */
     .apply-btn {
       width: 100%;
@@ -695,6 +701,18 @@
 
     .apply-btn:hover { opacity: 0.85; }
     .apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .refresh-data-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+    }
+
+    .refresh-data-btn:hover {
+      background: var(--accent-dim);
+      color: var(--text);
+      opacity: 1;
+    }
 
     /* ── Main content ──────────────────────────────────────────────────────── */
     .main {
@@ -2563,7 +2581,10 @@
 
     <hr class="divider" />
 
-    <button class="apply-btn" id="applyBtn" onclick="applyFilters()">Load Stats</button>
+    <div class="filter-action-stack">
+      <button class="apply-btn" id="applyBtn" onclick="applyFilters()">Load Stats</button>
+      <button class="apply-btn refresh-data-btn" id="refreshDataBtn" onclick="refreshData()">Refresh data</button>
+    </div>
   </aside>
 
 </div>
@@ -2894,12 +2915,14 @@ function getParams() {
 }
 
 // ── Apply filters (fetch from API) ─────────────────────────────────────────────
-async function applyFilters() {
+async function applyFilters(options = {}) {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Load Stats.
   // If no Maps or no Rounds are selected, there is nothing to query: the frontend
   // renders an empty result immediately and skips the Cloud Function call entirely.
   const params = getParams();
+  const refreshData = Boolean(options.refreshData);
+  if (refreshData) params.refresh_data = true;
   const selectedMaps = params.maps || [];
   const selectedRounds = getSelectedRoundTokens();
 
@@ -2922,8 +2945,11 @@ async function applyFilters() {
   }
 
   const btn = document.getElementById('applyBtn');
-  btn.disabled = true;
-  btn.textContent = 'Loading…';
+  const refreshBtn = document.getElementById('refreshDataBtn');
+  const activeBtn = refreshData ? refreshBtn : btn;
+  if (btn) btn.disabled = true;
+  if (refreshBtn) refreshBtn.disabled = true;
+  if (activeBtn) activeBtn.textContent = refreshData ? 'Refreshing…' : 'Loading…';
 
   showLoading();
 
@@ -2955,9 +2981,19 @@ async function applyFilters() {
   } catch (err) {
     showError(err.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Load Stats';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Load Stats';
+    }
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Refresh data';
+    }
   }
+}
+
+function refreshData() {
+  applyFilters({ refreshData: true });
 }
 
 
