@@ -72,7 +72,6 @@
       --shadow:      0 2px 12px rgba(0,0,0,0.4);
     }
 
-    /* ── Reset & base ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html {
@@ -113,7 +112,6 @@
       line-height: 1.5;
     }
 
-    /* ── Top bar ───────────────────────────────────────────────────────────── */
     .topbar {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
@@ -204,7 +202,6 @@
       color: var(--text);
     }
 
-    /* ── Layout ────────────────────────────────────────────────────────────── */
     :root {
       --side-nav-width: 111px;
       --side-nav-gap: 24px;
@@ -320,7 +317,6 @@
       opacity: 0.35;
     }
 
-    /* ── Sidebar (Filters Overlay Panel) ─────────────────────────────────── */
     .sidebar {
       background: var(--bg-panel);
       border-left: 1px solid var(--border);
@@ -583,7 +579,6 @@
     .apply-btn:hover { opacity: 0.85; }
     .apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* ── Main content ──────────────────────────────────────────────────────── */
     .main {
       padding: 24px;
       overflow-x: auto;
@@ -795,7 +790,6 @@
       color: var(--accent-bright);
     }
 
-    /* ── Attributes bar ────────────────────────────────────────────────────── */
     .attributes-bar {
       background: var(--bg-panel);
       border: 1px solid var(--border);
@@ -1180,7 +1174,6 @@
       .attributes-bar-body { gap: 14px 18px; }
     }
 
-    /* ── Type column filter ─────────────────────────────────────────────────── */
     .type-filter-btn {
       background: none;
       border: none;
@@ -1245,7 +1238,6 @@
 
     #statsTable thead th.type-filter-header { position: relative; }
 
-    /* ── Column header tooltips ─────────────────────────────────────────────── */
     .col-tip {
       display: inline;
       font-size: 9px;
@@ -1300,7 +1292,6 @@
       margin-bottom: 2px;
     }
 
-    /* ── Table ─────────────────────────────────────────────────────────────── */
     .table-wrap {
       background: var(--bg-panel);
       border: 2px solid var(--border);
@@ -1468,7 +1459,6 @@
       opacity: 0.22;
     }
 
-    /* ── Loading & error states ─────────────────────────────────────────────── */
     .state-overlay {
       display: flex;
       flex-direction: column;
@@ -1505,7 +1495,6 @@
 
     .error-icon { font-size: 32px; }
 
-    /* ── Pagination ─────────────────────────────────────────────────────────── */
     .pagination {
       display: flex;
       align-items: center;
@@ -1563,7 +1552,6 @@
       box-shadow: var(--shadow);
     }
 
-    /* ── Mobile ─────────────────────────────────────────────────────────────── */
     .mobile-filter-btn {
       display: flex;
       align-items: center;
@@ -1622,7 +1610,6 @@
       th, td { padding: 8px 6px; font-size: 12px; }
     }
 
-    /* Phone-only adjustments and media queries */
     @media (max-width: 600px) {
       :root {
         --side-nav-width: 84px;
@@ -1956,24 +1943,41 @@
   </a>
   <div class="nav-divider"></div>
   
-  <!-- "Opening hand" containing the updated high-fidelity "Hand & Choice" SVG vector logo -->
+  <!-- "Opening hand" containing the updated high-fidelity SVG representation of opening-hand-icon.png -->
   <a class="side-nav-link" href="#">
-    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <!-- Fan of Cards (Choice theme background cards) -->
-      <g opacity="0.4">
-        <!-- Card 1 (Left Tilt) -->
-        <rect x="2" y="3" width="5" height="9" rx="1" transform="rotate(-30 4.5 7.5)" />
-        <!-- Card 2 (Subtle Left Tilt) -->
-        <rect x="6.5" y="1.5" width="5" height="9" rx="1" transform="rotate(-10 9 6)" />
-        <!-- Card 3 (Subtle Right Tilt) -->
-        <rect x="11.5" y="1.5" width="5" height="9" rx="1" transform="rotate(10 14 6)" />
-        <!-- Card 4 (Right Tilt) -->
-        <rect x="16" y="3" width="5" height="9" rx="1" transform="rotate(30 18.5 7.5)" />
+    <svg class="nav-icon" viewBox="0 0 100 100" style="width: 26px; height: 26px; overflow: visible;">
+      <defs>
+        <!-- Custom SVG filters to recreate the premium neon drop-shadow glow from the image -->
+        <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="glow-teal" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      
+      <!-- Fanned Cards (Neon Green) -->
+      <g opacity="0.85" style="transition: opacity 0.3s;">
+        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(-36 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
+        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(-18 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
+        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(0 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
+        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(18 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
+        <rect x="39" y="16" width="22" height="38" rx="4" transform="rotate(36 50 75)" fill="none" stroke="#2bf085" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-green)" />
       </g>
-      <!-- Selection Pointer Cursor Arrow -->
-      <path d="M19.3 13.5 l3.7 2.3 l-1.4 0.5 l1.4 1.8 l-0.9 0.5 l-1.4 -1.8 l-1.4 0.9 z" opacity="0.85" />
-      <!-- Human Hand Contour (Centred vector contour) -->
-      <path d="M8 23 V17.5 C8 16, 5.5 15.5, 5.5 14 C5.5 12.5, 7 12, 8.2 13.8 L8.8 15 V11 C8.8 10, 10.3 10, 10.3 11 V14.5 V9 C10.3 8, 11.8 8, 11.8 9 V14.5 V10 C11.8 9, 13.3 9, 13.3 10 V14.5 V12 C13.3 11, 14.8 11, 14.8 12 V16.5 C14.8 18, 16 18.5, 16 23" />
+      
+      <!-- Vector-traced Human Hand Outline (Neon Teal) -->
+      <path d="M 48 88 C 47 78, 38 72, 31 63 C 26 57, 28 52, 34 55 C 40 58, 41 52, 40 44 C 39 37, 39 33, 40 28 C 41 24, 44 24, 45 28 C 46 33, 46 43, 47 48 C 47 38, 47 29, 48 22 C 49 18, 52 18, 53 22 C 54 29, 54 39, 55 45 C 55 38, 56 31, 57 26 C 58 22, 61 22, 62 26 C 63 31, 63 43, 64 50 C 65 52, 67 54, 67 58 C 67 66, 68 76, 65 86" fill="none" stroke="#5de2e7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-teal)" />
+      
+      <!-- Selection Pointer Arrow (Neon Teal with matching transparent inner color fill) -->
+      <path d="M 71 46 L 88 53 L 81 52 L 79 60 Z" fill="rgba(93, 226, 231, 0.15)" stroke="#5de2e7" stroke-width="3.5" stroke-linejoin="round" filter="url(#glow-teal)" />
     </svg>
     <span>Opening<br />hand</span>
   </a>
@@ -1982,7 +1986,6 @@
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-<!-- ── Layout ────────────────────────────────────────────────────────────────── -->
 <div class="layout" id="mainLayout">
 
   <!-- Main -->
@@ -2365,7 +2368,6 @@ let reeferOn = false;
 let aviaryOn = false;
 let typeBeforeReeferAviary = null;
 
-// ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   buildMapChips();
   buildRoundChips();
@@ -2377,7 +2379,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyFilters();
 });
 
-// ── Map chips ──────────────────────────────────────────────────────────────────
 function buildMapChips() {
   const container = document.getElementById('mapChips');
   VALID_MAPS.forEach(map => {
@@ -2391,7 +2392,6 @@ function buildMapChips() {
   });
 }
 
-// ── Round chips ────────────────────────────────────────────────────────────────
 function buildRoundChips() {
   const container = document.getElementById('roundChips');
   ROUND_FILTERS.forEach(round => {
@@ -2431,7 +2431,6 @@ function isRoundUnavailableColumn(col) {
   return ['delta_in_hand', 'playrate_pct', 'n_seen'].includes(col);
 }
 
-// ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
 const _tooltip = document.getElementById('map-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -3005,7 +3004,6 @@ function eloColor(val, minElo, maxElo) {
   return 'var(--elo-low)';
 }
 
-// ── Column header tooltips ─────────────────────────────────────────────────────
 const _colTip = document.getElementById('col-tooltip');
 
 document.addEventListener('mouseover', e => {
