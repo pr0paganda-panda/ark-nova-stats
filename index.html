@@ -73,8 +73,8 @@
       --accent-bright: #6df5b8;   /* lighter emerald, for links/hover */
       --accent-glow:   rgba(52,211,153,0.18);
 
-      --accent-teal:     #2bb8d6;   /* marine/ocean blue — Marine Worlds tab */
-      --accent-teal-dim: #155a68;
+      --accent-teal:     #0f4f73;   /* marine/ocean blue — Marine Worlds tab */
+      --accent-teal-dim: #0a334d;
 
       --accent-gold:     #e8ad4f;   /* warm amber-gold — Base tab only */
       --accent-gold-dim: #6b4a1d;
@@ -215,18 +215,19 @@
       margin-left: auto;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
       flex-shrink: 0;
     }
 
     .topbar-refresh-btn {
       height: 28px;
-      padding: 0 9px;
+      width: min(104px, var(--side-nav-width));
+      padding: 0 7px;
       border-radius: 999px;
       border: 1px solid var(--accent-refresh-dim);
       background: var(--bg-surface);
       color: var(--accent-refresh);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Arial Narrow', 'Roboto Condensed', 'Inter', sans-serif;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
@@ -234,7 +235,9 @@
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 5px;
+      letter-spacing: 0;
     }
 
     .topbar-refresh-btn:hover {
