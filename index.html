@@ -251,8 +251,8 @@
        The main dashboard has a compact, elegant navigation rail on the left.
        Filters always open as a right-side overlay, so the table never resizes. */
     :root {
-      --side-nav-width: 96px;
-      --side-nav-gap: 20px;
+      --side-nav-width: 111px; /* Reverted back to the spacious original width */
+      --side-nav-gap: 24px;    /* Reverted back to the original layout spacing */
     }
 
     .layout {
@@ -262,8 +262,10 @@
     }
 
     /* Redesigned Navigation Sidebar: Minimalist Indicator Rail
-       Transitions from block-like button enclosures to geometric icons, 
-       architectural whitespace, and elegant glowing edge markers. */
+       Transforms block-like enclosures into outline SVG glyphs, spacious uppercase 
+       tracking, and a sharp, scaling emerald blade at the left edge.
+       The width is reverted to the original sidebar proportions, and elements
+       are beautifully balanced as horizontal rectangular cards. */
     .side-nav {
       position: fixed;
       top: 56px;
@@ -280,6 +282,16 @@
       gap: 16px;
     }
 
+    /* Elegant, solid ("durchgezogen") separator line with high visibility */
+    .nav-divider {
+      height: 1.5px;
+      background: rgba(52, 211, 153, 0.35); /* Solid visible emerald color */
+      margin: 0px 14px; /* Inset from the sidebar outer edges */
+      flex-shrink: 0;
+    }
+
+    /* Formatting: Fixed vertical cells matching 75px on desktop, while retaining 
+       the spacious 111px layout width. Inner content is perfectly aligned. */
     .side-nav-link {
       position: relative;
       display: flex;
@@ -287,7 +299,8 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 16px 8px;
+      width: 100%;
+      height: 75px; /* Fixed height for desktop cells */
       color: #4a5e5a; /* Desaturated teal-grey default state */
       text-decoration: none;
       font-size: 10px;
@@ -295,10 +308,11 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
       line-height: 1.4;
-      gap: 8px;
+      gap: 6px;
       user-select: none;
       cursor: pointer;
       transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-sizing: border-box;
     }
 
     .nav-icon {
@@ -315,8 +329,8 @@
       content: '';
       position: absolute;
       left: 0;
-      top: 15%;
-      bottom: 15%;
+      top: 0;
+      bottom: 0;
       width: 3px;
       background: var(--accent);
       border-radius: 0 4px 4px 0;
@@ -1281,14 +1295,6 @@
       .attributes-bar-body { gap: 14px 18px; }
     }
 
-    @media (max-width: 600px) {
-      .attributes-bar-header { padding: 9px 12px; }
-      .attributes-bar-title { font-size: 12px; }
-      .attributes-bar-body { padding: 4px 12px 14px; gap: 12px 16px; }
-      .tags-popup { width: calc(100vw - 32px); padding: 14px 16px; }
-      .abilities-panel { width: 220px; }
-    }
-
     /* ── Type column filter ───────────────────────────────────────────────────
        The Type column is the far-right table column, but its header also contains
        the Animal/Sponsor/Project filter popup. This filter is CLIENT-SIDE only:
@@ -1762,8 +1768,8 @@
        Tablet deliberately keeps desktop-like percentage widths. */
     @media (max-width: 600px) {
       :root {
-        --side-nav-width: 72px; /* Slimmed down layout on phone for optimal screen real estate */
-        --side-nav-gap: 12px;
+        --side-nav-width: 84px; /* Reverted back to the original 84px mobile width */
+        --side-nav-gap: 20px;   /* Reverted back to the original layout spacing */
       }
 
       .topbar {
@@ -1775,20 +1781,26 @@
       .side-nav {
         top: 52px;
         width: var(--side-nav-width);
-        padding: 16px 0px;
-        gap: 12px;
+        padding: 0px 0px; /* Completely removed top padding on mobile */
+        gap: 0px;
       }
 
+      .nav-divider {
+        margin: 0px 10px; /* Slightly tighter inset margins on mobile */
+      }
+
+      /* Compact horizontal rectangular element configuration on mobile */
       .side-nav-link {
-        padding: 10px 4px;
-        font-size: 8px; /* micro text scale */
+        height: 50px; /* Locked height of rectangular mobile cells */
+        font-size: 8px; /* Micro text scale */
         letter-spacing: 0.05em;
-        gap: 5px;
+        gap: 4px; /* Reduced layout spacing to maximize vertical breathing room */
+        line-height: 1.25;
       }
 
       .nav-icon {
-        width: 18px;
-        height: 18px;
+        width: 16px; /* Scaled icon optimized for the 50px mobile height boundary */
+        height: 16px;
       }
 
       .topbar-logo {
@@ -2109,6 +2121,8 @@
 
   REDESIGNED: The block-containment look is replaced with inline outline-based SVGs,
   elegant tracking/typography spacing, and a sharp expanding emerald glow line at the edge.
+  The width is reverted to the original sidebar proportions, and elements
+  are beautifully balanced as horizontal rectangular cards.
 -->
 <nav class="side-nav" aria-label="Dashboard navigation">
   <a class="side-nav-link active" href="#" aria-current="page">
@@ -2119,14 +2133,16 @@
     </svg>
     <span>Cards</span>
   </a>
-  <span class="side-nav-link disabled" aria-disabled="true">
+  <div class="nav-divider"></div>
+  <a class="side-nav-link" href="#">
     <svg class="nav-icon" viewBox="0 0 24 24">
       <path d="M4.5 18l4-14a1 1 0 0 1 1.3-.7l3.8 1.1a1 1 0 0 1 .7 1.3l-4 14" opacity="0.6" />
       <rect x="9" y="3" width="6" height="15" rx="1" transform="rotate(5 12 10.5)" />
       <path d="M19.5 18l-4-14a1 1 0 0 0-1.3-.7l-3.8 1.1a1 1 0 0 0-.7 1.3l4 14" opacity="0.6" />
     </svg>
     <span>Opening<br />hand</span>
-  </span>
+  </a>
+  <div class="nav-divider"></div>
 </nav>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -2737,6 +2753,7 @@ function toggleChip(btn, group) {
   btn.classList.toggle('active');
 }
 
+// ── Filter sidebar overlay ────────────────────────────────────────────────────
 function isAllSelectedChipClick(btn, selector) {
   // Shared DOM-only helper for Maps/Rounds. It intentionally runs only when
   // every chip in the group is active. Once a group is narrowed, normal
@@ -3096,6 +3113,7 @@ function compareRowsForCurrentSort(a, b) {
   return dir === 'asc' ? result : -result;
 }
 
+// Assigns globally sorted rank indices for stable, non-filtered indexing in standard lists.
 function assignGlobalRanks() {
   // Global rank is assigned across all loaded cards BEFORE search/type filtering.
   // This is intentional: when searching "goat" or filtering to Sponsors, the # column
@@ -3286,6 +3304,7 @@ function fmtDelta(val) {
   return `${sign}${val.toFixed(3)}`;
 }
 
+// Formats big number digits nicely.
 function fmtN(val) {
   if (val == null) return '—';
   return val.toLocaleString('en-US');
@@ -3440,7 +3459,7 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Filter sidebar overlay ────────────────────────────────────────────────────
+// ── Toggle sidebar ────────────────────────────────────────────────────────────
 function toggleSidebar() {
   // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
   // back the old desktop grid column behavior unless Panda explicitly asks:
