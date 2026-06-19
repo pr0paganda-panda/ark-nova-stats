@@ -2788,6 +2788,10 @@ let cardAliases = new Map();
 let isMW = 1;
 let roundFilterActive = false; // Last loaded backend state: true when fewer than all round chips are selected.
 let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blank means no minimum.
+// In-memory browser cache for the two default backend snapshots. This complements
+// the server-side Cloud Storage cache: once MW/Base has loaded in this page view,
+// switching back to that default tab can render immediately without another fetch.
+const defaultSnapshotCache = { 0: null, 1: null };
 
 // ── Attributes bar state ──────────────────────────────────────────────────────
 // cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
@@ -3027,6 +3031,33 @@ function getParams() {
   return params;
 }
 
+function getDefaultSnapshotKey(params) {
+  // Mirrors the backend's cacheable-default definition. Only these two cases
+  // are safe to reuse without a fetch: default Marine Worlds and default Base.
+  const selectedMaps = params.maps || [];
+  const allMapNames = VALID_MAPS.map(m => m.full);
+  const allMapsSelected =
+    selectedMaps.length === allMapNames.length &&
+    allMapNames.every(mapName => selectedMaps.includes(mapName));
+
+  const playerMinDefault = params.player_elo_min === undefined || Number(params.player_elo_min) === 300;
+  const opponentMinDefault = params.opponent_elo_min === undefined || Number(params.opponent_elo_min) === 300;
+
+  const isDefault =
+    (params.is_mw === 0 || params.is_mw === 1) &&
+    allMapsSelected &&
+    playerMinDefault &&
+    params.player_elo_max === undefined &&
+    opponentMinDefault &&
+    params.opponent_elo_max === undefined &&
+    (params.date_from === undefined || params.date_from === '2025-01-01') &&
+    params.date_to === undefined &&
+    params.end_game_triggered === true &&
+    params.rounds === undefined;
+
+  return isDefault ? params.is_mw : null;
+}
+
 // ── Apply filters (fetch from API) ─────────────────────────────────────────────
 async function applyFilters(options = {}) {
   // This is the only frontend function that calls the backend API.
@@ -3051,6 +3082,17 @@ async function applyFilters(options = {}) {
 
     allData = [];
     filteredData = [];
+    searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+    updateCardSearchIndicator();
+    applySearch();
+    return;
+  }
+
+  const defaultSnapshotKey = getDefaultSnapshotKey(params);
+  const cachedDefaultSnapshot = defaultSnapshotKey === null ? null : defaultSnapshotCache[defaultSnapshotKey];
+  if (!refreshData && cachedDefaultSnapshot) {
+    roundFilterActive = Boolean(cachedDefaultSnapshot.round_filter_active);
+    allData = cachedDefaultSnapshot.data;
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
     updateCardSearchIndicator();
     applySearch();
@@ -3087,6 +3129,13 @@ async function applyFilters(options = {}) {
     }
 
     allData = json.data;
+    if (defaultSnapshotKey !== null) {
+      defaultSnapshotCache[defaultSnapshotKey] = {
+        data: json.data,
+        round_filter_active: Boolean(json.round_filter_active),
+        cache_status: json.cache_status || 'unknown',
+      };
+    }
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
     updateCardSearchIndicator();
     applySearch();
