@@ -2737,6 +2737,9 @@ let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blan
 // the server-side Cloud Storage cache: once MW/Base has loaded in this page view,
 // switching back to that default tab can render immediately without another fetch.
 const defaultSnapshotCache = { 0: null, 1: null };
+let apiWarmupInFlight = false;
+let apiWarmupLastAt = 0;
+const API_WARMUP_COOLDOWN_MS = 5 * 60 * 1000;
 
 // ── Attributes bar state ──────────────────────────────────────────────────────
 // cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
@@ -2771,6 +2774,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTypeFilterIndicator();
   buildAttributeChips();
   applyFilters(); // auto-load on page open with defaults
+  warmApiInBackground();
 
   loadCardAliases().then(() => {
     if (allData.length) applySearch();
@@ -3008,6 +3012,25 @@ function getDefaultSnapshotKey(params) {
     params.rounds === undefined;
 
   return isDefault ? params.is_mw : null;
+}
+
+function warmApiInBackground() {
+  const now = Date.now();
+  if (apiWarmupInFlight || now - apiWarmupLastAt < API_WARMUP_COOLDOWN_MS) return;
+
+  apiWarmupInFlight = true;
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ warmup: true }),
+    cache: 'no-store',
+    keepalive: true,
+  }).catch(() => {
+    // Warmup is opportunistic; visible filter requests still handle errors normally.
+  }).finally(() => {
+    apiWarmupInFlight = false;
+    apiWarmupLastAt = Date.now();
+  });
 }
 
 // ── Apply filters (fetch from API) ─────────────────────────────────────────────
@@ -3723,8 +3746,10 @@ function toggleSidebar() {
   // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
   // back the old desktop grid column behavior unless Panda explicitly asks:
   // opening Filters must not shrink or shift the table.
-  document.getElementById('sidebar').classList.toggle('open');
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('active');
+  if (sidebar.classList.contains('open')) warmApiInBackground();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
