@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <!--
-  Ark Nova Statistics Dashboard â€” annotated handoff version
+  Ark Nova Statistics Dashboard — annotated handoff version
 
   Purpose of this file:
   - Static frontend for GitHub Pages.
@@ -44,12 +44,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
-    /* â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ── Design tokens ───────────────────────────────────────────────────────
        Central colour/spacing variables. Most of the visual theme should be changed here first.
        Redesigned 2026-06-18: moved the dark base from a yellow-green "forest"
        cast to a cooler deep-marine teal-black. This gives the emerald accent
        real contrast to pop against (rather than green-on-khaki-green), while
-       staying on-theme â€” Ark Nova's own box/board palette is dark teal, not
+       staying on-theme — Ark Nova's own box/board palette is dark teal, not
        olive. Two secondary accents were added for variety: a marine teal
        (Marine Worlds tab) and a warm gold (Base tab, "narrowed filter"
        highlights, echoing the sponsorship/conservation gold already used on
@@ -68,7 +68,7 @@
       --text-muted:  #84ada3;   /* labels, secondary */
       --text-dim:    #4f7269;   /* very faint */
 
-      --accent:        #34d399;   /* vivid emerald â€” Ark Nova leaf, primary */
+      --accent:        #34d399;   /* vivid emerald — Ark Nova leaf, primary */
       --accent-dim:    #1d6b48;
       --accent-bright: #6df5b8;   /* lighter emerald, for links/hover */
       --accent-glow:   rgba(52,211,153,0.18);
@@ -76,7 +76,7 @@
       --accent-teal:     #17368f;   /* darker, subtler ultramarine for the Marine Worlds tab */
       --accent-teal-dim: #0d1f5a;
 
-      --accent-gold:     #e8ad4f;   /* warm amber-gold â€” Base tab only */
+      --accent-gold:     #e8ad4f;   /* warm amber-gold — Base tab only */
       --accent-gold-dim: #6b4a1d;
 
       --accent-filter:     #9edfc2;   /* pale mint for narrowed filters:
@@ -90,7 +90,7 @@
       --tab-active:  var(--accent);
       --tab-bg:      var(--bg-surface);
 
-      /* delta colours â€” unchanged, do not touch */
+      /* delta colours — unchanged, do not touch */
       --pos-strong:  #4caf72;
       --pos-mid:     #8bc78a;
       --pos-weak:    #b8dbb5;
@@ -99,7 +99,7 @@
       --neg-strong:  #c0432a;
       --neutral:     #7a9e80;
 
-      /* elo colour scale (teal/blue-green) â€” unchanged, do not touch */
+      /* elo colour scale (teal/blue-green) — unchanged, do not touch */
       --elo-low:   #2a5a5a;
       --elo-mid:   #2a8a7a;
       --elo-high:  #4acfb0;
@@ -112,7 +112,7 @@
       --shadow:      0 2px 12px rgba(0,0,0,0.4);
     }
 
-    /* â”€â”€ Reset & base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Reset & base ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html {
@@ -155,7 +155,7 @@
       line-height: 1.5;
     }
 
-    /* â”€â”€ Top bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Top bar ───────────────────────────────────────────────────────────── */
     .topbar {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
@@ -281,7 +281,7 @@
     }
 
     .tab-btn.active.tab-base {
-      background: var(--accent-gold);   /* warm gold for Base â€” replaces the old olive/khaki tone */
+      background: var(--accent-gold);   /* warm gold for Base — replaces the old olive/khaki tone */
       border-color: var(--accent-gold);
     }
 
@@ -290,7 +290,7 @@
       color: var(--text);
     }
 
-    /* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ── Layout ──────────────────────────────────────────────────────────────
        The main dashboard has a compact, elegant navigation rail on the left.
        Filters always open as a right-side overlay, so the table never resizes. */
     :root {
@@ -459,7 +459,7 @@
       line-height: 1.2;
     }
 
-    /* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ── Sidebar ─────────────────────────────────────────────────────────────
        Universal right-side overlay. It never participates in layout width. */
     .sidebar {
       background: var(--bg-panel);
@@ -757,7 +757,7 @@
       opacity: 1;
     }
 
-    /* â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Main content ──────────────────────────────────────────────────────── */
     .main {
       padding: 24px;
       overflow-x: auto;
@@ -991,7 +991,7 @@
       color: var(--accent-bright);
     }
 
-    /* â”€â”€ Attributes bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ── Attributes bar ──────────────────────────────────────────────────────
        Sits between the main-header (meta/min-plays/rows) and the table.
        All filtering here is CLIENT-SIDE only, layered into applySearch() exactly
        like the Type filter. It reads card metadata (species, strength, abilities,
@@ -1396,7 +1396,7 @@
       .attributes-bar-body { gap: 14px 18px; }
     }
 
-    /* â”€â”€ Type column filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ── Type column filter ───────────────────────────────────────────────────
        The Type column is the far-right table column, but its header also contains
        the Animal/Sponsor/Project filter popup. This filter is CLIENT-SIDE only:
        it filters already-loaded data and does not re-query BigQuery. */
@@ -1418,7 +1418,7 @@
     .type-filter-btn.active { color: var(--accent); }
 
     /* Active Type filter indicator.
-       Default = all three card types selected, so the header shows normal "Type â–¼".
+       Default = all three card types selected, so the header shows normal "Type ▼".
        Filtered = only one or two card types selected, so the header turns warm moss green
        and the arrow is replaced by one/two dots. This is deliberately warmer/more muted
        than the brighter green used by the sorted-column state. */
@@ -1472,7 +1472,7 @@
        stay aligned during horizontal table scrolling. */
     #statsTable thead th.type-filter-header { position: relative; }
 
-    /* â”€â”€ Column header tooltips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Column header tooltips ─────────────────────────────────────────────── */
     .col-tip {
       display: inline;
       font-size: 9px;
@@ -1527,7 +1527,7 @@
       margin-bottom: 2px;
     }
 
-    /* â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ── Table ───────────────────────────────────────────────────────────────
        Desktop/tablet use percentage widths from the <th style="width:..."> values.
        Phones override those widths with fixed px values and horizontal scrolling. */
     .table-wrap {
@@ -1706,7 +1706,7 @@
       opacity: 0.22;
     }
 
-    /* â”€â”€ Loading & error states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Loading & error states ─────────────────────────────────────────────── */
     .state-overlay {
       display: flex;
       flex-direction: column;
@@ -1743,7 +1743,7 @@
 
     .error-icon { font-size: 32px; }
 
-    /* â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Pagination ─────────────────────────────────────────────────────────── */
     .pagination {
       display: flex;
       align-items: center;
@@ -1785,7 +1785,7 @@
       padding: 0 6px;
     }
 
-    /* â”€â”€ Tooltip for map chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Tooltip for map chips ──────────────────────────────────────────────── */
     #map-tooltip {
       position: fixed;
       background: var(--bg-deep);
@@ -1802,7 +1802,7 @@
       box-shadow: var(--shadow);
     }
 
-    /* â”€â”€ Mobile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Mobile ─────────────────────────────────────────────────────────────── */
     .mobile-filter-btn {
       display: flex;
       align-items: center;
@@ -2069,7 +2069,7 @@
 
       /* Phone-only column widths.
          These nth-child selectors depend on the exact table order:
-         1 #, 2 Card, 3 Î” In Hand, 4 Î” Played, 5 Elo, 6 Playrate, 7 Played, 8 Seen, 9 Type. */
+         1 #, 2 Card, 3 Δ In Hand, 4 Δ Played, 5 Elo, 6 Playrate, 7 Played, 8 Seen, 9 Type. */
       #statsTable th:nth-child(1), #statsTable td:nth-child(1) { width: 40px !important; }
       #statsTable th:nth-child(2), #statsTable td:nth-child(2) { width: 120px !important; }
       #statsTable th:nth-child(3), #statsTable td:nth-child(3) { width: 100px !important; }
@@ -2206,7 +2206,7 @@
 <div id="map-tooltip"></div>
 <div id="col-tooltip"></div>
 
-<!-- â”€â”€ Top bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <header class="topbar">
   <div class="topbar-left">
     <div class="tabs">
@@ -2218,7 +2218,7 @@
   <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
   <div class="topbar-actions">
     <button class="mobile-filter-btn filter-toggle-highlight" onclick="toggleSidebar()" id="filterToggleBtn">
-    â˜° Filters
+    ☰ Filters
     </button>
   </div>
 </header>
@@ -2267,7 +2267,7 @@
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-<!-- â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── Layout ────────────────────────────────────────────────────────────────── -->
 <div class="layout" id="mainLayout">
 
   <!-- Main -->
@@ -2299,11 +2299,11 @@
       </div>
     </div>
 
-    <!-- â”€â”€ Attributes bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    <!-- ── Attributes bar ──────────────────────────────────────────────────
          Client-side-only card metadata filters (Species, Habitat, Strength,
          Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked
          up by card_name. Filtering is layered into applySearch() exactly like
-         the Type filter â€” no backend call, instant results.
+         the Type filter — no backend call, instant results.
          Collapsible, collapsed by default.
 
          Important maintenance notes:
@@ -2320,7 +2320,7 @@
         </div>
         <div class="attributes-bar-actions">
           <button class="attributes-reset-btn" onclick="resetAttributesFromHeader(event)">Reset</button>
-          <span class="attributes-bar-chevron">â–¾</span>
+          <span class="attributes-bar-chevron">▾</span>
         </div>
       </div>
       <div class="attributes-bar-body" id="attributesBarBody">
@@ -2418,7 +2418,7 @@
              Animal-only attribute. Disabled unless Animal is active in Type.
              Turning ON forces Type to Animal-only, remembering whatever Type
              selection was active immediately before (shared with Aviary).
-             Turning OFF restores that remembered Type â€” unless Aviary is still
+             Turning OFF restores that remembered Type — unless Aviary is still
              ON, in which case Type stays Animal-only until both are off. -->
         <div class="attr-group" id="attrGroupReefer" data-attr-group="reefer">
           <span class="attr-group-label">Reefer</span>
@@ -2454,7 +2454,7 @@
             </button>
             <div class="abilities-panel" id="abilitiesPanel" onclick="event.stopPropagation()">
               <input class="abilities-search-input" type="text" id="abilitiesSearchInput"
-                     placeholder="Search abilitiesâ€¦" oninput="renderAbilitiesList()" />
+                     placeholder="Search abilities…" oninput="renderAbilitiesList()" />
               <div class="abilities-actions">
                 <span class="map-toggle-link" onclick="selectAllAbilities()">all</span> /
                 <span class="map-toggle-link" onclick="selectNoneAbilities()">none</span>
@@ -2498,7 +2498,7 @@
             - phone nth-child widths,
             - sticky phone columns,
             - colspan="9" in loading/error states.
-            Current order: #, Card, Î” In Hand, Î” Played, Elo, Playrate, Played, Seen, Type.
+            Current order: #, Card, Δ In Hand, Δ Played, Elo, Playrate, Played, Seen, Type.
           -->
           <tr>
             <th style="width:5%;text-align:center;cursor:default;">#</th>
@@ -2508,24 +2508,24 @@
                  opening/typing in search can accidentally trigger sorting. -->
             <th class="card-search-header" onclick="sortBy('card_name')" style="width:20%;text-align:center">
               <div class="card-header-content" id="cardHeaderContent">
-                <button class="card-search-btn" id="cardSearchBtn" onclick="openCardSearch(event)" title="Search cards" aria-label="Search cards">ðŸ”</button>
+                <button class="card-search-btn" id="cardSearchBtn" onclick="openCardSearch(event)" title="Search cards" aria-label="Search cards">🔍</button>
                 <span class="card-header-title">Card</span>
-                <span class="sort-arrow" id="sort-card_name">â†•</span>
+                <span class="sort-arrow" id="sort-card_name">↕</span>
               </div>
               <div class="card-header-search" id="cardHeaderSearch" onclick="event.stopPropagation()">
-                <span class="card-header-search-icon">ðŸ”</span>
-                <input class="card-header-search-input" type="text" id="searchInput" placeholder="Searchâ€¦" oninput="onSearch()" />
-                <button class="card-search-close" onclick="closeCardSearch(event)" title="Clear search" aria-label="Clear search">Ã—</button>
+                <span class="card-header-search-icon">🔍</span>
+                <input class="card-header-search-input" type="text" id="searchInput" placeholder="Search…" oninput="onSearch()" />
+                <button class="card-search-close" onclick="closeCardSearch(event)" title="Clear search" aria-label="Clear search">×</button>
               </div>
             </th>
-            <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Î” (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">â†•</span></th>
-            <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Î” (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">â†•</span></th>
-            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">â†•</span></th>
-            <th onclick="sortBy('playrate_pct')" style="width:13%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">â†•</span></th>
-            <th onclick="sortBy('n_played')" style="width:10%;text-align:center">Played<span class="col-tip" data-tip-played>?</span><span class="sort-arrow" id="sort-n_played">â†•</span></th>
-            <th onclick="sortBy('n_seen')" style="width:10%;text-align:center">Seen<span class="col-tip" data-tip-seen>?</span><span class="sort-arrow" id="sort-n_seen">â†•</span></th>
+            <th onclick="sortBy('delta_in_hand')" style="width:12%;text-align:center">Δ (In Hand)<span class="col-tip" data-tip="Average elo gain when in hand">?</span><span class="sort-arrow" id="sort-delta_in_hand">↕</span></th>
+            <th onclick="sortBy('delta_played')" style="width:12%;text-align:center">Δ (Played)<span class="col-tip" data-tip="Average elo gain when played">?</span><span class="sort-arrow" id="sort-delta_played">↕</span></th>
+            <th onclick="sortBy('avg_elo')" style="width:8%;text-align:center">Elo<span class="col-tip" data-tip="Average player elo when played">?</span><span class="sort-arrow" id="sort-avg_elo">↕</span></th>
+            <th onclick="sortBy('playrate_pct')" style="width:13%;text-align:center">Playrate <span class="col-tip" data-tip-fraction>?</span><span class="sort-arrow" id="sort-playrate_pct">↕</span></th>
+            <th onclick="sortBy('n_played')" style="width:10%;text-align:center">Played<span class="col-tip" data-tip-played>?</span><span class="sort-arrow" id="sort-n_played">↕</span></th>
+            <th onclick="sortBy('n_seen')" style="width:10%;text-align:center">Seen<span class="col-tip" data-tip-seen>?</span><span class="sort-arrow" id="sort-n_seen">↕</span></th>
             <th class="type-filter-header" id="typeFilterHeader" style="width:10%;text-align:center;cursor:pointer;" onclick="toggleTypeFilterPopup(event)">
-              <span class="type-filter-label">Type <span class="type-filter-indicator" id="typeFilterIndicator">â–¼</span></span>
+              <span class="type-filter-label">Type <span class="type-filter-indicator" id="typeFilterIndicator">▼</span></span>
               <div class="type-filter-popup" id="typeFilterPopup">
                 <button class="chip active" data-value="animal" onclick="toggleTypeChip(this)">Animal</button>
                 <button class="chip active" data-value="sponsor" onclick="toggleTypeChip(this)">Sponsor</button>
@@ -2555,7 +2555,7 @@
       <span class="sidebar-title">Filters</span>
       <div style="display:flex;align-items:center;gap:6px;">
         <button class="reset-btn" onclick="resetFilters()">Reset</button>
-        <button class="sidebar-close-btn" onclick="toggleSidebar()" title="Close filters">âœ•</button>
+        <button class="sidebar-close-btn" onclick="toggleSidebar()" title="Close filters">✕</button>
       </div>
     </div>
 
@@ -2641,7 +2641,7 @@
 </div>
 
 <script>
-// â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Config ─────────────────────────────────────────────────────────────────────
 // API_URL points to the deployed Google Cloud Function. The frontend sends POST JSON
 // with filters; the backend queries BigQuery and returns already-aggregated card stats.
 const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
@@ -2659,10 +2659,10 @@ const CARD_ALIASES_URL = 'cards_altnames.csv';
 // bar still renders but every group is effectively a no-op since there's no data to filter on.
 const CARD_ATTRIBUTES_URL = 'cards_attributes.csv';
 
-// â”€â”€ Attribute definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Attribute definitions ─────────────────────────────────────────────────────
 // Each attribute group declares which card Types it can possibly apply to.
 // A group is disabled (and reset to its default/non-filtering state) whenever
-// none of its relevantTypes are active in the Type filter â€” e.g. Strength only
+// none of its relevantTypes are active in the Type filter — e.g. Strength only
 // ever appears on Sponsor cards, so it's meaningless (and disabled) otherwise.
 const SPECIES_TAGS = ['Bear', 'Bird', 'Herbivore', 'Petting Zoo', 'Predator', 'Primate', 'Reptile', 'Sea Animal'];
 const CONTINENT_TAGS = ['Africa', 'America', 'Asia', 'Australia', 'Europe'];
@@ -2721,10 +2721,10 @@ const ROUND_FILTERS = [
   { label: '6+', value: '6+' },
 ];
 
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── State ──────────────────────────────────────────────────────────────────────
 let allData = [];      // Full API result for current backend filters.
 let filteredData = []; // allData after client-side search + Type chip filtering.
-// Default opening sort: highest Î” (In Hand) first.
+// Default opening sort: highest Δ (In Hand) first.
 let currentSort = { col: 'delta_in_hand', dir: 'desc' };
 let currentPage = 1;
 let rowsPerPage = 50;
@@ -2738,7 +2738,7 @@ let minPlayedThreshold = null; // Client-side minimum n_played filter. Null/blan
 // switching back to that default tab can render immediately without another fetch.
 const defaultSnapshotCache = { 0: null, 1: null };
 
-// â”€â”€ Attributes bar state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Attributes bar state ──────────────────────────────────────────────────────
 // cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
 let cardAttributes = new Map();
 let cardAttributesLoaded = false;
@@ -2762,7 +2762,7 @@ let aviaryOn = false;
 // switches Type to Animal-only, so it can be restored once both are off again.
 let typeBeforeReeferAviary = null;
 
-// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   // Build dynamic map/round chips, load alias file, then immediately fetch default stats.
   buildMapChips();
@@ -2776,7 +2776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-// â”€â”€ Map chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Map chips ──────────────────────────────────────────────────────────────────
 function buildMapChips() {
   const container = document.getElementById('mapChips');
   VALID_MAPS.forEach(map => {
@@ -2790,7 +2790,7 @@ function buildMapChips() {
   });
 }
 
-// â”€â”€ Round chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Round chips ────────────────────────────────────────────────────────────────
 function buildRoundChips() {
   const container = document.getElementById('roundChips');
   ROUND_FILTERS.forEach(round => {
@@ -2836,7 +2836,7 @@ function isRoundUnavailableColumn(col) {
   return ['delta_in_hand', 'playrate_pct', 'n_seen'].includes(col);
 }
 
-// â”€â”€ Smart tooltip (avoids viewport clipping) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
 const _tooltip = document.getElementById('map-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -2879,14 +2879,14 @@ function selectNoneMaps() {
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.remove('active'));
 }
 
-// â”€â”€ Toggle chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Toggle chip ────────────────────────────────────────────────────────────────
 function toggleChip(btn, group) {
   // Maps use the same "all selected -> clicked chip only" shortcut as Rounds.
   if (group === 'map' && isAllSelectedChipClick(btn, '#mapChips .chip')) return;
   btn.classList.toggle('active');
 }
 
-// â”€â”€ Filter sidebar overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Filter sidebar overlay ────────────────────────────────────────────────────
 function isAllSelectedChipClick(btn, selector) {
   // Shared DOM-only helper for Maps/Rounds. It intentionally runs only when
   // every chip in the group is active. Once a group is narrowed, normal
@@ -2898,7 +2898,7 @@ function isAllSelectedChipClick(btn, selector) {
   return true;
 }
 
-// â”€â”€ MW / Base tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── MW / Base tab ──────────────────────────────────────────────────────────────
 function setTab(value, btn) {
   isMW = value;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2906,12 +2906,12 @@ function setTab(value, btn) {
   applyFilters();
 }
 
-// â”€â”€ end_game toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── end_game toggle ────────────────────────────────────────────────────────────
 function onEndGameChange() {
-  // nothing extra needed â€” value read on apply
+  // nothing extra needed — value read on apply
 }
 
-// â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Reset ──────────────────────────────────────────────────────────────────────
 function resetFilters() {
   document.getElementById('playerEloMin').value = '300';
   document.getElementById('playerEloMax').value = '';
@@ -2938,7 +2938,7 @@ function resetFilters() {
   applyFilters();
 }
 
-// â”€â”€ Collect filter params â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Collect filter params ──────────────────────────────────────────────────────
 function getParams() {
   // Collect backend filters here. Search text and Type chips are intentionally not sent;
   // they are applied client-side after data has loaded. The Round chips are sent because
@@ -2971,7 +2971,7 @@ function getParams() {
   if (dFrom) params.date_from = dFrom;
   if (dTo) params.date_to = dTo;
 
-  // card_types now handled client-side â€” not sent to API
+  // card_types now handled client-side — not sent to API
 
   return params;
 }
@@ -3003,7 +3003,7 @@ function getDefaultSnapshotKey(params) {
   return isDefault ? params.is_mw : null;
 }
 
-// â”€â”€ Apply filters (fetch from API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Apply filters (fetch from API) ─────────────────────────────────────────────
 async function applyFilters() {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Apply filters.
@@ -3017,7 +3017,7 @@ async function applyFilters() {
     roundFilterActive = selectedRounds.length < ROUND_FILTERS.length;
 
     // In round-filter mode, these columns are intentionally unavailable. If the
-    // table was previously sorted by one of them, switch to Î” (Played), which
+    // table was previously sorted by one of them, switch to Δ (Played), which
     // remains meaningful for played-round analysis.
     if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
       currentSort = { col: 'delta_played', dir: 'desc' };
@@ -3078,7 +3078,7 @@ async function applyFilters() {
     roundFilterActive = Boolean(json.round_filter_active ?? (params.rounds !== undefined));
 
     // In round-filter mode, these columns are intentionally unavailable. If the
-    // table was previously sorted by one of them, switch to Î” (Played), which
+    // table was previously sorted by one of them, switch to Δ (Played), which
     // remains meaningful for played-round analysis.
     if (roundFilterActive && isRoundUnavailableColumn(currentSort.col)) {
       currentSort = { col: 'delta_played', dir: 'desc' };
@@ -3107,7 +3107,7 @@ async function applyFilters() {
 }
 
 
-// â”€â”€ Card aliases / nicknames for search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Card aliases / nicknames for search ───────────────────────────────────────
 function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -3192,7 +3192,7 @@ function aliasesForCard(cardName) {
   return cardAliases.get(normalizeSearchText(cardName)) || [];
 }
 
-// â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Search ─────────────────────────────────────────────────────────────────────
 // Invoked on search query update.
 function onSearch() {
   searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
@@ -3270,7 +3270,7 @@ function applySearch() {
   applySortAndRender();
 }
 
-// â”€â”€ Sort â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sort ───────────────────────────────────────────────────────────────────────
 function sortBy(col) {
   // Round-filtered data cannot meaningfully sort by stats that are hidden as unavailable.
   if (roundFilterActive && isRoundUnavailableColumn(col)) return;
@@ -3328,30 +3328,30 @@ function applySortAndRender() {
   const sorted = [...filteredData].sort(compareRowsForCurrentSort);
 
   // Update sort arrows
-  document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = 'â†•');
+  document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '↕');
   document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
   const arrow = document.getElementById(`sort-${col}`);
   if (arrow) {
-    arrow.textContent = dir === 'asc' ? 'â†‘' : 'â†“';
+    arrow.textContent = dir === 'asc' ? '↑' : '↓';
     arrow.closest('th').classList.add('sorted');
   }
 
   renderTable(sorted);
 }
 
-// â”€â”€ Rows per page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Rows per page ──────────────────────────────────────────────────────────────
 function onRppChange() {
   rowsPerPage = parseInt(document.getElementById('rppSelect').value);
   currentPage = 1;
   applySortAndRender();
 }
 
-// â”€â”€ Render table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Render table ───────────────────────────────────────────────────────────────
 function renderTable(data) {
   // data is already filtered + sorted. This function only handles pagination,
   // colour formatting, and converting rows into table HTML.
   // In roundFilterActive mode, the backend returns NULL for delta_in_hand, n_seen,
-  // and playrate_pct; this function renders those cells as a single long dash (â€”).
+  // and playrate_pct; this function renders those cells as a single long dash (—).
   const tbody = document.getElementById('tableBody');
   const pagination = document.getElementById('pagination');
   const meta = document.getElementById('tableMeta');
@@ -3359,7 +3359,7 @@ function renderTable(data) {
   if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="9">
       <div class="state-overlay">
-        <div class="error-icon">ðŸ”</div>
+        <div class="error-icon">🔍</div>
         <div class="state-title">No cards found</div>
         <div class="state-sub">Try adjusting your search or filters.</div>
       </div>
@@ -3385,19 +3385,19 @@ function renderTable(data) {
   tbody.innerHTML = pageData.map(row => {
     const dp = fmtDelta(row.delta_played);
     const dh = fmtDelta(row.delta_in_hand);
-    const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : 'â€”';
+    const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '—';
     const prVal = row.playrate_pct || 0;
     const barWidth = prVal; // absolute: playrate % = bar width %
     const barColor = prColor(prVal);
-    const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : 'â€”';
+    const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
     const eloCol = eloColor(row.avg_elo, minElo, maxElo);
 
     const inHandCell = roundFilterActive
-      ? '<td class="unavailable-cell">â€”</td>'
+      ? '<td class="unavailable-cell">—</td>'
       : `<td class="delta" style="color:${deltaColor(row.delta_in_hand)}">${dh}</td>`;
 
     const playrateCell = roundFilterActive
-      ? '<td class="unavailable-cell">â€”</td>'
+      ? '<td class="unavailable-cell">—</td>'
       : `<td>
         <div class="playrate-cell">
           <div class="playrate-bar-wrap">
@@ -3408,11 +3408,11 @@ function renderTable(data) {
       </td>`;
 
     const seenCell = roundFilterActive
-      ? '<td class="unavailable-cell">â€”</td>'
+      ? '<td class="unavailable-cell">—</td>'
       : `<td class="n-cell">${fmtN(row.n_seen)}</td>`;
 
     return `<tr>
-      <td class="rank-cell">${row.global_rank ?? 'â€”'}</td>
+      <td class="rank-cell">${row.global_rank ?? '—'}</td>
       <td class="card-name">${titleCase(row.card_name)}</td>
       ${inHandCell}
       <td class="delta" style="color:${deltaColor(row.delta_played)}">${dp}</td>
@@ -3427,7 +3427,7 @@ function renderTable(data) {
   // Meta
   const from = start + 1;
   const to = Math.min(start + rpp, data.length);
-  meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}â€“${to}</strong> of <strong>${data.length}</strong> cards`;
+  meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}–${to}</strong> of <strong>${data.length}</strong> cards`;
 
   // Pagination
   if (totalPages <= 1) {
@@ -3439,17 +3439,17 @@ function renderTable(data) {
 }
 
 function buildPagination(totalPages) {
-  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>â€¹</button>`;
+  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
 
   const pages = paginationRange(currentPage, totalPages);
   let prev = null;
   for (const p of pages) {
-    if (prev !== null && p - prev > 1) html += `<span class="page-info">â€¦</span>`;
+    if (prev !== null && p - prev > 1) html += `<span class="page-info">…</span>`;
     html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
     prev = p;
   }
 
-  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>â€º</button>`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
   return html;
 }
 
@@ -3470,12 +3470,12 @@ function goPage(p) {
   document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// â”€â”€ States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── States ─────────────────────────────────────────────────────────────────────
 function showLoading() {
   document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
       <div class="spinner"></div>
-      <div class="state-title">Fetching dataâ€¦</div>
+      <div class="state-title">Fetching data…</div>
       <div class="state-sub">Querying BigQuery with your current filters.</div>
     </div>
   </td></tr>`;
@@ -3486,23 +3486,23 @@ function showLoading() {
 function showError(msg) {
   document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
-      <div class="error-icon">âš ï¸</div>
+      <div class="error-icon">⚠️</div>
       <div class="state-title">Something went wrong</div>
       <div class="state-sub">${msg}</div>
     </div>
   </td></tr>`;
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtDelta(val) {
-  if (val == null) return 'â€”';
+  if (val == null) return '—';
   const sign = val >= 0 ? '+' : '';
   return `${sign}${val.toFixed(3)}`;
 }
 
 // Formats big number digits nicely.
 function fmtN(val) {
-  if (val == null) return 'â€”';
+  if (val == null) return '—';
   return val.toLocaleString('en-US');
 }
 
@@ -3549,7 +3549,7 @@ function eloColor(val, minElo, maxElo) {
   return 'var(--elo-low)';
 }
 
-// â”€â”€ Column header tooltips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Column header tooltips ─────────────────────────────────────────────────────
 const _colTip = document.getElementById('col-tooltip');
 
 document.addEventListener('mouseover', e => {
@@ -3601,7 +3601,7 @@ function positionColTip(e) {
   _colTip.style.top = y + 'px';
 }
 
-// â”€â”€ Type column filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Type column filter ─────────────────────────────────────────────────────────
 function toggleTypeFilterPopup(e) {
   // Opens/closes the far-right Type column popup.
   // Important: clicking the chips themselves should not also re-toggle the popup.
@@ -3625,10 +3625,10 @@ function updateTypeFilterIndicator() {
 
   if (activeCount === allChips.length) {
     header.classList.remove('type-filter-active');
-    indicator.textContent = 'â–¼';
+    indicator.textContent = '▼';
   } else {
     header.classList.add('type-filter-active');
-    indicator.textContent = activeCount === 1 ? 'â€¢' : 'â€¢â€¢';
+    indicator.textContent = activeCount === 1 ? '•' : '••';
   }
 }
 
@@ -3655,7 +3655,7 @@ document.addEventListener('click', e => {
   }
 });
 
-// â”€â”€ Toggle sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Toggle sidebar ────────────────────────────────────────────────────────────
 function toggleSidebar() {
   // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
   // back the old desktop grid column behavior unless Panda explicitly asks:
@@ -3664,15 +3664,15 @@ function toggleSidebar() {
   document.getElementById('sidebarOverlay').classList.toggle('active');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// â”€â”€ Attributes bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Attributes bar ──────────────────────────────────────────────────────────
 // Everything below is CLIENT-SIDE ONLY. It reads static card metadata from
 // cards_attributes.csv (loaded once at startup) and layers extra filtering on
 // top of the existing Type/Search/Min-plays pipeline inside applySearch().
 // No part of this ever triggers a backend fetch.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════════════════
 
-// â”€â”€ Loading cards_attributes.csv â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Loading cards_attributes.csv ────────────────────────────────────────────────
 async function loadCardAttributes() {
   // Used columns: Type,Name,Species,Continent,Water,Rock,Science,Strength,
   // Size,Abilities,Reefer,Aviary. Species/Abilities can contain multiple
@@ -3747,7 +3747,7 @@ function setAttributesUnavailable(unavailable) {
   if (bar) bar.classList.toggle('attributes-unavailable', unavailable);
 }
 
-// â”€â”€ Collapse / expand â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Collapse / expand ───────────────────────────────────────────────────────────
 function toggleAttributesBar() {
   document.getElementById('attributesBar').classList.toggle('collapsed');
 }
@@ -3760,7 +3760,7 @@ function resetAttributesFromHeader(event) {
   applySearch();
 }
 
-// â”€â”€ Building the static chip rows and tag popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Building the static chip rows and tag popup ──────────────────────────────────
 function buildAttributeChips() {
   buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
   buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
@@ -3849,7 +3849,7 @@ function setAttributeValues(kind, selectAll) {
   applySearch();
 }
 
-// â”€â”€ Species / Habitat popups â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Species / Habitat popups ───────────────────────────────────────────────────
 function toggleTagPopup(kind, event) {
   if (event) event.stopPropagation();
   const group = document.getElementById(kind === 'species' ? 'attrGroupSpecies' : 'attrGroupContinent');
@@ -3934,7 +3934,7 @@ function updateTagButtonLabels() {
   updateSingleTagButton('continent', selectedContinentTags, CONTINENT_TAGS);
 }
 
-// â”€â”€ Abilities dropdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Abilities dropdown ────────────────────────────────────────────────────────
 function buildAbilitiesList() {
   renderAbilitiesList();
 }
@@ -4068,7 +4068,7 @@ document.addEventListener('click', e => {
 
 window.addEventListener('resize', positionAbilitiesPanel);
 
-// â”€â”€ Water / Rock / Science toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Water / Rock / Science toggles ────────────────────────────────────────────
 // Water and Rock apply to both Animal and Sponsor cards. Turning either on
 // visibly narrows Type to Animal + Sponsor, just like Species/Habitat. Science
 // is Sponsor-only, so turning it on follows Strength and forces Sponsor-only.
@@ -4088,7 +4088,7 @@ function onBoolTagToggle(which) {
   applySearch();
 }
 
-// â”€â”€ Reefer / Aviary toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Reefer / Aviary toggles ──────────────────────────────────────────────────────
 function onReeferAviaryToggle(which) {
   const reeferCheckbox = document.getElementById('reeferToggle');
   const aviaryCheckbox = document.getElementById('aviaryToggle');
@@ -4115,14 +4115,14 @@ function onReeferAviaryToggle(which) {
     typeBeforeReeferAviary = null;
   }
   // If one was already on and the other just joined it (both now on), Type
-  // stays Animal-only â€” no change needed since it's already forced there.
+  // stays Animal-only — no change needed since it's already forced there.
 
   refreshAttributeAvailability();
   updateAttributesSummary();
   applySearch();
 }
 
-// â”€â”€ Type filter helpers shared with Strength/Size/Reefer/Aviary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Type filter helpers shared with Strength/Size/Reefer/Aviary ──────────────────
 function getActiveTypeTokens() {
   return [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value);
 }
@@ -4193,7 +4193,7 @@ function syncAnimalOnlyTypeFilter() {
   }
 }
 
-// â”€â”€ Disabling groups based on the active Type filter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Disabling groups based on the active Type filter ──────────────────────────────
 // Central rule: a group is disabled whenever NONE of its relevantTypes are
 // currently active in the Type filter. Disabling always resets that group's
 // selection back to its default (all-selected for chip/ability groups, off
@@ -4332,10 +4332,10 @@ function updateAttributesSummary() {
   updateAbilitiesButtonLabel();
 }
 
-// â”€â”€ The actual per-row filtering check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── The actual per-row filtering check ───────────────────────────────────────────
 function passesAttributeFilters(row) {
   // If the attributes CSV failed to load, or this particular card has no entry
-  // in it, do not filter the row out â€” fail open so the table still works.
+  // in it, do not filter the row out — fail open so the table still works.
   if (!cardAttributesLoaded) return true;
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
@@ -4377,7 +4377,7 @@ function passesAttributeFilters(row) {
   if (reeferOn && !attrs.reefer) return false;
   if (aviaryOn && !attrs.aviary) return false;
 
-  // Abilities: OR logic â€” card passes if it has at least one selected ability.
+  // Abilities: OR logic — card passes if it has at least one selected ability.
   // selectedAbilities defaults to the full set, so this only narrows anything
   // once the user has deliberately deselected at least one ability.
   if (selectedAbilities.size !== allAbilities.length) {
