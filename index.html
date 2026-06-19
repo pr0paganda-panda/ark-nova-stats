@@ -202,10 +202,52 @@
       font-weight: 400;
     }
 
-    /* MW / Base tabs */
-    .tabs {
+    .topbar-left {
       display: flex;
-      gap: 4px;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .topbar-refresh-btn {
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--accent-dim);
+      background: var(--bg-surface);
+      color: var(--accent);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+
+    .topbar-refresh-btn:hover {
+      background: var(--accent-dim);
+      color: var(--text);
+    }
+
+    .topbar-refresh-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .refresh-short { display: none; }
+
+    /* MW / Base segmented switch */
+    .tabs {
+      width: 88px;
+      height: 30px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      padding: 2px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      flex-shrink: 0;
     }
 
     /* push filter button to the far right */
@@ -214,17 +256,31 @@
     }
 
     .tab-btn {
-      padding: 6px 18px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--tab-bg);
+      height: 24px;
+      min-width: 0;
+      padding: 0;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
       color: var(--text-muted);
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 0;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+
+    .tab-btn::after {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .tab-mw::after { content: 'MW'; }
+    .tab-base::after { content: 'Base'; }
 
     .tab-btn.active {
       border-color: currentColor;
@@ -1871,6 +1927,27 @@
         height: 21px;
       }
 
+      .topbar-left {
+        gap: 6px;
+      }
+
+      .topbar-refresh-btn {
+        width: 30px;
+        padding: 0;
+        font-size: 0;
+      }
+
+      .topbar-refresh-btn::after {
+        content: '↻';
+        font-size: 15px;
+        line-height: 1;
+      }
+
+      .refresh-full,
+      .refresh-short {
+        display: none;
+      }
+
       /* Compact MW/Base segmented switch for narrow phone screens. */
       .tabs {
         width: 88px;
@@ -2160,9 +2237,12 @@
 
 <!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <header class="topbar">
-  <div class="tabs">
-    <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
-    <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
+  <div class="topbar-left">
+    <button class="topbar-refresh-btn" id="refreshDataBtn" onclick="refreshData()" aria-label="Refresh stats"><span class="refresh-full">Refresh stats</span><span class="refresh-short">Refresh</span></button>
+    <div class="tabs">
+      <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
+      <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
+    </div>
   </div>
   <!-- Header title. Words are split into spans so spacing between Ark/Nova/Statistics is controlled by CSS gap. -->
   <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
@@ -2486,8 +2566,8 @@
           <tr><td colspan="9">
             <div class="state-overlay">
               <div class="spinner"></div>
-              <div class="state-title">Set your filters and click Load Stats</div>
-              <div class="state-sub">Adjust any filters in the sidebar, then click the green button to fetch live data from BigQuery.</div>
+              <div class="state-title">Preparing data...</div>
+              <div class="state-sub">Loading the latest available card statistics.</div>
             </div>
           </td></tr>
         </tbody>
@@ -2582,8 +2662,7 @@
     <hr class="divider" />
 
     <div class="filter-action-stack">
-      <button class="apply-btn" id="applyBtn" onclick="applyFilters()">Load Stats</button>
-      <button class="apply-btn refresh-data-btn" id="refreshDataBtn" onclick="refreshData()">Refresh data</button>
+      <button class="apply-btn" id="applyBtn" onclick="applyFilters()">Apply filters</button>
     </div>
   </aside>
 
@@ -2917,7 +2996,7 @@ function getParams() {
 // ── Apply filters (fetch from API) ─────────────────────────────────────────────
 async function applyFilters(options = {}) {
   // This is the only frontend function that calls the backend API.
-  // It runs on page load, MW/Base tab change, Reset, and Load Stats.
+  // It runs on page load, MW/Base tab change, Reset, and Apply filters.
   // If no Maps or no Rounds are selected, there is nothing to query: the frontend
   // renders an empty result immediately and skips the Cloud Function call entirely.
   const params = getParams();
@@ -2983,11 +3062,11 @@ async function applyFilters(options = {}) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Load Stats';
+      btn.textContent = 'Apply filters';
     }
     if (refreshBtn) {
       refreshBtn.disabled = false;
-      refreshBtn.textContent = 'Refresh data';
+      refreshBtn.innerHTML = '<span class="refresh-full">Refresh stats</span><span class="refresh-short">Refresh</span>';
     }
   }
 }
