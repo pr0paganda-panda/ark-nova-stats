@@ -3473,8 +3473,10 @@ function goPage(p) {
 // ── States ─────────────────────────────────────────────────────────────────────
 function showLoading(mode = 'query') {
   const isSavedSnapshot = mode === 'saved';
-  const title = isSavedSnapshot ? 'Loading saved stats...' : 'Fetching data…';
-  const sub = isSavedSnapshot ? '' : '<div class="state-sub">Querying BigQuery with your current filters.</div>';
+  const title = isSavedSnapshot ? 'Preparing data...' : 'Fetching data…';
+  const sub = isSavedSnapshot
+    ? '<div class="state-sub">Loading the latest available card statistics.</div>'
+    : '<div class="state-sub">Querying BigQuery with your current filters.</div>';
   document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
       <div class="spinner"></div>
