@@ -84,6 +84,9 @@
                                           the Type column header. */
       --accent-filter-dim: #3d6f5b;
 
+      --accent-refresh:     #4fd5c4;   /* cooler blue-green, only for Refresh data */
+      --accent-refresh-dim: #1e6f69;
+
       --tab-active:  var(--accent);
       --tab-bg:      var(--bg-surface);
 
@@ -167,7 +170,7 @@
     }
 
     /* The logo/title is absolutely centred so it stays visually centred even though
-       the MW/Base switch is on the left and the Filters button is on the right. */
+       utility controls sit on both sides of the topbar. */
     .topbar-logo {
       font-family: 'Bitter', serif;
       font-weight: 700;
@@ -205,27 +208,37 @@
     .topbar-left {
       display: flex;
       align-items: center;
+      flex-shrink: 0;
+    }
+
+    .topbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
       gap: 10px;
       flex-shrink: 0;
     }
 
     .topbar-refresh-btn {
-      height: 30px;
-      padding: 0 12px;
+      height: 28px;
+      padding: 0 9px;
       border-radius: 999px;
-      border: 1px solid var(--accent-dim);
+      border: 1px solid var(--accent-refresh-dim);
       background: var(--bg-surface);
-      color: var(--accent);
+      color: var(--accent-refresh);
       font-family: 'Inter', sans-serif;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       cursor: pointer;
       transition: background 0.15s, color 0.15s, opacity 0.15s;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .topbar-refresh-btn:hover {
-      background: var(--accent-dim);
+      background: var(--accent-refresh-dim);
       color: var(--text);
     }
 
@@ -234,7 +247,10 @@
       cursor: not-allowed;
     }
 
-    .refresh-short { display: none; }
+    .refresh-icon {
+      font-size: 13px;
+      line-height: 1;
+    }
 
     /* MW / Base segmented switch */
     .tabs {
@@ -253,6 +269,10 @@
     /* push filter button to the far right */
     .mobile-filter-btn {
       margin-left: auto;
+    }
+
+    .topbar-actions .mobile-filter-btn {
+      margin-left: 0;
     }
 
     .tab-btn {
@@ -1935,6 +1955,7 @@
         width: 30px;
         padding: 0;
         font-size: 0;
+        justify-content: center;
       }
 
       .topbar-refresh-btn::after {
@@ -1943,9 +1964,16 @@
         line-height: 1;
       }
 
-      .refresh-full,
-      .refresh-short {
+      .topbar-refresh-btn::after {
+        content: none;
+      }
+
+      .topbar-refresh-btn .refresh-label {
         display: none;
+      }
+
+      .topbar-refresh-btn .refresh-icon {
+        font-size: 15px;
       }
 
       /* Compact MW/Base segmented switch for narrow phone screens. */
@@ -2238,17 +2266,19 @@
 <!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <header class="topbar">
   <div class="topbar-left">
-    <button class="topbar-refresh-btn" id="refreshDataBtn" onclick="refreshData()" aria-label="Refresh stats"><span class="refresh-full">Refresh stats</span><span class="refresh-short">Refresh</span></button>
+    <button class="topbar-refresh-btn" id="refreshDataBtn" onclick="refreshData()" aria-label="Refresh data"><span class="refresh-icon" aria-hidden="true">&#10227;</span><span class="refresh-label">Refresh data</span></button>
+  </div>
+  <!-- Header title. Words are split into spans so spacing between Ark/Nova/Statistics is controlled by CSS gap. -->
+  <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
+  <div class="topbar-actions">
     <div class="tabs">
       <button class="tab-btn tab-mw active" onclick="setTab(1, this)">Marine Worlds</button>
       <button class="tab-btn tab-base" onclick="setTab(0, this)">Base</button>
     </div>
-  </div>
-  <!-- Header title. Words are split into spans so spacing between Ark/Nova/Statistics is controlled by CSS gap. -->
-  <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
-  <button class="mobile-filter-btn filter-toggle-highlight" onclick="toggleSidebar()" id="filterToggleBtn">
+    <button class="mobile-filter-btn filter-toggle-highlight" onclick="toggleSidebar()" id="filterToggleBtn">
     ☰ Filters
-  </button>
+    </button>
+  </div>
 </header>
 
 <!--
@@ -3066,7 +3096,7 @@ async function applyFilters(options = {}) {
     }
     if (refreshBtn) {
       refreshBtn.disabled = false;
-      refreshBtn.innerHTML = '<span class="refresh-full">Refresh stats</span><span class="refresh-short">Refresh</span>';
+      refreshBtn.innerHTML = '<span class="refresh-icon" aria-hidden="true">&#10227;</span><span class="refresh-label">Refresh data</span>';
     }
   }
 }
