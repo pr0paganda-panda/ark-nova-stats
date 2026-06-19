@@ -73,8 +73,8 @@
       --accent-bright: #6df5b8;   /* lighter emerald, for links/hover */
       --accent-glow:   rgba(52,211,153,0.18);
 
-      --accent-teal:     #0f4f73;   /* marine/ocean blue — Marine Worlds tab */
-      --accent-teal-dim: #0a334d;
+      --accent-teal:     #123cbd;   /* saturated ultramarine for the Marine Worlds tab */
+      --accent-teal-dim: #0b2472;
 
       --accent-gold:     #e8ad4f;   /* warm amber-gold — Base tab only */
       --accent-gold-dim: #6b4a1d;
@@ -227,7 +227,7 @@
       border: 1px solid var(--accent-refresh-dim);
       background: var(--bg-surface);
       color: var(--accent-refresh);
-      font-family: 'Arial Narrow', 'Roboto Condensed', 'Inter', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
@@ -314,6 +314,7 @@
     .tab-btn.active.tab-mw {
       background: var(--accent-teal);   /* marine teal for Marine Worlds */
       border-color: var(--accent-teal);
+      color: var(--text);
     }
 
     .tab-btn.active.tab-base {
@@ -2269,7 +2270,7 @@
 <!-- ── Top bar ──────────────────────────────────────────────────────────────── -->
 <header class="topbar">
   <div class="topbar-left">
-    <button class="topbar-refresh-btn" id="refreshDataBtn" onclick="refreshData()" aria-label="Refresh data"><span class="refresh-icon" aria-hidden="true">&#10227;</span><span class="refresh-label">Refresh data</span></button>
+    <button class="topbar-refresh-btn" id="refreshDataBtn" onclick="refreshData()" aria-label="Update data"><span class="refresh-icon" aria-hidden="true">&#10227;</span><span class="refresh-label">Update</span></button>
   </div>
   <!-- Header title. Words are split into spans so spacing between Ark/Nova/Statistics is controlled by CSS gap. -->
   <div class="topbar-logo"><img class="topbar-logo-img" src="logo.png" alt="" /><span class="topbar-title-text"><span>Ark</span><span>Nova</span><span class="topbar-title-muted">Statistics</span></span></div>
@@ -3099,7 +3100,7 @@ async function applyFilters(options = {}) {
     }
     if (refreshBtn) {
       refreshBtn.disabled = false;
-      refreshBtn.innerHTML = '<span class="refresh-icon" aria-hidden="true">&#10227;</span><span class="refresh-label">Refresh data</span>';
+      refreshBtn.innerHTML = '<span class="refresh-icon" aria-hidden="true">&#10227;</span><span class="refresh-label">Update</span>';
     }
   }
 }
