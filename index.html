@@ -329,6 +329,7 @@
     .nav-icon-hand {
       fill: currentColor;
       stroke: none;
+      transition: fill 0.3s ease, filter 0.3s ease, transform 0.3s ease;
     }
 
     /* Active vertical green glow strip (Expanding Indicator Blade) */
@@ -381,6 +382,25 @@
     .side-nav-link.disabled .nav-icon {
       stroke: currentColor;
       opacity: 0.35;
+    }
+
+    /* Filled hand icon: keep it uniform. These rules intentionally come after
+       the generic nav-icon active/hover rules so no stroke flashes on hover. */
+    .side-nav-link .nav-icon-hand,
+    .side-nav-link.active .nav-icon-hand,
+    .side-nav-link:hover:not(.disabled) .nav-icon-hand,
+    .side-nav-link.disabled .nav-icon-hand {
+      stroke: none;
+    }
+
+    .side-nav-link.active .nav-icon-hand,
+    .side-nav-link:hover:not(.disabled) .nav-icon-hand {
+      fill: var(--accent);
+      filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.22));
+    }
+
+    .side-nav-link.disabled .nav-icon-hand {
+      fill: currentColor;
     }
 
     /* ── Sidebar ─────────────────────────────────────────────────────────────
