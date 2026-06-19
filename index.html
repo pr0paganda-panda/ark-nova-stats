@@ -3046,7 +3046,7 @@ async function applyFilters() {
   if (btn) btn.disabled = true;
   if (btn) btn.textContent = defaultSnapshotKey === null ? 'Loading...' : 'Loading default...';
 
-  showLoading();
+  showLoading(defaultSnapshotKey === null ? 'query' : 'saved');
 
   try {
     let json;
@@ -3471,12 +3471,15 @@ function goPage(p) {
 }
 
 // ── States ─────────────────────────────────────────────────────────────────────
-function showLoading() {
+function showLoading(mode = 'query') {
+  const isSavedSnapshot = mode === 'saved';
+  const title = isSavedSnapshot ? 'Loading saved stats...' : 'Fetching data…';
+  const sub = isSavedSnapshot ? '' : '<div class="state-sub">Querying BigQuery with your current filters.</div>';
   document.getElementById('tableBody').innerHTML = `<tr><td colspan="9">
     <div class="state-overlay">
       <div class="spinner"></div>
-      <div class="state-title">Fetching data…</div>
-      <div class="state-sub">Querying BigQuery with your current filters.</div>
+      <div class="state-title">${title}</div>
+      ${sub}
     </div>
   </td></tr>`;
   document.getElementById('pagination').style.display = 'none';
