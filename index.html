@@ -2236,6 +2236,68 @@
       #statsTable tbody tr:hover td:nth-child(2) {
         background: var(--bg-hover);
       }
+
+      /* ── Attributes bar: mobile layout ────────────────────────────────────
+         Replace the horizontal flex-wrap free-for-all with a clean vertical
+         stack of rows. Each group becomes a horizontal label + control pair.
+         Vertical separators are hidden; rows use a thin border-bottom instead. */
+
+      .attributes-bar-body {
+        flex-direction: column;
+        gap: 0;
+        padding: 0;
+      }
+
+      /* Each attr-group becomes a full-width horizontal row */
+      .attr-group {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        gap: 12px;
+      }
+
+      .attr-group:last-of-type {
+        border-bottom: none;
+      }
+
+      /* Label stays on the left, control floats right */
+      .attr-group-label {
+        flex-shrink: 0;
+      }
+
+      /* Strength / Size have a heading div wrapping label + all/none links */
+      .attr-group-heading {
+        flex-shrink: 0;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      /* Chip rows sit on the right side, wrapping if needed */
+      .attr-chip-row {
+        justify-content: flex-end;
+        flex: 1;
+      }
+
+      /* Vertical separators serve no purpose in a stacked layout */
+      .attr-separator {
+        display: none;
+      }
+
+      /* Species / Habitat "All" buttons: don't stretch full width on mobile */
+      .attr-tags-btn {
+        width: auto;
+        min-width: 60px;
+      }
+
+      /* Abilities dropdown button */
+      .abilities-dropdown-btn {
+        width: auto;
+        min-width: 60px;
+      }
     }
 
     /* Overlay for mobile sidebar */
