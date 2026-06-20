@@ -16,6 +16,9 @@ export function renderShell(root) {
     </div>
   `;
   root.dataset.shellRendered = 'true';
+
+  const navCollapseBtn = document.getElementById('navCollapseBtn');
+  if (navCollapseBtn) navCollapseBtn.textContent = '‹';
 }
 
 export function setActiveNav(pageId) {
@@ -55,7 +58,13 @@ export function toggleNavCollapse() {
   if (!nav || !btn) return;
   const isCollapsed = nav.classList.toggle('nav-collapsed');
   btn.textContent = isCollapsed ? '›' : '‹';
-  document.documentElement.style.setProperty('--side-nav-width', isCollapsed ? '0px' : '84px');
+  if (isCollapsed) {
+    document.documentElement.style.setProperty('--side-nav-width', '0px');
+  } else {
+    document.documentElement.style.removeProperty('--side-nav-width');
+  }
 }
+
+
 
 

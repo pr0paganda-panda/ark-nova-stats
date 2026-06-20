@@ -13,19 +13,22 @@ const appRoot = document.getElementById('app');
 let activePage = null;
 let activePageId = null;
 let currentDataset = 1;
+let routeRenderToken = 0;
 
 async function renderCurrentRoute() {
+  const renderToken = ++routeRenderToken;
   renderShell(appRoot);
 
   const pageId = getRoutePageId();
   const pageDef = PAGES[pageId] || PAGES.cards;
 
+  const page = await pageDef.load();
+  if (renderToken !== routeRenderToken) return;
+
   if (activePage && activePage.unmount) activePage.unmount();
   activePageId = pageDef.id;
   setActiveNav(activePageId);
   closeSidebarIfOpen();
-
-  const page = await pageDef.load();
   activePage = page;
 
   document.title = page.title ? `${page.title} | Ark Nova Statistics` : 'Ark Nova Statistics';
@@ -48,3 +51,6 @@ window.toggleNavCollapse = toggleNavCollapse;
 
 onRouteChange(renderCurrentRoute);
 renderCurrentRoute();
+
+
+
