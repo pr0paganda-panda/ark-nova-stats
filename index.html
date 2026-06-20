@@ -302,6 +302,7 @@
       display: block;
       margin-left: calc(var(--side-nav-width) + var(--side-nav-gap));
       min-height: calc(100vh - 56px);
+      transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Redesigned Navigation Sidebar: Minimalist Indicator Rail
@@ -323,6 +324,11 @@
       align-items: stretch;
       padding: 24px 0px; /* generous structural spacing */
       gap: 16px;
+    }
+
+    /* Nav collapse toggle tab — only shown on mobile */
+    .nav-collapse-btn {
+      display: none;
     }
 
     /* Elegant, solid ("durchgezogen") separator line with high visibility */
@@ -1885,10 +1891,61 @@
         width: var(--side-nav-width);
         padding: 0px 0px; /* Completely removed top padding on mobile */
         gap: 0px;
+        transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: visible; /* allow the toggle tab to poke out */
+      }
+
+      /* Toggle tab that sticks out from the right edge of the nav */
+      .nav-collapse-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        right: -14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 40px;
+        background: #050d0c;
+        border: 1px solid rgba(52, 211, 153, 0.25);
+        border-left: none;
+        border-radius: 0 6px 6px 0;
+        color: var(--accent);
+        font-size: 10px;
+        cursor: pointer;
+        z-index: 96;
+        transition: background 0.15s, color 0.15s;
+        line-height: 1;
+        padding: 0;
+      }
+
+      .nav-collapse-btn:hover {
+        background: var(--bg-hover);
+        color: var(--accent-bright);
       }
 
       .nav-divider {
         margin: 0px 10px; /* Slightly tighter inset margins on mobile */
+      }
+
+      /* Collapsed nav: icon-only, 48px wide */
+      .side-nav.nav-collapsed {
+        --side-nav-width: 48px;
+        width: 48px;
+      }
+
+      .side-nav.nav-collapsed .nav-divider {
+        display: none;
+      }
+
+      .side-nav.nav-collapsed .side-nav-link span,
+      .side-nav.nav-collapsed .nav-label-coming {
+        display: none;
+      }
+
+      .side-nav.nav-collapsed .side-nav-link {
+        height: 44px;
+        justify-content: center;
       }
 
       /* Compact horizontal rectangular element configuration on mobile */
@@ -2235,7 +2292,8 @@
   The width is reverted to the original sidebar proportions, and elements
   are beautifully balanced as horizontal rectangular cards.
 -->
-<nav class="side-nav" aria-label="Dashboard navigation">
+<nav class="side-nav" id="sideNav" aria-label="Dashboard navigation">
+  <button class="nav-collapse-btn" id="navCollapseBtn" onclick="toggleNavCollapse()" aria-label="Toggle navigation"></button>
   <a class="side-nav-link active" href="#" aria-current="page">
     <svg class="nav-icon" viewBox="0 0 24 24">
       <rect x="3" y="6" width="12" height="15" rx="2" />
@@ -2776,6 +2834,10 @@ document.addEventListener('DOMContentLoaded', () => {
   buildAttributeChips();
   applyFilters(); // auto-load on page open with defaults
   warmApiInBackground();
+
+  // Set initial nav collapse chevron label (nav starts expanded).
+  const navCollapseBtn = document.getElementById('navCollapseBtn');
+  if (navCollapseBtn) navCollapseBtn.textContent = '‹';
 
   loadCardAliases().then(() => {
     if (allData.length) applySearch();
@@ -3779,6 +3841,19 @@ function toggleSidebar() {
   sidebar.classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('active');
   if (sidebar.classList.contains('open')) warmApiInBackground();
+}
+
+function toggleNavCollapse() {
+  // Mobile-only: collapses the nav rail to icon-only (48px) or expands it back.
+  // Updates the CSS variable on <html> so .layout margin-left tracks the change.
+  const nav = document.getElementById('sideNav');
+  const btn = document.getElementById('navCollapseBtn');
+  const isCollapsed = nav.classList.toggle('nav-collapsed');
+  btn.textContent = isCollapsed ? '›' : '‹';
+  // Drive the layout margin via the root variable so the transition animates smoothly.
+  document.documentElement.style.setProperty(
+    '--side-nav-width', isCollapsed ? '48px' : '84px'
+  );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
