@@ -995,9 +995,20 @@
     }
 
     .attributes-bar-chevron {
-      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      font-size: 0;
       color: var(--text-dim);
-      transition: transform 0.2s;
+      line-height: 1;
+    }
+
+    .attributes-bar-chevron::before {
+      content: '▴';
+      font-size: 28px;
+      line-height: 1;
     }
 
     .attributes-bar-actions {
@@ -1034,7 +1045,11 @@
     }
 
     .attributes-bar.collapsed .attributes-bar-chevron {
-      transform: rotate(-90deg);
+      transform: none;
+    }
+
+    .attributes-bar.collapsed .attributes-bar-chevron::before {
+      content: '▾';
     }
 
     .attributes-bar-body {
