@@ -973,7 +973,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 16px;
+      min-height: 45px;
+      padding: 0 16px;
+      box-sizing: border-box;
       cursor: pointer;
       user-select: none;
     }
@@ -988,6 +990,7 @@
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.11em;
+      line-height: 1;
       padding-left: 6px;
     }
 
@@ -1005,6 +1008,10 @@
     }
 
     .attributes-reset-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 24px;
       font-size: 11px;
       color: var(--text-muted);
       background: none;
