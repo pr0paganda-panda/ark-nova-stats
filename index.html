@@ -2634,7 +2634,7 @@
     <hr class="divider" />
 
     <div class="filter-action-stack">
-      <button class="apply-btn" id="applyBtn" onclick="applyFilters()">Apply filters</button>
+      <button class="apply-btn" id="applyBtn" onclick="applyFiltersFromSidebar()">Apply filters</button>
     </div>
   </aside>
 
@@ -3012,6 +3012,34 @@ function getDefaultSnapshotKey(params) {
     params.rounds === undefined;
 
   return isDefault ? params.is_mw : null;
+}
+
+function closeSidebarIfOpen() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (!sidebar || !sidebar.classList.contains('open')) return;
+  sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('active');
+}
+
+async function applyFiltersFromSidebar() {
+  const params = getParams();
+  const defaultSnapshotKey = getDefaultSnapshotKey(params);
+  if (defaultSnapshotKey !== null) {
+    const cachedDefaultSnapshot = defaultSnapshotCache[defaultSnapshotKey];
+    if (cachedDefaultSnapshot) {
+      roundFilterActive = Boolean(cachedDefaultSnapshot.round_filter_active);
+      allData = cachedDefaultSnapshot.data;
+      searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
+      updateCardSearchIndicator();
+      applySearch();
+    }
+    closeSidebarIfOpen();
+    return;
+  }
+
+  await applyFilters();
+  closeSidebarIfOpen();
 }
 
 function warmApiInBackground() {
