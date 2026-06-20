@@ -262,8 +262,8 @@
     /* Redesigned Navigation Sidebar: Minimalist Indicator Rail
        Transforms block-like enclosures into outline SVG glyphs, spacious uppercase 
        tracking, and a sharp, scaling emerald blade at the left edge.
-       The width is reverted to the original sidebar proportions, and elements
-       are beautifully balanced as horizontal rectangular cards. */
+       The width is controlled by --side-nav-width, and elements are
+       balanced as horizontal rectangular cards. */
     .side-nav {
       position: fixed;
       top: 56px;
@@ -294,7 +294,7 @@
     }
 
     /* Formatting: Fixed vertical cells matching 75px on desktop, while retaining 
-       the spacious 111px layout width. Inner content is perfectly aligned. */
+       the 112px desktop layout width. Inner content is perfectly aligned. */
     .side-nav-link {
       position: relative;
       display: flex;
@@ -2255,3 +2255,4 @@
     }
 
     .sidebar-overlay.active { display: block; }
+
