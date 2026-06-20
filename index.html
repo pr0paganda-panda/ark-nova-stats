@@ -2238,65 +2238,48 @@
       }
 
       /* ── Attributes bar: mobile layout ────────────────────────────────────
-         Replace the horizontal flex-wrap free-for-all with a clean vertical
-         stack of rows. Each group becomes a horizontal label + control pair.
-         Vertical separators are hidden; rows use a thin border-bottom instead. */
+         Keep the desktop toolbar shape, but force one horizontal row and let it
+         scroll sideways. This keeps the table visible instead of pushing it down. */
 
       .attributes-bar-body {
-        flex-direction: column;
-        gap: 0;
-        padding: 0;
-      }
-
-      /* Each attr-group becomes a full-width horizontal row */
-      .attr-group {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 10px 16px;
-        border-bottom: 1px solid var(--border);
-        gap: 12px;
-      }
-
-      .attr-group:last-of-type {
-        border-bottom: none;
-      }
-
-      /* Label stays on the left, control floats right */
-      .attr-group-label {
-        flex-shrink: 0;
-      }
-
-      /* Strength / Size have a heading div wrapping label + all/none links */
-      .attr-group-heading {
-        flex-shrink: 0;
-        flex-direction: column;
+        flex-wrap: nowrap;
         align-items: flex-start;
-        gap: 2px;
+        gap: 16px 22px;
+        padding: 16px;
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-light) transparent;
       }
 
-      /* Chip rows sit on the right side, wrapping if needed */
+      .attributes-bar-body::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      .attributes-bar-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .attributes-bar-body::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 3px;
+      }
+
+      .attr-group {
+        flex: 0 0 auto;
+      }
+
       .attr-chip-row {
-        justify-content: flex-end;
-        flex: 1;
+        flex-wrap: nowrap;
       }
 
-      /* Vertical separators serve no purpose in a stacked layout */
+      .attr-chip-row .chip {
+        flex: 0 0 auto;
+      }
+
       .attr-separator {
-        display: none;
-      }
-
-      /* Species / Habitat "All" buttons: don't stretch full width on mobile */
-      .attr-tags-btn {
-        width: auto;
-        min-width: 60px;
-      }
-
-      /* Abilities dropdown button */
-      .abilities-dropdown-btn {
-        width: auto;
-        min-width: 60px;
+        flex: 0 0 auto;
       }
     }
 
