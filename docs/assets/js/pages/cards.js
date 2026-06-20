@@ -129,7 +129,11 @@ let aviaryOn = false;
 let typeBeforeReeferAviary = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-export function mount() {
+export function mount({ dataset = 1 } = {}) {
+  // The router recreates this page's DOM on every visit, while ES module state
+  // persists. Reset DOM-backed state here so controls and data start aligned.
+  resetCardsPageState(dataset);
+
   // Build dynamic map/round chips, fetch default stats immediately, then let
   // optional CSV metadata load in parallel without blocking the first table.
   buildMapChips();
@@ -140,10 +144,6 @@ export function mount() {
   if (searchInput) searchInput.addEventListener('input', onSearch);
   applyFilters(); // auto-load on page open with defaults
   warmApiInBackground();
-
-  // Set initial nav collapse chevron label (nav starts expanded).
-  const navCollapseBtn = document.getElementById('navCollapseBtn');
-  if (navCollapseBtn) navCollapseBtn.textContent = '‹';
 
   loadCardAliases().then(() => {
     if (allData.length) applySearch();
@@ -156,6 +156,29 @@ export function mount() {
 }
 
 
+function resetCardsPageState(dataset) {
+  allData = [];
+  filteredData = [];
+  currentSort = { col: 'delta_in_hand', dir: 'desc' };
+  currentPage = 1;
+  rowsPerPage = 50;
+  searchQuery = '';
+  isMW = Number(dataset) === 0 ? 0 : 1;
+  roundFilterActive = false;
+  minPlayedThreshold = null;
+  selectedSpeciesTags = new Set(SPECIES_TAGS);
+  selectedContinentTags = new Set(CONTINENT_TAGS);
+  selectedStrengths = new Set(STRENGTH_VALUES);
+  selectedSizes = new Set(SIZE_VALUES);
+  selectedAbilities = new Set(allAbilities);
+  currentTagPopupKind = 'species';
+  waterOn = false;
+  rockOn = false;
+  scienceOn = false;
+  reeferOn = false;
+  aviaryOn = false;
+  typeBeforeReeferAviary = null;
+}
 // ── Map chips ──────────────────────────────────────────────────────────────────
 function buildMapChips() {
   const container = document.getElementById('mapChips');
@@ -1138,28 +1161,6 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Toggle sidebar ────────────────────────────────────────────────────────────
-function toggleSidebar() {
-  // Filters are now a universal overlay on desktop/tablet/mobile. Do not bring
-  // back the old desktop grid column behavior unless Panda explicitly asks:
-  // opening Filters must not shrink or shift the table.
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('active');
-  if (sidebar.classList.contains('open')) warmApiInBackground();
-}
-
-function toggleNavCollapse() {
-  // Mobile-only: collapses the nav rail fully (0px) or expands it back.
-  // Updates the CSS variable on <html> so .layout margin-left tracks the change.
-  const nav = document.getElementById('sideNav');
-  const btn = document.getElementById('navCollapseBtn');
-  const isCollapsed = nav.classList.toggle('nav-collapsed');
-  btn.textContent = isCollapsed ? '›' : '‹';
-  document.documentElement.style.setProperty(
-    '--side-nav-width', isCollapsed ? '0px' : '84px'
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ── Attributes bar ──────────────────────────────────────────────────────────
@@ -1890,7 +1891,7 @@ function passesAttributeFilters(row) {
   return true;
 }
 export function setDataset(value) {
-  isMW = value;
+  isMW = Number(value) === 0 ? 0 : 1;
   applyFilters();
 }
 
@@ -1938,3 +1939,5 @@ Object.assign(window, {
   applyFiltersFromSidebar,
   goPage,
 });
+
+
