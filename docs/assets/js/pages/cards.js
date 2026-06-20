@@ -136,6 +136,8 @@ export function mount() {
   buildRoundChips();
   updateTypeFilterIndicator();
   buildAttributeChips();
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.addEventListener('input', onSearch);
   applyFilters(); // auto-load on page open with defaults
   warmApiInBackground();
 
@@ -1893,6 +1895,8 @@ export function setDataset(value) {
 }
 
 export function unmount() {
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.removeEventListener('input', onSearch);
   const panel = document.getElementById('abilitiesPanel');
   if (panel) panel.classList.remove('open');
   const typePopup = document.getElementById('typeFilterPopup');
