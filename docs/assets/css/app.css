@@ -1022,7 +1022,8 @@
     }
 
     .attributes-bar.collapsed .attributes-reset-btn {
-      display: none;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .attributes-bar.collapsed .attributes-bar-chevron {
