@@ -44,6 +44,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
+    @font-face {
+      font-family: 'InterDisplay';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('https://rsms.me/inter/font-files/InterDisplay-Regular.woff2') format('woff2');
+    }
+
     /* ── Design tokens ───────────────────────────────────────────────────────
        Central colour/spacing variables. Most of the visual theme should be changed here first.
        Redesigned 2026-06-18: moved the dark base from a yellow-green "forest"
@@ -271,7 +279,7 @@
     .tab-btn.active {
       border-color: currentColor;
       color: var(--bg);
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .tab-btn.active.tab-mw {
@@ -1022,9 +1030,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-family: 'Inter', sans-serif;
+      font-family: 'InterDisplay', 'Inter', sans-serif;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 400;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.07em;
