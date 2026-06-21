@@ -180,8 +180,8 @@
     }
 
     .wm-nova {
-      color: var(--accent);
-      text-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
+      color: #cfe5dc;
+      text-shadow: 0 0 14px rgba(207, 229, 220, 0.18);
     }
 
     .wm-stats {
