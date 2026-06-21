@@ -126,11 +126,6 @@
     /* The logo/title is absolutely centred so it stays visually centred even though
        utility controls sit on both sides of the topbar. */
     .topbar-logo {
-      font-family: 'Bitter', serif;
-      font-weight: 500;
-      font-size: 18px;
-      color: var(--accent);
-      letter-spacing: 0.01em;
       white-space: nowrap;
       position: absolute;
       left: 50%;
@@ -138,25 +133,68 @@
       pointer-events: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      line-height: 1;
     }
 
-    .topbar-logo-img {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-      flex-shrink: 0;
-    }
-
-    .topbar-title-text {
+    .topbar-wordmark {
       display: flex;
-      align-items: baseline;
-      gap: 0.25em;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      line-height: 1;
     }
 
-    .topbar-title-muted {
+    .topbar-wordmark-top {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      line-height: 1;
+    }
+
+    .wm-ark,
+    .wm-nova {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .wm-ark {
+      color: var(--text);
+    }
+
+    .wm-rhino {
+      display: flex;
+      align-items: center;
+      margin: 0 5px;
+      color: var(--accent);
+      opacity: 0.95;
+    }
+
+    .wm-rhino svg {
+      display: block;
+      width: 22px;
+      height: 26px;
+    }
+
+    .wm-nova {
+      color: var(--accent);
+      text-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
+    }
+
+    .wm-stats {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 8.5px;
+      letter-spacing: 0.32em;
       color: var(--text-muted);
-      font-weight: 400;
+      text-transform: uppercase;
+      text-align: center;
+      width: 100%;
+      margin-top: 2px;
+      line-height: 1;
     }
 
     .topbar-left {
@@ -1841,8 +1879,9 @@
 
     @media (max-width: 768px) {
       .topbar { padding: 0 16px; }
-      .topbar-logo { font-size: 15px; gap: 6px; }
-      .topbar-logo-img { width: 24px; height: 24px; }
+      .wm-ark, .wm-nova { font-size: 17px; }
+      .wm-rhino svg { width: 18px; height: 21px; }
+      .wm-stats { font-size: 7px; letter-spacing: 0.28em; }
       .main { padding: 12px; overflow-x: hidden; }
       th, td { padding: 8px 6px; font-size: 12px; }
       /* Tablets keep the same percentage-based column widths as desktop. */
@@ -1929,15 +1968,13 @@
         height: 16px;
       }
 
-      .topbar-logo {
-        font-size: 13px;
-        gap: 4px;
-      }
+      .wm-ark, .wm-nova { font-size: 14px; }
 
-      .topbar-logo-img {
-        width: 21px;
-        height: 21px;
-      }
+      .wm-rhino { margin: 0 3px; }
+
+      .wm-rhino svg { width: 15px; height: 18px; }
+
+      .wm-stats { font-size: 6px; letter-spacing: 0.24em; }
 
       .topbar-left {
         gap: 6px;
