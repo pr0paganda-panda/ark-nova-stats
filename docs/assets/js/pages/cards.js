@@ -103,6 +103,12 @@ const defaultSnapshotCache = { 0: null, 1: null };
 let apiWarmupInFlight = false;
 let apiWarmupLastAt = 0;
 const API_WARMUP_COOLDOWN_MS = 5 * 60 * 1000;
+let isPageMounted = false;
+let mountToken = 0;
+
+function isCurrentMount(token) {
+  return isPageMounted && token === mountToken;
+}
 
 // ── Attributes bar state ──────────────────────────────────────────────────────
 // cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
@@ -130,6 +136,9 @@ let typeBeforeReeferAviary = null;
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 export function mount({ dataset = 1 } = {}) {
+  bindWindowHandlers();
+  isPageMounted = true;
+  const activeMountToken = ++mountToken;
   // The router recreates this page's DOM on every visit, while ES module state
   // persists. Reset DOM-backed state here so controls and data start aligned.
   resetCardsPageState(dataset);
@@ -142,14 +151,16 @@ export function mount({ dataset = 1 } = {}) {
   buildAttributeChips();
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.addEventListener('input', onSearch);
-  applyFilters(); // auto-load on page open with defaults
+  applyFilters(activeMountToken); // auto-load on page open with defaults
   warmApiInBackground();
 
   loadCardAliases().then(() => {
+    if (!isCurrentMount(activeMountToken)) return;
     if (allData.length) applySearch();
   });
 
   loadCardAttributes().then(() => {
+    if (!isCurrentMount(activeMountToken)) return;
     refreshAttributeAvailability();
     if (allData.length) applySearch();
   });
@@ -306,7 +317,7 @@ function setTab(value, btn) {
   isMW = value;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  applyFilters();
+  applyFilters(mountToken);
 }
 
 // ── end_game toggle ────────────────────────────────────────────────────────────
@@ -338,7 +349,7 @@ function resetFilters() {
   resetAllAttributeFilters();
   refreshAttributeAvailability();
 
-  applyFilters();
+  applyFilters(mountToken);
 }
 
 // ── Collect filter params ──────────────────────────────────────────────────────
@@ -415,10 +426,12 @@ function closeSidebarIfOpen() {
 }
 
 async function applyFiltersFromSidebar() {
+  const activeMountToken = mountToken;
   const params = getParams();
   const defaultSnapshotKey = getDefaultSnapshotKey(params);
   if (defaultSnapshotKey !== null) {
     const cachedDefaultSnapshot = defaultSnapshotCache[defaultSnapshotKey];
+    if (!isCurrentMount(activeMountToken)) return;
     if (cachedDefaultSnapshot) {
       roundFilterActive = Boolean(cachedDefaultSnapshot.round_filter_active);
       allData = cachedDefaultSnapshot.data;
@@ -430,8 +443,8 @@ async function applyFiltersFromSidebar() {
     return;
   }
 
-  await applyFilters();
-  closeSidebarIfOpen();
+  await applyFilters(activeMountToken);
+  if (isCurrentMount(activeMountToken)) closeSidebarIfOpen();
 }
 
 function warmApiInBackground() {
@@ -454,11 +467,12 @@ function warmApiInBackground() {
 }
 
 // ── Apply filters (fetch from API) ─────────────────────────────────────────────
-async function applyFilters() {
+async function applyFilters(activeMountToken = mountToken) {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Apply filters.
   // If no Maps or no Rounds are selected, there is nothing to query: the frontend
   // renders an empty result immediately and skips the Cloud Function call entirely.
+  if (!isCurrentMount(activeMountToken)) return;
   const params = getParams();
   const selectedMaps = params.maps || [];
   const selectedRounds = getSelectedRoundTokens();
@@ -507,6 +521,7 @@ async function applyFilters() {
         if (!snapshotRes.ok) throw new Error(`Snapshot HTTP ${snapshotRes.status}`);
         json = await snapshotRes.json();
       } catch (snapshotErr) {
+        if (!isCurrentMount(activeMountToken)) return;
         const fallbackRes = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -523,6 +538,7 @@ async function applyFilters() {
       json = await res.json();
     }
 
+    if (!isCurrentMount(activeMountToken)) return;
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
     roundFilterActive = Boolean(json.round_filter_active ?? (params.rounds !== undefined));
@@ -547,9 +563,9 @@ async function applyFilters() {
     applySearch();
 
   } catch (err) {
-    showError(err.message);
+    if (isCurrentMount(activeMountToken)) showError(err.message);
   } finally {
-    if (btn) {
+    if (isCurrentMount(activeMountToken) && btn) {
       btn.disabled = false;
       btn.textContent = 'Apply filters';
     }
@@ -1892,10 +1908,13 @@ function passesAttributeFilters(row) {
 }
 export function setDataset(value) {
   isMW = Number(value) === 0 ? 0 : 1;
-  applyFilters();
+  if (!isPageMounted) return;
+  applyFilters(mountToken);
 }
 
 export function unmount() {
+  isPageMounted = false;
+  mountToken += 1;
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.removeEventListener('input', onSearch);
   const panel = document.getElementById('abilitiesPanel');
@@ -1906,7 +1925,7 @@ export function unmount() {
   if (tagPopup) tagPopup.classList.remove('open');
 }
 
-Object.assign(window, {
+const PAGE_WINDOW_HANDLERS = {
   onMinPlaysInput,
   onRppChange,
   toggleAttributesBar,
@@ -1938,6 +1957,8 @@ Object.assign(window, {
   onEndGameChange,
   applyFiltersFromSidebar,
   goPage,
-});
+};
 
-
+function bindWindowHandlers() {
+  Object.assign(window, PAGE_WINDOW_HANDLERS);
+}
