@@ -1845,6 +1845,14 @@
       color: var(--accent);
     }
 
+    .filter-btn-icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      display: block;
+      fill: currentColor;
+    }
+
     /* Sidebar close button (X) */
     .sidebar-close-btn {
       background: none;
