@@ -1,10 +1,21 @@
 ﻿export const id = 'opening-hand';
+import {
+  cappedNumericRange,
+  deltaRangeColor,
+  numericRange,
+  playrateColor,
+  relativeEloColor,
+} from '../color-scales.js?v=20260707-1';
+import { loadStats } from '../snapshot-cache.js?v=20260908-arena-bootstrap1';
+import { formatSignedDeltaAdaptive } from '../table-cells.js?v=20260712-4';
+import { ALL_MAPS, DEFAULT_MAPS, mapGroupNames, renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
+
 export const title = 'Opening Hand';
 export const navLabel = 'Opening Hand';
-export const mainHtml = "<!--\n      Main table controls.\n      Desktop/tablet: meta left, Minimum keeps + Rows controls right.\n      Phone: compact single row. Card search lives inside the Card table header.\n    -->\n    <div class=\"main-header\">\n      <div class=\"table-meta\" id=\"tableMeta\"></div>\n      <div class=\"main-controls\">\n        <!-- Frontend-only Minimum keeps filter.\n             Empty value = no minimum. It filters by n_played (kept count) immediately via onMinPlaysInput().\n             The blank placeholder is intentional; CSS draws the centred dash. -->\n        <div class=\"min-plays-wrap\">\n          <label class=\"min-plays-label\" for=\"minPlayedInput\"><span class=\"min-plays-label-full\">Minimum keeps</span><span class=\"min-plays-label-short\">Min keeps</span></label>\n          <input class=\"min-plays-input\" type=\"number\" id=\"minPlayedInput\" placeholder=\" \" min=\"0\" inputmode=\"numeric\" oninput=\"onMinPlaysInput()\" />\n        </div>\n        <div class=\"rpp-wrap\">\n          Rows\n          <select class=\"rpp-select\" id=\"rppSelect\" onchange=\"onRppChange()\">\n            <option value=\"25\">25</option>\n            <option value=\"50\" selected>50</option>\n            <option value=\"100\">100</option>\n            <option value=\"9999\">All</option>\n          </select>\n        </div>\n      </div>\n    </div>\n\n    <!-- ── Attributes bar ──────────────────────────────────────────────────\n         Client-side-only card metadata filters (Species, Habitat, Strength,\n         Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked\n         up by card_name. Filtering is layered into applySearch() exactly like\n         the Type filter — no backend call, instant results.\n         Collapsible, collapsed by default.\n\n         Important maintenance notes:\n         - Conditions still exists in cards_attributes.csv, but is intentionally\n           NOT exposed in the UI and is not read by the frontend.\n         - Species and Habitat are separate filters, not a combined OR group.\n         - Rock/Water/Science are boolean \"only cards with this tag\" toggles.\n         - Strength/Science are Sponsor-only; Size/Reefer/Aviary/Abilities are\n           Animal-only. Availability is controlled in ATTR_RELEVANT_TYPES. -->\n    <div class=\"attributes-bar collapsed\" id=\"attributesBar\">\n      <div class=\"attributes-bar-header\" onclick=\"toggleAttributesBar()\">\n        <div class=\"attributes-bar-title\">\n          Attributes\n        </div>\n        <div class=\"attributes-bar-actions\">\n          <button class=\"attributes-reset-btn\" onclick=\"resetAttributesFromHeader(event)\">Reset</button>\n          <span class=\"attributes-bar-chevron\">▾</span>\n        </div>\n      </div>\n      <div class=\"attributes-bar-body\" id=\"attributesBarBody\">\n\n        <!-- Species and Habitat are separate include-list filters.\n             Both are disabled and reset when Type is Project-only.\n             Do not merge these back into one Tags control unless Panda asks:\n             user testing specifically preferred them split. -->\n        <div class=\"attr-group\" id=\"attrGroupSpecies\" data-attr-group=\"species\">\n          <span class=\"attr-group-label\">Species</span>\n          <button class=\"attr-tags-btn\" id=\"speciesBtn\" onclick=\"toggleTagPopup('species', event)\">\n            <span id=\"speciesBtnLabel\">All</span>\n            <span class=\"attr-tags-indicator\" id=\"speciesBtnIndicator\"></span>\n          </button>\n        </div>\n\n        <div class=\"attr-group\" id=\"attrGroupContinent\" data-attr-group=\"continent\">\n          <span class=\"attr-group-label\">Habitat</span>\n          <button class=\"attr-tags-btn\" id=\"continentBtn\" onclick=\"toggleTagPopup('continent', event)\">\n            <span id=\"continentBtnLabel\">All</span>\n            <span class=\"attr-tags-indicator\" id=\"continentBtnIndicator\"></span>\n          </button>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Rock / Water / Science: simple yes/no toggles, default OFF (no filtering).\n             Switching ON narrows to \"only cards that have this tag\".\n             Rock/Water appear on Animal and Sponsor; Science only on Sponsor. -->\n        <div class=\"attr-group\" id=\"attrGroupRock\" data-attr-group=\"rock\">\n          <span class=\"attr-group-label\">Rock</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"rockToggle\" onchange=\"onBoolTagToggle('rock')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-group\" id=\"attrGroupWater\" data-attr-group=\"water\">\n          <span class=\"attr-group-label\">Water</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"waterToggle\" onchange=\"onBoolTagToggle('water')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <div class=\"attr-group\" id=\"attrGroupScience\" data-attr-group=\"science\">\n          <span class=\"attr-group-label\">Science</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"scienceToggle\" onchange=\"onBoolTagToggle('science')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Strength: 3/4/5/6 chips. Sponsor-only attribute.\n             Disabled unless Sponsor is active in the Type filter.\n             Narrowing this (away from all-selected) forces Type to Sponsor-only. -->\n        <div class=\"attr-group\" id=\"attrGroupStrength\" data-attr-group=\"strength\">\n          <div class=\"attr-group-heading\">\n            <span class=\"attr-group-label\">Strength</span>\n            <span class=\"attr-group-actions\">\n              (<span class=\"map-toggle-link\" onclick=\"selectAllAttributeValues('strength')\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneAttributeValues('strength')\">none</span>)\n            </span>\n          </div>\n          <div class=\"attr-chip-row\" id=\"strengthChips\"></div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Size: 1/2/3/4/5 chips. Animal-only attribute.\n             Disabled unless Animal is active in the Type filter.\n             Narrowing this forces Type to Animal-only. -->\n        <div class=\"attr-group\" id=\"attrGroupSize\" data-attr-group=\"size\">\n          <div class=\"attr-group-heading\">\n            <span class=\"attr-group-label\">Size</span>\n            <span class=\"attr-group-actions\">\n              (<span class=\"map-toggle-link\" onclick=\"selectAllAttributeValues('size')\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneAttributeValues('size')\">none</span>)\n            </span>\n          </div>\n          <div class=\"attr-chip-row\" id=\"sizeChips\"></div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Reefer: yes/no toggle, default No (off, not filtering).\n             Animal-only attribute. Disabled unless Animal is active in Type.\n             Turning ON forces Type to Animal-only, remembering whatever Type\n             selection was active immediately before (shared with Aviary).\n             Turning OFF restores that remembered Type — unless Aviary is still\n             ON, in which case Type stays Animal-only until both are off. -->\n        <div class=\"attr-group\" id=\"attrGroupReefer\" data-attr-group=\"reefer\">\n          <span class=\"attr-group-label\">Reefer</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"reeferToggle\" onchange=\"onReeferAviaryToggle('reefer')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <!-- Aviary: same pattern as Reefer, sharing the same remembered-Type slot. -->\n        <div class=\"attr-group\" id=\"attrGroupAviary\" data-attr-group=\"aviary\">\n          <span class=\"attr-group-label\">Aviary</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"aviaryToggle\" onchange=\"onReeferAviaryToggle('aviary')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Abilities: searchable multi-select checklist, alphabetical, OR logic.\n             Animal-only attribute. Disabled unless Animal is active in Type. -->\n        <div class=\"attr-group\" id=\"attrGroupAbilities\" data-attr-group=\"abilities\">\n          <span class=\"attr-group-label\">Abilities</span>\n          <div class=\"abilities-dropdown\">\n            <button class=\"abilities-dropdown-btn\" id=\"abilitiesBtn\" onclick=\"toggleAbilitiesPanel(event)\">\n              <span id=\"abilitiesBtnLabel\">All</span>\n              <span class=\"attr-tags-indicator\" id=\"abilitiesBtnIndicator\"></span>\n            </button>\n            <div class=\"abilities-panel\" id=\"abilitiesPanel\" onclick=\"event.stopPropagation()\">\n              <input class=\"abilities-search-input\" type=\"text\" id=\"abilitiesSearchInput\"\n                     placeholder=\"Search abilities…\" oninput=\"renderAbilitiesList()\" />\n              <div class=\"abilities-actions\">\n                <span class=\"map-toggle-link\" onclick=\"selectAllAbilities()\">all</span> /\n                <span class=\"map-toggle-link\" onclick=\"selectNoneAbilities()\">none</span>\n              </div>\n              <div class=\"abilities-list\" id=\"abilitiesList\"></div>\n            </div>\n          </div>\n        </div>\n\n      </div>\n    </div>\n\n    <!-- Tag popup overlay: reused by Species and Habitat.\n         The popup content is generated from currentTagPopupKind, so there is\n         only one modal in the DOM for both controls. -->\n    <div class=\"tags-popup-overlay\" id=\"tagPopupOverlay\" onclick=\"closeTagPopupOnOverlay(event)\">\n      <div class=\"tags-popup\" onclick=\"event.stopPropagation()\">\n        <div class=\"tags-popup-header\">\n          <span class=\"tags-popup-title\" id=\"tagPopupTitle\">Species</span>\n          <div class=\"tags-popup-actions\">\n            <span class=\"map-toggle-link\" onclick=\"selectAllCurrentTagPopup()\">all</span> /\n            <span class=\"map-toggle-link\" onclick=\"selectNoneCurrentTagPopup()\">none</span>\n          </div>\n        </div>\n\n        <div class=\"tags-popup-section\">\n          <div class=\"tags-popup-chips\" id=\"tagPopupChips\"></div>\n        </div>\n\n        <button class=\"tags-popup-close-btn\" onclick=\"closeTagPopup()\">Done</button>\n      </div>\n    </div>\n\n    <div class=\"table-wrap\">\n      <table id=\"statsTable\">\n        <thead>\n          <!--\n\n            Table order matters. Keep this in sync with:\n            - renderTable() row HTML,\n            - phone nth-child widths,\n            - sticky phone columns,\n            - colspan=\"9\" in loading/error states.\n            Current order: #, Card, Δ Dealt, Δ Kept, Elo, Keeprate, Kept, Dealt, Type.\n          -->\n          <tr>\n            <th style=\"width:5%;text-align:center;cursor:default;\">#</th>\n            <!-- Card search lives inside this header cell.\n                 Clicking the cell sorts by card_name; clicking the magnifier opens search.\n                 Keep openCardSearch(event) and the overlay's stopPropagation, otherwise\n                 opening/typing in search can accidentally trigger sorting. -->\n            <th class=\"card-search-header\" onclick=\"sortBy('card_name')\" style=\"width:20%;text-align:center\">\n              <div class=\"card-header-content\" id=\"cardHeaderContent\">\n                <button class=\"card-search-btn\" id=\"cardSearchBtn\" onclick=\"openCardSearch(event)\" title=\"Search cards\" aria-label=\"Search cards\">🔍</button>\n                <span class=\"card-header-title\">Card</span>\n                <span class=\"sort-arrow\" id=\"sort-card_name\">↕</span>\n              </div>\n              <div class=\"card-header-search\" id=\"cardHeaderSearch\" onclick=\"event.stopPropagation()\">\n                <span class=\"card-header-search-icon\">🔍</span>\n                <input class=\"card-header-search-input\" type=\"text\" id=\"searchInput\" placeholder=\"Search…\" oninput=\"onSearch()\" />\n                <button class=\"card-search-close\" onclick=\"closeCardSearch(event)\" title=\"Clear search\" aria-label=\"Clear search\">×</button>\n              </div>\n            </th>\n            <th onclick=\"sortBy('delta_played')\" style=\"width:12%;text-align:center\">Δ (Dealt)<span class=\"col-tip\" data-tip=\"Average elo gain when dealt\">?</span><span class=\"sort-arrow\" id=\"sort-delta_played\">↕</span></th>\n            <th onclick=\"sortBy('delta_in_hand')\" style=\"width:12%;text-align:center\">Δ (Kept)<span class=\"col-tip\" data-tip=\"Average elo gain when kept\">?</span><span class=\"sort-arrow\" id=\"sort-delta_in_hand\">↕</span></th>\n            <th onclick=\"sortBy('avg_elo')\" style=\"width:8%;text-align:center\">Elo<span class=\"col-tip\" data-tip=\"Average player elo when kept\">?</span><span class=\"sort-arrow\" id=\"sort-avg_elo\">↕</span></th>\n            <th onclick=\"sortBy('playrate_pct')\" style=\"width:13%;text-align:center\">Keeprate <span class=\"col-tip\" data-tip-fraction>?</span><span class=\"sort-arrow\" id=\"sort-playrate_pct\">↕</span></th>\n            <th onclick=\"sortBy('n_played')\" style=\"width:10%;text-align:center\">Kept<span class=\"col-tip\" data-tip-played>?</span><span class=\"sort-arrow\" id=\"sort-n_played\">↕</span></th>\n            <th onclick=\"sortBy('n_seen')\" style=\"width:10%;text-align:center\">Dealt<span class=\"col-tip\" data-tip-seen>?</span><span class=\"sort-arrow\" id=\"sort-n_seen\">↕</span></th>\n            <th class=\"type-filter-header\" id=\"typeFilterHeader\" style=\"width:10%;text-align:center;cursor:pointer;\" onclick=\"toggleTypeFilterPopup(event)\">\n              <span class=\"type-filter-label\">Type <span class=\"type-filter-indicator\" id=\"typeFilterIndicator\">▼</span></span>\n              <div class=\"type-filter-popup\" id=\"typeFilterPopup\">\n                <button class=\"chip active\" data-value=\"animal\" onclick=\"toggleTypeChip(this)\">Animal</button>\n                <button class=\"chip active\" data-value=\"sponsor\" onclick=\"toggleTypeChip(this)\">Sponsor</button>\n                <button class=\"chip active\" data-value=\"project\" onclick=\"toggleTypeChip(this)\">Project</button>\n              </div>\n            </th>\n          </tr>\n        </thead>\n        <tbody id=\"tableBody\">\n          <tr><td colspan=\"9\">\n            <div class=\"state-overlay\">\n              <div class=\"spinner\"></div>\n              <div class=\"state-title\">Preparing data...</div>\n              <div class=\"state-sub\">Loading the latest available opening hand statistics.</div>\n            </div>\n          </td></tr>\n        </tbody>\n      </table>\n      <div class=\"pagination\" id=\"pagination\" style=\"display:none;\"></div>\n    </div>";
-export const sidebarHtml = "<div class=\"sidebar-header\">\n      <span class=\"sidebar-title\">Filters</span>\n      <div style=\"display:flex;align-items:center;gap:6px;\">\n        <button class=\"reset-btn\" onclick=\"resetFilters()\">Reset</button>\n        <button class=\"sidebar-close-btn\" onclick=\"toggleSidebar()\" title=\"Close filters\">✕</button>\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Player ELO -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Player ELO</span>\n      <div class=\"range-row\">\n        <input class=\"range-input\" type=\"number\" id=\"playerEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" />\n        <input class=\"range-input\" type=\"number\" id=\"playerEloMax\" placeholder=\"Max\" min=\"0\" />\n      </div>\n    </div>\n\n    <!-- Opponent ELO -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Opponent ELO</span>\n      <div class=\"range-row\">\n        <input class=\"range-input\" type=\"number\" id=\"opponentEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" />\n        <input class=\"range-input\" type=\"number\" id=\"opponentEloMax\" placeholder=\"Max\" min=\"0\" />\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Maps -->\n    <div class=\"filter-group\">\n      <div style=\"display:flex;align-items:baseline;gap:6px;margin-bottom:8px;\">\n        <span class=\"filter-label\" style=\"margin-bottom:0\">Maps</span>\n        <span class=\"map-select-all-none\">\n          (<span class=\"map-toggle-link\" onclick=\"selectAllMaps()\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneMaps()\">none</span>)\n        </span>\n      </div>\n      <div class=\"chip-grid\" id=\"mapChips\"></div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Date range -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Date Range</span>\n      <input class=\"date-input\" type=\"date\" id=\"dateFrom\" value=\"2025-01-01\" />\n      <input class=\"date-input\" type=\"date\" id=\"dateTo\" />\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- End game triggered -->\n    <div class=\"filter-group\">\n      <div class=\"toggle-row\">\n        <span class=\"toggle-label\">Completed games only</span>\n        <label class=\"toggle\">\n          <input type=\"checkbox\" id=\"endGameToggle\" checked onchange=\"onEndGameChange()\" />\n          <span class=\"toggle-track\"></span>\n        </label>\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <div class=\"filter-action-stack\">\n      <button class=\"apply-btn\" id=\"applyBtn\" onclick=\"applyFiltersFromSidebar()\">Apply filters</button>\n    </div>";
+export const mainHtml = "<!--\n      Main table controls.\n      Desktop/tablet: meta left, Minimum keeps + Rows controls right.\n      Phone: compact single row. Card search lives inside the Card table header.\n    -->\n    <div class=\"main-header\">\n      <div class=\"table-meta\" id=\"tableMeta\"></div>\n      <div class=\"main-controls\">\n        <!-- Frontend-only Minimum keeps filter.\n             Empty value = no minimum. It filters by n_played (kept count) immediately via onMinPlaysInput().\n             The blank placeholder is intentional; CSS draws the centred dash. -->\n        <div class=\"min-plays-wrap\">\n          <label class=\"min-plays-label\" for=\"minPlayedInput\"><span class=\"min-plays-label-full\">Minimum keeps</span><span class=\"min-plays-label-short\">Min keeps</span></label>\n          <input class=\"min-plays-input\" type=\"number\" id=\"minPlayedInput\" placeholder=\" \" min=\"0\" inputmode=\"numeric\" oninput=\"onMinPlaysInput()\" />\n        </div>\n        <div class=\"rpp-wrap\">\n          Rows\n          <select class=\"rpp-select\" id=\"rppSelect\" onchange=\"onRppChange()\">\n            <option value=\"25\">25</option>\n            <option value=\"50\" selected>50</option>\n            <option value=\"100\">100</option>\n            <option value=\"9999\">All</option>\n          </select>\n        </div>\n      </div>\n    </div>\n\n    <!-- Attributes bar\n         Client-side-only card metadata filters (Species, Habitat, Strength,\n         Size, Reefer, Aviary, Abilities). Reads cards_attributes.csv, looked\n         up by card_name. Filtering is layered into applySearch() exactly like\n         the Type filter \u2014 no backend call, instant results.\n         Collapsible, collapsed by default.\n\n         Important maintenance notes:\n         - Conditions still exists in cards_attributes.csv, but is intentionally\n           NOT exposed in the UI and is not read by the frontend.\n         - Species and Habitat are separate filters, not a combined OR group.\n         - Rock/Water/Science are boolean \"only cards with this tag\" toggles.\n         - Strength/Science are Sponsor-only; Size/Reefer/Aviary/Abilities are\n           Animal-only. Availability is controlled in ATTR_RELEVANT_TYPES. -->\n    <div class=\"attributes-bar collapsed\" id=\"attributesBar\">\n      <div class=\"attributes-bar-header\" onclick=\"toggleAttributesBar()\">\n        <div class=\"attributes-bar-title\">\n          Attributes\n        </div>\n        <div class=\"attributes-bar-actions\">\n          <button class=\"attributes-reset-btn\" onclick=\"resetAttributesFromHeader(event)\">Reset</button>\n          <span class=\"attributes-bar-chevron\">&#9662;</span>\n        </div>\n      </div>\n      <div class=\"attributes-bar-body\" id=\"attributesBarBody\">\n\n        <!-- Species and Habitat are separate include-list filters.\n             Both are disabled and reset when Type is Project-only.\n             Do not merge these back into one Tags control unless Panda asks:\n             user testing specifically preferred them split. -->\n        <div class=\"attr-group\" id=\"attrGroupSpecies\" data-attr-group=\"species\">\n          <span class=\"attr-group-label\">Species</span>\n          <button class=\"attr-tags-btn\" id=\"speciesBtn\" onclick=\"toggleTagPopup('species', event)\">\n            <span id=\"speciesBtnLabel\">All</span>\n            <span class=\"attr-tags-indicator\" id=\"speciesBtnIndicator\"></span>\n          </button>\n        </div>\n\n        <div class=\"attr-group\" id=\"attrGroupContinent\" data-attr-group=\"continent\">\n          <span class=\"attr-group-label\">Habitat</span>\n          <button class=\"attr-tags-btn\" id=\"continentBtn\" onclick=\"toggleTagPopup('continent', event)\">\n            <span id=\"continentBtnLabel\">All</span>\n            <span class=\"attr-tags-indicator\" id=\"continentBtnIndicator\"></span>\n          </button>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Rock / Water / Science: simple yes/no toggles, default OFF (no filtering).\n             Switching ON narrows to \"only cards that have this tag\".\n             Rock/Water appear on Animal and Sponsor; Science only on Sponsor. -->\n        <div class=\"attr-group\" id=\"attrGroupRock\" data-attr-group=\"rock\">\n          <span class=\"attr-group-label\">Rock</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"rockToggle\" onchange=\"onBoolTagToggle('rock')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-group\" id=\"attrGroupWater\" data-attr-group=\"water\">\n          <span class=\"attr-group-label\">Water</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"waterToggle\" onchange=\"onBoolTagToggle('water')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <div class=\"attr-group\" id=\"attrGroupScience\" data-attr-group=\"science\">\n          <span class=\"attr-group-label\">Science</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"scienceToggle\" onchange=\"onBoolTagToggle('science')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Strength: 3/4/5/6 chips. Sponsor-only attribute.\n             Disabled unless Sponsor is active in the Type filter.\n             Narrowing this (away from all-selected) forces Type to Sponsor-only. -->\n        <div class=\"attr-group\" id=\"attrGroupStrength\" data-attr-group=\"strength\">\n          <div class=\"attr-group-heading\">\n            <span class=\"attr-group-label\">Strength</span>\n            <span class=\"attr-group-actions\">\n              (<span class=\"map-toggle-link\" onclick=\"selectAllAttributeValues('strength')\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneAttributeValues('strength')\">none</span>)\n            </span>\n          </div>\n          <div class=\"attr-chip-row\" id=\"strengthChips\"></div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Size: 1/2/3/4/5 chips. Animal-only attribute.\n             Disabled unless Animal is active in the Type filter.\n             Narrowing this forces Type to Animal-only. -->\n        <div class=\"attr-group\" id=\"attrGroupSize\" data-attr-group=\"size\">\n          <div class=\"attr-group-heading\">\n            <span class=\"attr-group-label\">Size</span>\n            <span class=\"attr-group-actions\">\n              (<span class=\"map-toggle-link\" onclick=\"selectAllAttributeValues('size')\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneAttributeValues('size')\">none</span>)\n            </span>\n          </div>\n          <div class=\"attr-chip-row\" id=\"sizeChips\"></div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Reefer: yes/no toggle, default No (off, not filtering).\n             Animal-only attribute. Disabled unless Animal is active in Type.\n             Turning ON forces Type to Animal-only, remembering whatever Type\n             selection was active immediately before (shared with Aviary).\n             Turning OFF restores that remembered Type \u2014 unless Aviary is still\n             ON, in which case Type stays Animal-only until both are off. -->\n        <div class=\"attr-group\" id=\"attrGroupReefer\" data-attr-group=\"reefer\">\n          <span class=\"attr-group-label\">Reefer</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"reeferToggle\" onchange=\"onReeferAviaryToggle('reefer')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <!-- Aviary: same pattern as Reefer, sharing the same remembered-Type slot. -->\n        <div class=\"attr-group\" id=\"attrGroupAviary\" data-attr-group=\"aviary\">\n          <span class=\"attr-group-label\">Aviary</span>\n          <div class=\"attr-toggle-row\">\n            <label class=\"toggle\">\n              <input type=\"checkbox\" id=\"aviaryToggle\" onchange=\"onReeferAviaryToggle('aviary')\" />\n              <span class=\"toggle-track\"></span>\n            </label>\n          </div>\n        </div>\n\n        <div class=\"attr-separator\" aria-hidden=\"true\"></div>\n\n        <!-- Abilities: searchable multi-select checklist, alphabetical, OR logic.\n             Animal-only attribute. Disabled unless Animal is active in Type. -->\n        <div class=\"attr-group\" id=\"attrGroupAbilities\" data-attr-group=\"abilities\">\n          <span class=\"attr-group-label\">Abilities</span>\n          <div class=\"abilities-dropdown\">\n            <button class=\"abilities-dropdown-btn\" id=\"abilitiesBtn\" onclick=\"toggleAbilitiesPanel(event)\">\n              <span id=\"abilitiesBtnLabel\">All</span>\n              <span class=\"attr-tags-indicator\" id=\"abilitiesBtnIndicator\"></span>\n            </button>\n            <div class=\"abilities-panel\" id=\"abilitiesPanel\" onclick=\"event.stopPropagation()\">\n              <input class=\"abilities-search-input\" type=\"text\" id=\"abilitiesSearchInput\"\n                     placeholder=\"Search abilities...\" oninput=\"renderAbilitiesList()\" />\n              <div class=\"abilities-actions\">\n                <span class=\"map-toggle-link\" onclick=\"selectAllAbilities()\">all</span> /\n                <span class=\"map-toggle-link\" onclick=\"selectNoneAbilities()\">none</span>\n              </div>\n              <div class=\"abilities-list\" id=\"abilitiesList\"></div>\n            </div>\n          </div>\n        </div>\n\n      </div>\n    </div>\n\n    <!-- Tag popup overlay: reused by Species and Habitat.\n         The popup content is generated from currentTagPopupKind, so there is\n         only one modal in the DOM for both controls. -->\n    <div class=\"tags-popup-overlay\" id=\"tagPopupOverlay\" onclick=\"closeTagPopupOnOverlay(event)\">\n      <div class=\"tags-popup\" onclick=\"event.stopPropagation()\">\n        <div class=\"tags-popup-header\">\n          <span class=\"tags-popup-title\" id=\"tagPopupTitle\">Species</span>\n          <div class=\"tags-popup-actions\">\n            <span class=\"map-toggle-link\" onclick=\"selectAllCurrentTagPopup()\">all</span> /\n            <span class=\"map-toggle-link\" onclick=\"selectNoneCurrentTagPopup()\">none</span>\n          </div>\n        </div>\n\n        <div class=\"tags-popup-section\">\n          <div class=\"tags-popup-chips\" id=\"tagPopupChips\"></div>\n        </div>\n\n        <button class=\"tags-popup-close-btn\" onclick=\"closeTagPopup()\">Done</button>\n      </div>\n    </div>\n\n    <div class=\"table-wrap\">\n      <div class=\"table-scroll\">\n      <table id=\"statsTable\">\n        <thead>\n          <tr>\n            <th style=\"width:5%;text-align:center;cursor:default;\">#</th>\n            <th class=\"card-search-header\" onclick=\"sortBy('card_name')\" style=\"width:20%;text-align:center\">\n              <div class=\"card-header-content\" id=\"cardHeaderContent\">\n                <button class=\"card-search-btn\" id=\"cardSearchBtn\" onclick=\"openCardSearch(event)\" title=\"Search cards\" aria-label=\"Search cards\">&#128269;</button>\n                <span class=\"card-header-title\">Card</span>\n                <span class=\"sort-arrow\" id=\"sort-card_name\">&#8597;</span>\n              </div>\n              <div class=\"card-header-search\" id=\"cardHeaderSearch\" onclick=\"event.stopPropagation()\">\n                <span class=\"card-header-search-icon\">&#128269;</span>\n                <input class=\"card-header-search-input\" type=\"text\" id=\"searchInput\" placeholder=\"Search...\" oninput=\"onSearch()\" />\n                <button class=\"card-search-close\" onclick=\"closeCardSearch(event)\" title=\"Clear search\" aria-label=\"Clear search\">x</button>\n              </div>\n            </th>\n            <th onclick=\"sortBy('delta_in_hand')\" style=\"width:12%;text-align:center\">&Delta; (Kept)<span class=\"col-tip\" data-tip=\"average elo gain when kept\">?</span><span class=\"sort-arrow\" id=\"sort-delta_in_hand\">&#8597;</span></th>\n            <th onclick=\"sortBy('delta_played')\" style=\"width:12%;text-align:center\">&Delta; (Dealt)<span class=\"col-tip\" data-tip=\"average elo gain when dealt\">?</span><span class=\"sort-arrow\" id=\"sort-delta_played\">&#8597;</span></th>\n            <th onclick=\"sortBy('avg_elo')\" style=\"width:8%;text-align:center\">Elo<span class=\"col-tip\" data-tip=\"average player elo when kept\">?</span><span class=\"sort-arrow\" id=\"sort-avg_elo\">&#8597;</span></th>\n            <th onclick=\"sortBy('playrate_pct')\" style=\"width:13%;text-align:center\">Keeprate <span class=\"col-tip\" data-tip-fraction>?</span><span class=\"sort-arrow\" id=\"sort-playrate_pct\">&#8597;</span></th>\n            <th onclick=\"sortBy('n_played')\" style=\"width:10%;text-align:center\">Kept<span class=\"col-tip\" data-tip-played>?</span><span class=\"sort-arrow\" id=\"sort-n_played\">&#8597;</span></th>\n            <th onclick=\"sortBy('n_seen')\" style=\"width:10%;text-align:center\">Dealt<span class=\"col-tip\" data-tip-seen>?</span><span class=\"sort-arrow\" id=\"sort-n_seen\">&#8597;</span></th>\n            <th class=\"type-filter-header\" id=\"typeFilterHeader\" style=\"width:10%;text-align:center;cursor:pointer;\" onclick=\"toggleTypeFilterPopup(event)\">\n              <span class=\"type-filter-label\">Type <span class=\"type-filter-indicator type-filter-icon\" id=\"typeFilterIndicator\"></span></span>\n              <div class=\"type-filter-popup\" id=\"typeFilterPopup\">\n                <button class=\"chip active\" data-value=\"animal\" onclick=\"toggleTypeChip(this)\">Animal</button>\n                <button class=\"chip active\" data-value=\"sponsor\" onclick=\"toggleTypeChip(this)\">Sponsor</button>\n                <button class=\"chip active\" data-value=\"project\" onclick=\"toggleTypeChip(this)\">Project</button>\n              </div>\n            </th>\n          </tr>\n        </thead>\n        <tbody id=\"tableBody\">\n          <tr><td colspan=\"9\">\n            <div class=\"state-overlay\">\n              <div class=\"spinner\"></div>\n              <div class=\"state-title\">Preparing data...</div>\n              <div class=\"state-sub\">Loading the latest available opening hand statistics.</div>\n            </div>\n          </td></tr>\n        </tbody>\n      </table>\n      </div>\n      <div class=\"pagination\" id=\"pagination\" style=\"display:none;\"></div>\n    </div>";
+export const sidebarHtml = "<div class=\"sidebar-header\">\n      <span class=\"sidebar-title\">Filters</span>\n      <div style=\"display:flex;align-items:center;gap:6px;\">\n        <button class=\"reset-btn\" onclick=\"resetFilters()\">Reset</button>\n        <button class=\"sidebar-close-btn\" onclick=\"toggleSidebar()\" title=\"Close filters\">x</button>\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Player ELO -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Player ELO</span>\n      <div class=\"range-row\">\n        <input class=\"range-input\" type=\"number\" id=\"playerEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" />\n        <input class=\"range-input\" type=\"number\" id=\"playerEloMax\" placeholder=\"Max\" min=\"0\" />\n      </div>\n    </div>\n\n    <!-- Opponent ELO -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Opponent ELO</span>\n      <div class=\"range-row\">\n        <input class=\"range-input\" type=\"number\" id=\"opponentEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" />\n        <input class=\"range-input\" type=\"number\" id=\"opponentEloMax\" placeholder=\"Max\" min=\"0\" />\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Maps -->\n    <div class=\"filter-group\">\n      <div style=\"display:flex;align-items:baseline;gap:6px;margin-bottom:8px;\">\n        <span class=\"filter-label\" style=\"margin-bottom:0\">Maps</span>\n        <span class=\"map-select-all-none\">\n          (<span class=\"map-toggle-link\" onclick=\"selectAllMaps()\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneMaps()\">none</span>)\n        </span>\n      </div>\n      <div class=\"chip-grid\" id=\"mapChips\"></div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Date range -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Date Range</span>\n      <input class=\"date-input\" type=\"text\" inputmode=\"numeric\" pattern=\"\\d{4}-\\d{2}-\\d{2}\" placeholder=\"yyyy-mm-dd\" id=\"dateFrom\" value=\"2025-01-01\" />\n      <input class=\"date-input\" type=\"text\" inputmode=\"numeric\" pattern=\"\\d{4}-\\d{2}-\\d{2}\" placeholder=\"yyyy-mm-dd\" id=\"dateTo\" />\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Completed games only: true means no table concession -->\n    <div class=\"filter-group\">\n      <div class=\"toggle-row\">\n        <span class=\"toggle-label\">Completed games only</span>\n        <label class=\"toggle\">\n          <input type=\"checkbox\" id=\"endGameToggle\" onchange=\"onEndGameChange()\" />\n          <span class=\"toggle-track\"></span>\n        </label>\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <div class=\"filter-action-stack\">\n      <button class=\"apply-btn\" id=\"applyBtn\" onclick=\"applyFiltersFromSidebar()\">Apply filters</button>\n    </div>";
 
-// ── Config ─────────────────────────────────────────────────────────────────────
+// Config
 // API_URL points to the deployed Google Cloud Function. The frontend sends POST JSON
 // with filters; the backend queries BigQuery and returns already-aggregated card stats.
 const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
@@ -23,13 +34,21 @@ const CARD_ALIASES_URL = 'cards_altnames.csv';
 // bar still renders but every group is effectively a no-op since there's no data to filter on.
 const CARD_ATTRIBUTES_URL = 'cards_attributes.csv';
 
-// ── Attribute definitions ─────────────────────────────────────────────────────
+// Attribute definitions
 // Each attribute group declares which card Types it can possibly apply to.
 // A group is disabled (and reset to its default/non-filtering state) whenever
-// none of its relevantTypes are active in the Type filter — e.g. Strength only
+// none of its relevantTypes are active in the Type filter \u2014 e.g. Strength only
 // ever appears on Sponsor cards, so it's meaningless (and disabled) otherwise.
+const TAG_NONE_VALUE = '0';
 const SPECIES_TAGS = ['Bear', 'Bird', 'Herbivore', 'Petting Zoo', 'Predator', 'Primate', 'Reptile', 'Sea Animal'];
 const CONTINENT_TAGS = ['Africa', 'America', 'Asia', 'Australia', 'Europe'];
+const ATTRIBUTE_ICON_ASSETS = {
+  Bear: 'bear.png', Bird: 'bird.png', Herbivore: 'herbivore.png',
+  'Petting Zoo': 'petting-zoo.png', Predator: 'predator.png', Primate: 'primate.png',
+  Reptile: 'reptile.png', 'Sea Animal': 'sea-animal.png',
+  Africa: 'africa.png', America: 'americas.png', Asia: 'asia.png',
+  Australia: 'australia.png', Europe: 'europe.png',
+};
 
 const STRENGTH_VALUES = ['3', '4', '5', '6'];
 const SIZE_VALUES = ['1', '2', '3', '4', '5'];
@@ -46,6 +65,11 @@ const ATTR_RELEVANT_TYPES = {
   aviary: ['animal'],
   abilities: ['animal'],
 };
+
+function escapeAttr(value) {
+  return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 // Keep this list in sync with the actual UI groups above.
 // refreshAttributeAvailability() uses it as the single source of truth for:
@@ -74,7 +98,7 @@ const VALID_MAPS = [
   { code: 'T1',  full: 'Map T1: Tournament 1' },
 ];
 
-// ── State ──────────────────────────────────────────────────────────────────────
+// State
 let allData = [];      // Full API result for current backend filters.
 let filteredData = []; // allData after client-side search + Type chip filtering.
 // Default opening sort: highest delta dealt first.
@@ -85,7 +109,7 @@ let searchQuery = '';
 let cardAliases = new Map();
 let isMW = 1;
 let roundFilterActive = false; // Opening Hand has no round filter; kept false so all metric columns stay visible.
-let minPlayedThreshold = null; // Client-side minimum kept-count filter. Null/blank means no minimum.
+let minPlayedThreshold = 1000; // Client-side default; changing it never requests backend data.
 // In-memory browser cache for the two default backend snapshots. This complements
 // the server-side Cloud Storage cache: once MW/Base has loaded in this page view,
 // switching back to that default tab can render immediately without another fetch.
@@ -100,7 +124,7 @@ function isCurrentMount(token) {
   return isPageMounted && token === mountToken;
 }
 
-// ── Attributes bar state ──────────────────────────────────────────────────────
+// Attributes bar state
 // cardAttributes maps normalized card name -> parsed attribute object from cards_attributes.csv.
 let cardAttributes = new Map();
 let cardAttributesLoaded = false;
@@ -123,11 +147,17 @@ let aviaryOn = false;
 // Remembered Type-filter selection captured right before Reefer or Aviary first
 // switches Type to Animal-only, so it can be restored once both are off again.
 let typeBeforeReeferAviary = null;
+let typeBeforeSharedAnimalSponsor = null;
+let typeBeforeSponsorOnly = null;
+let typeBeforeSizeOnly = null;
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// Init
 export function mount({ dataset = 1 } = {}) {
   bindWindowHandlers();
   isPageMounted = true;
+  // The shared phone stylesheet needs an explicit schema marker so its
+  // nine-column Card widths never leak into unrelated #statsTable matrices.
+  document.getElementById('statsTable')?.classList.add('opening-hand-table');
   const activeMountToken = ++mountToken;
   // The router recreates this page's DOM on every visit, while ES module state
   // persists. Reset DOM-backed state here so controls and data start aligned.
@@ -165,7 +195,9 @@ function resetOpeningHandPageState(dataset) {
   searchQuery = '';
   isMW = Number(dataset) === 0 ? 0 : 1;
   roundFilterActive = false;
-  minPlayedThreshold = null;
+  minPlayedThreshold = 1000;
+  const minimumInput = document.getElementById('minPlayedInput');
+  if (minimumInput) minimumInput.value = '1000';
   selectedSpeciesTags = new Set(SPECIES_TAGS);
   selectedContinentTags = new Set(CONTINENT_TAGS);
   selectedStrengths = new Set(STRENGTH_VALUES);
@@ -178,29 +210,25 @@ function resetOpeningHandPageState(dataset) {
   reeferOn = false;
   aviaryOn = false;
   typeBeforeReeferAviary = null;
+  typeBeforeSharedAnimalSponsor = null;
+  typeBeforeSponsorOnly = null;
+  typeBeforeSizeOnly = null;
 }
-// ── Map chips ──────────────────────────────────────────────────────────────────
+// Map chips
 function buildMapChips() {
   const container = document.getElementById('mapChips');
-  VALID_MAPS.forEach(map => {
-    const btn = document.createElement('button');
-    btn.className = 'chip active';
-    btn.dataset.value = map.full;
-    btn.dataset.tooltip = map.full;
-    btn.textContent = map.code;
-    btn.onclick = () => toggleChip(btn, 'map');
-    container.appendChild(btn);
-  });
+  if (container) renderMapFilterChips(container, DEFAULT_MAPS.map(([, , full]) => full), 'toggleOpeningMap');
 }
 
 function isRoundUnavailableColumn(col) {
   return false;
 }
 
-// ── Smart tooltip (avoids viewport clipping) ───────────────────────────────────
+// Smart tooltip (avoids viewport clipping)
 const _tooltip = document.getElementById('map-tooltip');
 
 document.addEventListener('mouseover', e => {
+  if (!isPageMounted) return;
   const chip = e.target.closest('[data-tooltip]');
   if (!chip) return;
   _tooltip.textContent = chip.dataset.tooltip;
@@ -209,12 +237,14 @@ document.addEventListener('mouseover', e => {
 });
 
 document.addEventListener('mousemove', e => {
+  if (!isPageMounted) return;
   if (_tooltip.style.display === 'none') return;
   if (!e.target.closest('[data-tooltip]')) { _tooltip.style.display = 'none'; return; }
   positionTooltip(e);
 });
 
 document.addEventListener('mouseout', e => {
+  if (!isPageMounted) return;
   if (!e.target.closest('[data-tooltip]')) _tooltip.style.display = 'none';
 });
 
@@ -232,34 +262,27 @@ function positionTooltip(e) {
   _tooltip.style.top = y + 'px';
 }
 
-function selectAllMaps() {
-  document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
+function selectAllMaps(group = 'all') {
+  const names = group === 'all' ? ALL_MAPS.map(([, , full]) => full) : mapGroupNames(group);
+  document.querySelectorAll('#mapChips .chip').forEach(c => { if (names.includes(c.dataset.map)) c.classList.add('active'); });
 }
 
-function selectNoneMaps() {
-  document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.remove('active'));
+function selectNoneMaps(group = 'all') {
+  const names = group === 'all' ? ALL_MAPS.map(([, , full]) => full) : mapGroupNames(group);
+  document.querySelectorAll('#mapChips .chip').forEach(c => { if (names.includes(c.dataset.map)) c.classList.remove('active'); });
 }
 
-// ── Toggle chip ────────────────────────────────────────────────────────────────
+function toggleOpeningMap(map) {
+  const chip = [...document.querySelectorAll('#mapChips .chip')].find(item => item.dataset.map === map);
+  chip?.classList.toggle('active');
+}
+
+// Toggle chip
 function toggleChip(btn, group) {
-// Maps use the "all selected -> clicked chip only" shortcut.
-  if (group === 'map' && isAllSelectedChipClick(btn, '#mapChips .chip')) return;
   btn.classList.toggle('active');
 }
 
-// ── Filter sidebar overlay ────────────────────────────────────────────────────
-function isAllSelectedChipClick(btn, selector) {
-// Shared DOM-only helper for chip groups. It intentionally runs only when
-  // every chip in the group is active. Once a group is narrowed, normal
-  // select/deselect toggling resumes so users can refine incrementally.
-  const chips = [...document.querySelectorAll(selector)];
-  if (!chips.length || chips.some(c => !c.classList.contains('active'))) return false;
-
-  chips.forEach(c => c.classList.toggle('active', c === btn));
-  return true;
-}
-
-// ── MW / Base tab ──────────────────────────────────────────────────────────────
+// MW / Base tab
 function setTab(value, btn) {
   isMW = value;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -267,12 +290,12 @@ function setTab(value, btn) {
   applyFilters(mountToken);
 }
 
-// ── end_game toggle ────────────────────────────────────────────────────────────
+// end_game toggle
 function onEndGameChange() {
-  // nothing extra needed — value read on apply
+  // nothing extra needed \u2014 value read on apply
 }
 
-// ── Reset ──────────────────────────────────────────────────────────────────────
+// Reset
 function resetFilters() {
   document.getElementById('playerEloMin').value = '300';
   document.getElementById('playerEloMax').value = '';
@@ -280,12 +303,12 @@ function resetFilters() {
   document.getElementById('opponentEloMax').value = '';
   document.getElementById('dateFrom').value = '2025-01-01';
   document.getElementById('dateTo').value = '';
-  document.getElementById('endGameToggle').checked = true;
+  document.getElementById('endGameToggle').checked = false;
 
   document.querySelectorAll('#mapChips .chip').forEach(c => c.classList.add('active'));
   const minPlayedInput = document.getElementById('minPlayedInput');
-  if (minPlayedInput) minPlayedInput.value = '';
-  minPlayedThreshold = null;
+  if (minPlayedInput) minPlayedInput.value = '1000';
+  minPlayedThreshold = 1000;
 
   // Reset type filter chips
   document.querySelectorAll('#typeFilterPopup .chip').forEach(c => c.classList.add('active'));
@@ -298,7 +321,7 @@ function resetFilters() {
   applyFilters(mountToken);
 }
 
-// ── Collect filter params ──────────────────────────────────────────────────────
+// Collect filter params
 function getParams() {
   // Collect backend filters here. Search text and Type chips are intentionally not sent;
   // they are applied client-side after data has loaded.
@@ -308,7 +331,7 @@ function getParams() {
     is_mw: isMW,
     stats_page: STATS_PAGE,
     maps: selectedMaps,
-    end_game_triggered: document.getElementById('endGameToggle').checked ? true : null,
+    completed_only: document.getElementById('endGameToggle').checked ? true : null,
   };
 
 
@@ -319,19 +342,20 @@ function getParams() {
   const dFrom = document.getElementById('dateFrom').value;
   const dTo = document.getElementById('dateTo').value;
 
-  if (pMin) params.player_elo_min = parseInt(pMin);
+  params.player_elo_min = pMin === '' ? 0 : parseInt(pMin);
   if (pMax) params.player_elo_max = parseInt(pMax);
-  if (oMin) params.opponent_elo_min = parseInt(oMin);
+  params.opponent_elo_min = oMin === '' ? 0 : parseInt(oMin);
   if (oMax) params.opponent_elo_max = parseInt(oMax);
   if (dFrom) params.date_from = dFrom;
   if (dTo) params.date_to = dTo;
 
-  // card_types now handled client-side — not sent to API
+  // card_types now handled client-side \u2014 not sent to API
 
   return params;
 }
 
 function getDefaultSnapshotKey(params) {
+  if (window.hasActiveGlobalModeFilter?.()) return null;
   // Mirrors the backend's cacheable-default definition. Only these two cases
   // are safe to reuse without a fetch: default Marine Worlds and default Base.
   const selectedMaps = params.maps || [];
@@ -352,7 +376,7 @@ function getDefaultSnapshotKey(params) {
     params.opponent_elo_max === undefined &&
     (params.date_from === undefined || params.date_from === '2025-01-01') &&
     params.date_to === undefined &&
-    params.end_game_triggered === true &&
+    params.completed_only === null &&
     params.rounds === undefined;
 
   return isDefault ? params.is_mw : null;
@@ -384,8 +408,8 @@ async function applyFiltersFromSidebar() {
     return;
   }
 
+  closeSidebarIfOpen();
   await applyFilters(activeMountToken);
-  if (isCurrentMount(activeMountToken)) closeSidebarIfOpen();
 }
 
 function warmApiInBackground() {
@@ -407,7 +431,7 @@ function warmApiInBackground() {
   });
 }
 
-// ── Apply filters (fetch from API) ─────────────────────────────────────────────
+// Apply filters (fetch from API)
 async function applyFilters(activeMountToken = mountToken) {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Apply filters.
@@ -440,35 +464,15 @@ async function applyFilters(activeMountToken = mountToken) {
 
   const btn = document.getElementById('applyBtn');
   if (btn) btn.disabled = true;
-  if (btn) btn.textContent = defaultSnapshotKey === null ? 'Loading...' : 'Loading default...';
-
   showLoading(defaultSnapshotKey === null ? 'query' : 'saved');
 
   try {
     let json;
 
-    if (defaultSnapshotKey !== null) {
-      try {
-        const snapshotRes = await fetch(DEFAULT_SNAPSHOT_URLS[defaultSnapshotKey], { cache: 'no-cache' });
-        if (!snapshotRes.ok) throw new Error(`Snapshot HTTP ${snapshotRes.status}`);
-        json = await snapshotRes.json();
-      } catch (snapshotErr) {
-        if (!isCurrentMount(activeMountToken)) return;
-        const fallbackRes = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(params),
-        });
-        json = await fallbackRes.json();
-      }
-    } else {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      json = await res.json();
-    }
+    json = await loadStats(
+      params,
+      defaultSnapshotKey === null ? null : DEFAULT_SNAPSHOT_URLS[defaultSnapshotKey],
+    );
 
     if (!isCurrentMount(activeMountToken)) return;
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
@@ -498,7 +502,7 @@ async function applyFilters(activeMountToken = mountToken) {
 }
 
 
-// ── Card aliases / nicknames for search ───────────────────────────────────────
+// Card aliases / nicknames for search
 function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -583,7 +587,7 @@ function aliasesForCard(cardName) {
   return cardAliases.get(normalizeSearchText(cardName)) || [];
 }
 
-// ── Search ─────────────────────────────────────────────────────────────────────
+// Search
 // Invoked on search query update.
 function onSearch() {
   searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
@@ -643,9 +647,8 @@ function applySearch() {
     [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value)
   );
 
-  filteredData = allData.filter(row => {
+  const candidatesBeforeMinimum = allData.filter(row => {
     if (!activeTypes.has(row.card_type)) return false;
-    if (minPlayedThreshold != null && Number(row.n_played || 0) < minPlayedThreshold) return false;
     if (!passesAttributeFilters(row)) return false;
 
     const cardName = normalizeSearchText(row.card_name);
@@ -656,12 +659,19 @@ function applySearch() {
       cardType.includes(searchQuery) ||
       aliases.some(alias => alias.includes(searchQuery));
   });
+  filteredData = minPlayedThreshold == null
+    ? candidatesBeforeMinimum
+    : candidatesBeforeMinimum.filter(row => Number(row.n_played || 0) >= minPlayedThreshold);
+  window.setMinimumPlaysWarning?.(
+    document.getElementById('minPlayedInput'),
+    minPlayedThreshold > 0 && candidatesBeforeMinimum.length > 0 && filteredData.length === 0
+  );
 
   currentPage = 1;
   applySortAndRender();
 }
 
-// ── Sort ───────────────────────────────────────────────────────────────────────
+// Sort
 function sortBy(col) {
   // Round-filtered data cannot meaningfully sort by stats that are hidden as unavailable.
   if (roundFilterActive && isRoundUnavailableColumn(col)) return;
@@ -702,10 +712,15 @@ function compareRowsForCurrentSort(a, b) {
 
 // Assigns globally sorted rank indices for stable, non-filtered indexing in standard lists.
 function assignGlobalRanks() {
-  // Global rank is assigned across all loaded cards BEFORE search/type filtering.
+  // Global rank is assigned across cards that pass Minimum keeps, but BEFORE
+  // search/type/attribute filtering.
   // This is intentional: when searching "goat" or filtering to Sponsors, the # column
-  // still shows the card's overall rank in the current full sorted dataset.
-  const globallySorted = [...allData].sort(compareRowsForCurrentSort);
+  // still shows the card's overall rank among all minimum-qualified cards.
+  const rankingUniverse = minPlayedThreshold == null
+    ? allData
+    : allData.filter(row => Number(row.n_played || 0) >= minPlayedThreshold);
+  const globallySorted = [...rankingUniverse].sort(compareRowsForCurrentSort);
+  allData.forEach(row => { row.global_rank = null; });
   globallySorted.forEach((row, index) => {
     row.global_rank = index + 1;
   });
@@ -714,23 +729,22 @@ function assignGlobalRanks() {
 function applySortAndRender() {
   assignGlobalRanks();
   const table = document.getElementById('statsTable');
-  if (table) table.classList.toggle('round-filter-active', roundFilterActive);
   const { col, dir } = currentSort;
   const sorted = [...filteredData].sort(compareRowsForCurrentSort);
 
   // Update sort arrows
-  document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '↕');
+  document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '\u2195');
   document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
   const arrow = document.getElementById(`sort-${col}`);
   if (arrow) {
-    arrow.textContent = dir === 'asc' ? '↑' : '↓';
+    arrow.textContent = dir === 'asc' ? '\u2191' : '\u2193';
     arrow.closest('th').classList.add('sorted');
   }
 
   renderTable(sorted);
 }
 
-// ── Rows per page ──────────────────────────────────────────────────────────────
+// Rows per page
 function onRppChange() {
   rowsPerPage = parseInt(document.getElementById('rppSelect').value);
   currentPage = 1;
@@ -746,8 +760,19 @@ function appendCell(rowEl, className, text, color) {
   return cell;
 }
 
+function appendDeltaCiCell(rowEl, row, prefix, text, range) {
+  const color = deltaRangeColor(row[prefix], range.min, range.max);
+  const cell = appendCell(rowEl, 'delta delta-ci-cell', text, color);
+  cell.dataset.ciLow = row[`${prefix}_ci95_low`] ?? '';
+  cell.dataset.ciHigh = row[`${prefix}_ci95_high`] ?? '';
+  cell.dataset.ciN = row[`${prefix}_ci95_n`] ?? '';
+  cell.dataset.ciColorMin = range.min ?? '';
+  cell.dataset.ciColorMax = range.max ?? '';
+  return cell;
+}
+
 function appendUnavailableCell(rowEl) {
-  appendCell(rowEl, 'unavailable-cell', '—');
+  appendCell(rowEl, 'unavailable-cell', '\u2014');
 }
 
 function appendPlayrateCell(rowEl, pr, prVal, barWidth, barColor) {
@@ -786,12 +811,12 @@ function appendTypeCell(rowEl, rawType) {
   rowEl.appendChild(cell);
 }
 
-// ── Render table ───────────────────────────────────────────────────────────────
+// Render table
 function renderTable(data) {
   // data is already filtered + sorted. This function only handles pagination,
   // colour formatting, and converting rows into table HTML.
   // In roundFilterActive mode, the backend returns NULL for delta_in_hand, n_seen,
-  // and playrate_pct; this function renders those cells as a single long dash (—).
+  // and playrate_pct; this function renders those cells as a single long dash (\u2014).
   const tbody = document.getElementById('tableBody');
   const pagination = document.getElementById('pagination');
   const meta = document.getElementById('tableMeta');
@@ -799,7 +824,7 @@ function renderTable(data) {
   if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="9">
       <div class="state-overlay">
-        <div class="error-icon">🔍</div>
+        <div class="error-icon">&#128269;</div>
         <div class="state-title">No cards found</div>
         <div class="state-sub">Try adjusting your search or filters.</div>
       </div>
@@ -816,29 +841,31 @@ function renderTable(data) {
   const start = (currentPage - 1) * rpp;
   const pageData = data.slice(start, start + rpp);
 
-  // Find max keeprate for bar scaling, and elo range for colour scale
-  const maxPR = Math.max(...data.map(r => r.playrate_pct || 0), 1);
-  const eloVals = data.map(r => r.avg_elo).filter(v => v != null);
-  const minElo = Math.min(...eloVals);
-  const maxElo = Math.max(...eloVals);
+  // Frontend-only search, Type, Attributes, and minimum-keep filters do not
+  // recolor survivors; ranges belong to the complete current backend payload.
+  const colorUniverse = allData.length ? allData : data;
+  const playrateRange = numericRange(colorUniverse, row => row.playrate_pct);
+  const eloRange = numericRange(colorUniverse, row => row.avg_elo);
+  const deltaKeptRange = cappedNumericRange(colorUniverse, row => row.delta_in_hand);
+  const deltaDealtRange = cappedNumericRange(colorUniverse, row => row.delta_played);
 
   tbody.replaceChildren();
   pageData.forEach(row => {
     const dp = fmtDelta(row.delta_played);
     const dh = fmtDelta(row.delta_in_hand);
-    const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '—';
+    const pr = row.playrate_pct != null ? row.playrate_pct.toFixed(2) + '%' : '\u2014';
     const prVal = row.playrate_pct || 0;
     const barWidth = prVal; // absolute: keeprate % = bar width %
-    const barColor = prColor(prVal);
-    const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '—';
-    const eloCol = eloColor(row.avg_elo, minElo, maxElo);
+    const barColor = prColor(prVal, playrateRange.min, playrateRange.max);
+    const eloDisplay = row.avg_elo != null ? Math.round(row.avg_elo).toLocaleString('en-US') : '\u2014';
+    const eloCol = eloColor(row.avg_elo, eloRange.min, eloRange.max);
 
     const tr = document.createElement('tr');
-    appendCell(tr, 'rank-cell', row.global_rank ?? '—');
+    appendCell(tr, 'rank-cell', row.global_rank ?? '\u2014');
     appendCell(tr, 'card-name', titleCase(row.card_name));
-    appendCell(tr, 'delta', dp, deltaColor(row.delta_played));
     if (roundFilterActive) appendUnavailableCell(tr);
-    else appendCell(tr, 'delta', dh, deltaColor(row.delta_in_hand));
+    else appendDeltaCiCell(tr, row, 'delta_in_hand', dh, deltaKeptRange);
+    appendDeltaCiCell(tr, row, 'delta_played', dp, deltaDealtRange);
     appendCell(tr, 'n-cell', eloDisplay, eloCol);
     if (roundFilterActive) appendUnavailableCell(tr);
     else appendPlayrateCell(tr, pr, prVal, barWidth, barColor);
@@ -852,7 +879,7 @@ function renderTable(data) {
   // Meta
   const from = start + 1;
   const to = Math.min(start + rpp, data.length);
-  meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}–${to}</strong> of <strong>${data.length}</strong> cards`;
+  meta.innerHTML = `<span class="meta-prefix">Showing </span><strong>${from}-${to}</strong> of <strong>${data.length}</strong> cards`;
 
   // Pagination
   if (totalPages <= 1) {
@@ -864,17 +891,17 @@ function renderTable(data) {
 }
 
 function buildPagination(totalPages) {
-  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo;</button>`;
 
   const pages = paginationRange(currentPage, totalPages);
   let prev = null;
   for (const p of pages) {
-    if (prev !== null && p - prev > 1) html += `<span class="page-info">…</span>`;
+    if (prev !== null && p - prev > 1) html += `<span class="page-info">...</span>`;
     html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
     prev = p;
   }
 
-  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&rsaquo;</button>`;
   return html;
 }
 
@@ -895,10 +922,12 @@ function goPage(p) {
   document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── States ─────────────────────────────────────────────────────────────────────
+// States
 function showLoading(mode = 'query') {
+  document.querySelectorAll('#statsTable th.sorted').forEach(th => th.classList.remove('sorted'));
+  document.querySelectorAll('#statsTable .sort-arrow').forEach(arrow => { arrow.textContent = '\u2195'; });
   const isSavedSnapshot = mode === 'saved';
-  const title = isSavedSnapshot ? 'Preparing data...' : 'Fetching data…';
+  const title = isSavedSnapshot ? 'Preparing data...' : 'Fetching data...';
   const sub = isSavedSnapshot
     ? '<div class="state-sub">Loading the latest available opening hand statistics.</div>'
     : '<div class="state-sub">Querying BigQuery with your current filters.</div>';
@@ -928,7 +957,7 @@ function showError(msg) {
   title.className = 'state-title';
   sub.className = 'state-sub';
 
-  icon.textContent = '⚠️';
+  icon.textContent = '!';
   title.textContent = 'Something went wrong';
   sub.textContent = msg;
 
@@ -940,16 +969,14 @@ function showError(msg) {
   tbody.replaceChildren(tr);
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// Helpers
 function fmtDelta(val) {
-  if (val == null) return '—';
-  const sign = val >= 0 ? '+' : '';
-  return `${sign}${val.toFixed(3)}`;
+  return formatSignedDeltaAdaptive(val);
 }
 
 // Formats big number digits nicely.
 function fmtN(val) {
-  if (val == null) return '—';
+  if (val == null) return '\u2014';
   return val.toLocaleString('en-US');
 }
 
@@ -958,7 +985,7 @@ function titleCase(str) {
   // because card names in the source data are case-sensitive.
   // Also handles "(domestic) Goat" -> "(Domestic) Goat".
   const lower = new Set(['on', 'in', 'of', 'the', 'a']);
-  return str
+  const displayName = str
     .split(' ')
     .map((word, i) => {
       const w = word.toLowerCase();
@@ -968,38 +995,20 @@ function titleCase(str) {
       return w.replace(/[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF]/, ch => ch.toUpperCase());
     })
     .join(' ');
+
+  return displayName
+    .replace(/\bWaza\b/g, 'WAZA')
+    .replace(/\bGalapagos\b/g, 'Gal\u00e1pagos');
 }
 
-function deltaColor(val) {
-  if (val == null) return 'var(--text-muted)';
-  if (val >= 0.6)  return 'var(--pos-strong)';
-  if (val >= 0.3)  return 'var(--pos-mid)';
-  if (val >= 0.05) return 'var(--pos-weak)';
-  if (val >= -0.05) return 'var(--neutral)';
-  if (val >= -0.3) return 'var(--neg-weak)';
-  if (val >= -0.6) return 'var(--neg-mid)';
-  return 'var(--neg-strong)';
-}
+const prColor = playrateColor;
+const eloColor = relativeEloColor;
 
-function prColor(val) {
-  if (val >= 50) return 'var(--pr-high)';
-  if (val >= 30) return 'var(--pr-mid)';
-  return 'var(--pr-low)';
-}
-
-function eloColor(val, minElo, maxElo) {
-  if (val == null) return 'var(--text-muted)';
-  if (maxElo === minElo) return 'var(--elo-mid)';
-  const t = (val - minElo) / (maxElo - minElo); // 0 = lowest, 1 = highest
-  if (t >= 0.66) return 'var(--elo-high)';
-  if (t >= 0.33) return 'var(--elo-mid)';
-  return 'var(--elo-low)';
-}
-
-// ── Column header tooltips ─────────────────────────────────────────────────────
+// Column header tooltips
 const _colTip = document.getElementById('col-tooltip');
 
 document.addEventListener('mouseover', e => {
+  if (!isPageMounted) return;
   const th = e.target.closest('th');
   if (!th) return;
   const tipEl = th.querySelector('.col-tip');
@@ -1023,13 +1032,17 @@ document.addEventListener('mouseover', e => {
 });
 
 document.addEventListener('mousemove', e => {
+  if (!isPageMounted) return;
   if (_colTip.style.display === 'none') return;
+  if (e.target.closest('.delta-ci-cell')) return;
   const th = e.target.closest('th');
   if (!th || !th.querySelector('.col-tip')) { _colTip.style.display = 'none'; return; }
   positionColTip(e);
 });
 
 document.addEventListener('mouseout', e => {
+  if (!isPageMounted) return;
+  if (e.target.closest('.delta-ci-cell') || e.relatedTarget?.closest('.delta-ci-cell')) return;
   const th = e.target.closest('th');
   if (!th || !e.relatedTarget?.closest('th') || e.relatedTarget.closest('th') !== th) {
     _colTip.style.display = 'none';
@@ -1048,20 +1061,61 @@ function positionColTip(e) {
   _colTip.style.top = y + 'px';
 }
 
-// ── Type column filter ─────────────────────────────────────────────────────────
+// Type column filter
 function toggleTypeFilterPopup(e) {
-  // Opens/closes the far-right Type column popup.
-  // Important: clicking the chips themselves should not also re-toggle the popup.
+  // Opens/closes the far-right Type column popup. The popup is position:fixed,
+  // so it can escape the scroll/clipping context of the table wrapper.
   e.stopPropagation();
-  // Don't open if the click was on a chip inside the popup
   if (e.target.closest('.type-filter-popup')) return;
   const popup = document.getElementById('typeFilterPopup');
-  popup.classList.toggle('open');
+  if (!popup) return;
+
+  const willOpen = !popup.classList.contains('open');
+  popup.classList.toggle('open', willOpen);
+  if (willOpen) {
+    positionTypeFilterPopup();
+    requestAnimationFrame(positionTypeFilterPopup);
+  }
 }
 
+function positionTypeFilterPopup() {
+  if (!isPageMounted) return;
+  const header = document.getElementById('typeFilterHeader');
+  const popup = document.getElementById('typeFilterPopup');
+  if (!header || !popup || !popup.classList.contains('open')) return;
+
+  const margin = 8;
+  const gap = 0;
+  const headerRect = header.getBoundingClientRect();
+  const popupRect = popup.getBoundingClientRect();
+  const popupWidth = popupRect.width || 110;
+  const popupHeight = popupRect.height || 120;
+  const anchoredTop = headerRect.bottom + gap;
+  if (anchoredTop + popupHeight <= 0 || anchoredTop >= window.innerHeight) {
+    closeTypeFilterPopup();
+    return;
+  }
+
+  let left = headerRect.left + (headerRect.width / 2) - (popupWidth / 2);
+  left = Math.max(margin, Math.min(left, window.innerWidth - popupWidth - margin));
+
+  let top = headerRect.bottom + gap;
+  if (top + popupHeight > window.innerHeight - margin) {
+    top = Math.max(margin, headerRect.top - popupHeight - gap);
+  }
+
+  popup.style.left = `${Math.round(left)}px`;
+  popup.style.top = `${Math.round(top)}px`;
+}
+
+function closeTypeFilterPopup() {
+  const popup = document.getElementById('typeFilterPopup');
+  if (!popup) return;
+  popup.classList.remove('open');
+}
 function updateTypeFilterIndicator() {
   // Visual reminder for the client-side Type filter after the popup is closed.
-  // All three selected = default state with arrow.
+  // All three selected = default state with compact filter icon.
   // Two selected = two warm-green dots. One selected = one warm-green dot.
   const header = document.getElementById('typeFilterHeader');
   const indicator = document.getElementById('typeFilterIndicator');
@@ -1072,20 +1126,18 @@ function updateTypeFilterIndicator() {
 
   if (activeCount === allChips.length) {
     header.classList.remove('type-filter-active');
-    indicator.textContent = '▼';
+    indicator.classList.add('type-filter-icon');
+    indicator.textContent = '';
   } else {
     header.classList.add('type-filter-active');
-    indicator.textContent = activeCount === 1 ? '•' : '••';
+    indicator.classList.remove('type-filter-icon');
+    indicator.textContent = activeCount === 1 ? '\u2022' : '\u2022\u2022';
   }
 }
 
 function toggleTypeChip(btn) {
-  // Don't allow deselecting all chips
-  const allChips = [...document.querySelectorAll('#typeFilterPopup .chip')];
-  const activeChips = allChips.filter(c => c.classList.contains('active'));
-  if (activeChips.length === 1 && btn.classList.contains('active')) return;
-
   btn.classList.toggle('active');
+
   updateTypeFilterIndicator();
   // Type changed: some Attribute groups may now be impossible (e.g. Strength
   // if Sponsor was just deselected). Re-evaluate which groups are disabled,
@@ -1094,24 +1146,30 @@ function toggleTypeChip(btn) {
   applySearch();
 }
 
-// Close type popup when clicking outside
+// Close Type popup when clicking outside its trigger or floating menu.
 document.addEventListener('click', e => {
+  if (!isPageMounted) return;
   const popup = document.getElementById('typeFilterPopup');
-  if (popup && popup.classList.contains('open') && !e.target.closest('#statsTable thead th.type-filter-header')) {
-    popup.classList.remove('open');
-  }
+  if (!popup || !popup.classList.contains('open')) return;
+  if (e.target.closest('#typeFilterPopup') || e.target.closest('#typeFilterHeader')
+      || e.target.closest('#filterToggleBtn') || e.target.closest('.sidebar-close-btn')
+      || e.target.closest('.attributes-bar-header')) return;
+  closeTypeFilterPopup();
 });
 
+window.addEventListener('resize', positionTypeFilterPopup);
+window.addEventListener('scroll', positionTypeFilterPopup, true);
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── Attributes bar ──────────────────────────────────────────────────────────
+
+// ==============================================================================
+// Attributes bar
 // Everything below is CLIENT-SIDE ONLY. It reads static card metadata from
 // cards_attributes.csv (loaded once at startup) and layers extra filtering on
 // top of the existing Type/Search/Min-plays pipeline inside applySearch().
 // No part of this ever triggers a backend fetch.
-// ══════════════════════════════════════════════════════════════════════════════
+// ==============================================================================
 
-// ── Loading cards_attributes.csv ────────────────────────────────────────────────
+// Loading cards_attributes.csv
 async function loadCardAttributes() {
   // Used columns: Type,Name,Species,Continent,Water,Rock,Science,Strength,
   // Size,Abilities,Reefer,Aviary. Species/Abilities can contain multiple
@@ -1186,9 +1244,11 @@ function setAttributesUnavailable(unavailable) {
   if (bar) bar.classList.toggle('attributes-unavailable', unavailable);
 }
 
-// ── Collapse / expand ───────────────────────────────────────────────────────────
+// Collapse / expand
 function toggleAttributesBar() {
   document.getElementById('attributesBar').classList.toggle('collapsed');
+  positionTypeFilterPopup();
+  requestAnimationFrame(positionTypeFilterPopup);
 }
 
 function resetAttributesFromHeader(event) {
@@ -1199,7 +1259,7 @@ function resetAttributesFromHeader(event) {
   applySearch();
 }
 
-// ── Building the static chip rows and tag popup ──────────────────────────────────
+// Building the static chip rows and tag popup
 function buildAttributeChips() {
   buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
   buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
@@ -1220,21 +1280,10 @@ function buildChipGroup(containerId, values, selectedSet, kind) {
   });
 }
 
-// Shared toggle handler for Strength/Size/Species/Continent chips.
-// `values` is the full list for that group, used to detect "back to all-selected".
-// UX shortcut: from the default all-selected state, the first chip click means
-// "only this chip". After that, clicks behave as normal toggles. This mirrors
-// Maps/Rounds, but must also update the selected Set because Attribute chips
-// are rebuilt from state whenever their popup/group is re-rendered.
+// Shared independent toggle handler for Strength/Size/Species/Continent chips.
 function toggleAttributeChip(btn, selectedSet, values, kind) {
   const value = btn.dataset.value;
-  if (selectedSet.size === values.length) {
-    selectedSet.clear();
-    selectedSet.add(value);
-    btn.parentElement.querySelectorAll('.chip').forEach(c => {
-      c.classList.toggle('active', c === btn);
-    });
-  } else if (selectedSet.has(value)) {
+  if (selectedSet.has(value)) {
     selectedSet.delete(value);
     btn.classList.remove('active');
   } else {
@@ -1247,11 +1296,11 @@ function toggleAttributeChip(btn, selectedSet, values, kind) {
   // effective filtering users see in the table.
   const isDefault = selectedSet.size === values.length;
   if (kind === 'strength') {
-    if (!isDefault) forceTypeToOnly('sponsor');
+    if (!isDefault) forceSponsorOnlyTypeFilter();
     else syncSponsorOnlyTypeFilter();
   }
   if (kind === 'size') {
-    if (!isDefault) forceTypeToOnly('animal');
+    if (!isDefault) forceSizeOnlyTypeFilter();
     else syncAnimalOnlyTypeFilter();
   }
   if (kind === 'species' || kind === 'continent') {
@@ -1275,12 +1324,12 @@ function setAttributeValues(kind, selectAll) {
   if (kind === 'strength') {
     selectedStrengths = selectAll ? new Set(STRENGTH_VALUES) : new Set();
     buildChipGroup('strengthChips', STRENGTH_VALUES, selectedStrengths, 'strength');
-    if (!selectAll) forceTypeToOnly('sponsor');
+    if (!selectAll) forceSponsorOnlyTypeFilter();
     else syncSponsorOnlyTypeFilter();
   } else if (kind === 'size') {
     selectedSizes = selectAll ? new Set(SIZE_VALUES) : new Set();
     buildChipGroup('sizeChips', SIZE_VALUES, selectedSizes, 'size');
-    if (!selectAll) forceTypeToOnly('animal');
+    if (!selectAll) forceSizeOnlyTypeFilter();
     else syncAnimalOnlyTypeFilter();
   }
 
@@ -1288,7 +1337,7 @@ function setAttributeValues(kind, selectAll) {
   applySearch();
 }
 
-// ── Species / Habitat popups ───────────────────────────────────────────────────
+// Species / Habitat popups
 function toggleTagPopup(kind, event) {
   if (event) event.stopPropagation();
   const group = document.getElementById(kind === 'species' ? 'attrGroupSpecies' : 'attrGroupContinent');
@@ -1318,7 +1367,19 @@ function renderCurrentTagPopup() {
   const kind = currentTagPopupKind === 'species' ? 'species' : 'continent';
 
   if (title) title.textContent = currentTagPopupKind === 'species' ? 'Species' : 'Habitat';
-  buildChipGroup('tagPopupChips', values, selectedSet, kind);
+  const container = document.getElementById('tagPopupChips');
+  if (!container) return;
+  container.innerHTML = values.map(value => {
+    const tooltip = value === 'America' ? 'Americas' : value;
+    return `<button type="button" class="attribute-icon-chip ${selectedSet.has(value) ? 'active' : ''}"
+      data-value="${escapeAttr(value)}" data-tooltip="${escapeAttr(tooltip)}"
+      aria-label="${escapeAttr(tooltip)}" aria-pressed="${selectedSet.has(value)}">
+      <img src="assets/img/icons/${ATTRIBUTE_ICON_ASSETS[value]}" alt="" />
+    </button>`;
+  }).join('');
+  container.querySelectorAll('.attribute-icon-chip').forEach(btn => {
+    btn.onclick = () => toggleAttributeChip(btn, selectedSet, values, kind);
+  });
 }
 
 function selectAllCurrentTagPopup() {
@@ -1373,7 +1434,7 @@ function updateTagButtonLabels() {
   updateSingleTagButton('continent', selectedContinentTags, CONTINENT_TAGS);
 }
 
-// ── Abilities dropdown ────────────────────────────────────────────────────────
+// Abilities dropdown
 function buildAbilitiesList() {
   renderAbilitiesList();
 }
@@ -1399,6 +1460,7 @@ function toggleAbilitiesPanel(event) {
 }
 
 function positionAbilitiesPanel() {
+  if (!isPageMounted) return;
   // The panel is fixed-positioned so a short filtered table cannot clip it.
   // Keep it visually anchored to the Abilities button and clamp it inside the viewport.
   const btn = document.getElementById('abilitiesBtn');
@@ -1458,6 +1520,8 @@ function toggleAbility(ability, checkbox) {
   } else {
     selectedAbilities.delete(ability);
   }
+  if (selectedAbilities.size === allAbilities.length) syncAnimalOnlyTypeFilter();
+  else forceSizeOnlyTypeFilter();
   updateAbilitiesButtonLabel();
   updateAttributesSummary();
   applySearch();
@@ -1466,6 +1530,8 @@ function toggleAbility(ability, checkbox) {
 function selectAllAbilities() {
   selectedAbilities = new Set(allAbilities);
   renderAbilitiesList();
+  if (selectedAbilities.size === allAbilities.length) syncAnimalOnlyTypeFilter();
+  else forceSizeOnlyTypeFilter();
   updateAbilitiesButtonLabel();
   updateAttributesSummary();
   applySearch();
@@ -1474,6 +1540,8 @@ function selectAllAbilities() {
 function selectNoneAbilities() {
   selectedAbilities = new Set();
   renderAbilitiesList();
+  if (selectedAbilities.size === allAbilities.length) syncAnimalOnlyTypeFilter();
+  else forceSizeOnlyTypeFilter();
   updateAbilitiesButtonLabel();
   updateAttributesSummary();
   applySearch();
@@ -1499,6 +1567,7 @@ function updateAbilitiesButtonLabel() {
 
 // Close Abilities panel when clicking outside it.
 document.addEventListener('click', e => {
+  if (!isPageMounted) return;
   const panel = document.getElementById('abilitiesPanel');
   if (panel && panel.classList.contains('open') && !e.target.closest('.abilities-dropdown')) {
     panel.classList.remove('open');
@@ -1507,9 +1576,9 @@ document.addEventListener('click', e => {
 
 window.addEventListener('resize', positionAbilitiesPanel);
 
-// ── Water / Rock / Science toggles ────────────────────────────────────────────
+// Water / Rock / Science toggles
 // Water and Rock apply to both Animal and Sponsor cards. Turning either on
-// visibly narrows Type to Animal + Sponsor, just like Species/Habitat. Science
+// removes Project from Type while preserving Animal-only/Sponsor-only choices. Science
 // is Sponsor-only, so turning it on follows Strength and forces Sponsor-only.
 function onBoolTagToggle(which) {
   if (which === 'water') {
@@ -1520,14 +1589,14 @@ function onBoolTagToggle(which) {
     syncSharedAnimalSponsorTypeFilter();
   } else if (which === 'science') {
     scienceOn = document.getElementById('scienceToggle').checked;
-    if (scienceOn) forceTypeToOnly('sponsor');
+    if (scienceOn) forceSponsorOnlyTypeFilter();
     else syncSponsorOnlyTypeFilter();
   }
   updateAttributesSummary();
   applySearch();
 }
 
-// ── Reefer / Aviary toggles ──────────────────────────────────────────────────────
+// Reefer / Aviary toggles
 function onReeferAviaryToggle(which) {
   const reeferCheckbox = document.getElementById('reeferToggle');
   const aviaryCheckbox = document.getElementById('aviaryToggle');
@@ -1554,14 +1623,14 @@ function onReeferAviaryToggle(which) {
     typeBeforeReeferAviary = null;
   }
   // If one was already on and the other just joined it (both now on), Type
-  // stays Animal-only — no change needed since it's already forced there.
+  // stays Animal-only \u2014 no change needed since it's already forced there.
 
   refreshAttributeAvailability();
   updateAttributesSummary();
   applySearch();
 }
 
-// ── Type filter helpers shared with Strength/Size/Reefer/Aviary ──────────────────
+// Type filter helpers shared with Strength/Size/Reefer/Aviary
 function getActiveTypeTokens() {
   return [...document.querySelectorAll('#typeFilterPopup .chip.active')].map(c => c.dataset.value);
 }
@@ -1581,58 +1650,81 @@ function forceTypeToOnly(typeValue) {
   refreshAttributeAvailability();
 }
 
+function forceSponsorOnlyTypeFilter() {
+  if (!typeBeforeSponsorOnly) typeBeforeSponsorOnly = getActiveTypeTokens();
+  forceTypeToOnly('sponsor');
+}
+
+function forceSizeOnlyTypeFilter() {
+  if (!typeBeforeSizeOnly) typeBeforeSizeOnly = getActiveTypeTokens();
+  forceTypeToOnly('animal');
+}
+
 function syncSharedAnimalSponsorTypeFilter() {
   // Species, Habitat, Rock, and Water can only match Animal/Sponsor cards.
-  // Whenever any of them is narrowed/on, mirror that effective constraint in
-  // the Type header and popup by deselecting Project. Once all four are back
-  // at default/off, restore Type to all three if it is in this automatic state.
+  // Narrowing one removes Project from the active Type set, but it preserves a
+  // prior Animal-only or Sponsor-only choice instead of widening it.
   const allSharedAnimalSponsorFiltersDefault =
     areSpeciesAtDefault() &&
     areContinentsAtDefault() &&
     !waterOn &&
     !rockOn;
   const activeTypes = getActiveTypeTokens();
-  const isAutoSharedAnimalSponsorTypeState =
-    activeTypes.length === 2 &&
-    activeTypes.includes('animal') &&
-    activeTypes.includes('sponsor');
+  const sharedTypes = activeTypes.filter(t => t === 'animal' || t === 'sponsor');
 
   if (!allSharedAnimalSponsorFiltersDefault) {
-    setActiveTypeTokens(['animal', 'sponsor']);
+    if (!typeBeforeSharedAnimalSponsor) typeBeforeSharedAnimalSponsor = activeTypes;
+    setActiveTypeTokens(sharedTypes.length ? sharedTypes : ['animal', 'sponsor']);
     refreshAttributeAvailability();
-  } else if (isAutoSharedAnimalSponsorTypeState) {
-    setActiveTypeTokens(['animal', 'sponsor', 'project']);
-    refreshAttributeAvailability();
+    return;
   }
+
+  if (!typeBeforeSharedAnimalSponsor) return;
+
+  const projectedBeforeShared = typeBeforeSharedAnimalSponsor.filter(t => t === 'animal' || t === 'sponsor');
+  const expectedAutoTypes = projectedBeforeShared.length ? projectedBeforeShared : ['animal', 'sponsor'];
+  const stillInAutoState =
+    activeTypes.length === expectedAutoTypes.length &&
+    expectedAutoTypes.every(t => activeTypes.includes(t));
+
+  if (stillInAutoState) setActiveTypeTokens(typeBeforeSharedAnimalSponsor);
+  typeBeforeSharedAnimalSponsor = null;
+  refreshAttributeAvailability();
 }
 
 function syncSponsorOnlyTypeFilter() {
-  // Science and narrowed Strength are Sponsor-only. If both return to default
-  // while Type is still in the automatic Sponsor-only state, restore all Types.
+  // Science and narrowed Strength are Sponsor-only. When they return to
+  // default, restore the Type selection from before they first forced Sponsor.
   const allSponsorOnlyFiltersDefault =
     !scienceOn &&
     selectedStrengths.size === STRENGTH_VALUES.length;
   const activeTypes = getActiveTypeTokens();
 
-  if (allSponsorOnlyFiltersDefault && activeTypes.length === 1 && activeTypes[0] === 'sponsor') {
-    setActiveTypeTokens(['animal', 'sponsor', 'project']);
-    refreshAttributeAvailability();
-  }
+  if (!allSponsorOnlyFiltersDefault || !typeBeforeSponsorOnly) return;
+
+  const stillInAutoState = activeTypes.length === 1 && activeTypes[0] === 'sponsor';
+  if (stillInAutoState) setActiveTypeTokens(typeBeforeSponsorOnly);
+  typeBeforeSponsorOnly = null;
+  refreshAttributeAvailability();
 }
 
 function syncAnimalOnlyTypeFilter() {
-  // Narrowed Size is Animal-only. If it returns to default while Type is still
-  // in the automatic Animal-only state, restore all Types.
-  const allAnimalOnlyFiltersDefault = selectedSizes.size === SIZE_VALUES.length;
+  // Narrowed Size and narrowed Abilities are Animal-only. When both return to
+  // default, restore the Type selection from before they first forced Animal.
+  const allAnimalOnlyFiltersDefault =
+    selectedSizes.size === SIZE_VALUES.length &&
+    selectedAbilities.size === allAbilities.length;
   const activeTypes = getActiveTypeTokens();
 
-  if (allAnimalOnlyFiltersDefault && activeTypes.length === 1 && activeTypes[0] === 'animal') {
-    setActiveTypeTokens(['animal', 'sponsor', 'project']);
-    refreshAttributeAvailability();
-  }
+  if (!allAnimalOnlyFiltersDefault || !typeBeforeSizeOnly) return;
+
+  const stillInAutoState = activeTypes.length === 1 && activeTypes[0] === 'animal';
+  if (stillInAutoState) setActiveTypeTokens(typeBeforeSizeOnly);
+  typeBeforeSizeOnly = null;
+  refreshAttributeAvailability();
 }
 
-// ── Disabling groups based on the active Type filter ──────────────────────────────
+// Disabling groups based on the active Type filter
 // Central rule: a group is disabled whenever NONE of its relevantTypes are
 // currently active in the Type filter. Disabling always resets that group's
 // selection back to its default (all-selected for chip/ability groups, off
@@ -1743,6 +1835,9 @@ function resetAllAttributeFilters() {
   reeferOn = false;
   aviaryOn = false;
   typeBeforeReeferAviary = null;
+  typeBeforeSharedAnimalSponsor = null;
+  typeBeforeSponsorOnly = null;
+  typeBeforeSizeOnly = null;
 
   buildAttributeChips();
   renderAbilitiesList();
@@ -1771,27 +1866,33 @@ function updateAttributesSummary() {
   updateAbilitiesButtonLabel();
 }
 
-// ── The actual per-row filtering check ───────────────────────────────────────────
+// The actual per-row filtering check
 function passesAttributeFilters(row) {
   // If the attributes CSV failed to load, or this particular card has no entry
-  // in it, do not filter the row out — fail open so the table still works.
+  // in it, do not filter the row out \u2014 fail open so the table still works.
   if (!cardAttributesLoaded) return true;
   const attrs = attributesForCard(row.card_name);
   if (!attrs) return true;
 
   // Species and Habitat are separate include-lists. Default all selected =
   // no filtering for that group. Once narrowed, a card must match at least one
-  // selected value in the narrowed group. Selecting none intentionally returns
-  // no matches for that group.
+  // selected value in the narrowed group. Selecting none means the explicit
+  // no-tag value, matching Sponsor cards with no Species/Habitat tag.
   // Important: these are ANDed as groups. If Species and Habitat are both
   // narrowed, a card must satisfy both groups.
   if (!areSpeciesAtDefault()) {
-    if (!selectedSpeciesTags.size) return false;
-    if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
+    if (selectedSpeciesTags.size) {
+      if (!attrs.species.some(s => selectedSpeciesTags.has(s))) return false;
+    } else if (!attrs.species.includes(TAG_NONE_VALUE)) {
+      return false;
+    }
   }
   if (!areContinentsAtDefault()) {
-    if (!selectedContinentTags.size) return false;
-    if (!attrs.continent || !selectedContinentTags.has(attrs.continent)) return false;
+    if (selectedContinentTags.size) {
+      if (!attrs.continent || !selectedContinentTags.has(attrs.continent)) return false;
+    } else if (attrs.continent !== TAG_NONE_VALUE) {
+      return false;
+    }
   }
 
   // Water/Rock/Science: simple boolean toggles, default OFF (no filtering).
@@ -1816,7 +1917,7 @@ function passesAttributeFilters(row) {
   if (reeferOn && !attrs.reefer) return false;
   if (aviaryOn && !attrs.aviary) return false;
 
-  // Abilities: OR logic — card passes if it has at least one selected ability.
+  // Abilities: OR logic \u2014 card passes if it has at least one selected ability.
   // selectedAbilities defaults to the full set, so this only narrows anything
   // once the user has deliberately deselected at least one ability.
   if (selectedAbilities.size !== allAbilities.length) {
@@ -1844,10 +1945,11 @@ export function unmount() {
   if (searchInput) searchInput.removeEventListener('input', onSearch);
   const panel = document.getElementById('abilitiesPanel');
   if (panel) panel.classList.remove('open');
-  const typePopup = document.getElementById('typeFilterPopup');
-  if (typePopup) typePopup.classList.remove('open');
+  closeTypeFilterPopup();
   const tagPopup = document.getElementById('tagPopupOverlay');
   if (tagPopup) tagPopup.classList.remove('open');
+  if (_tooltip) _tooltip.style.display = 'none';
+  if (_colTip) _colTip.style.display = 'none';
 }
 
 const PAGE_WINDOW_HANDLERS = {
@@ -1877,6 +1979,7 @@ const PAGE_WINDOW_HANDLERS = {
   resetFilters,
   selectAllMaps,
   selectNoneMaps,
+  toggleOpeningMap,
   onEndGameChange,
   applyFiltersFromSidebar,
   goPage,
