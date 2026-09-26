@@ -6,7 +6,7 @@ import {
   playrateColor,
   relativeEloColor,
 } from '../color-scales.js?v=20260707-1';
-import { loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
+import { loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway2';
 import { formatSignedDeltaAdaptive } from '../table-cells.js?v=20260712-4';
 import { ALL_MAPS, DEFAULT_MAPS, mapGroupNames, renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
 

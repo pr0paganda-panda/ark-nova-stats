@@ -6,7 +6,7 @@ import {
   playrateColor,
   relativeEloColor,
 } from '../color-scales.js?v=20260707-1';
-import { loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
+import { loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway2';
 import { formatSignedDeltaAdaptive } from '../table-cells.js?v=20260712-4';
 import { ALL_MAPS, DEFAULT_MAPS, mapGroupNames, renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
 
@@ -376,12 +376,13 @@ function resetFilters() {
 function getParams() {
   // Collect backend filters here. Search text and Type chips are intentionally not sent;
   // they are applied client-side after data has loaded. The Round chips are sent because
-  // round filtering changes the BigQuery aggregation itself.
+  // round filtering changes the backend aggregation itself.
   const selectedMaps = [...document.querySelectorAll('#mapChips .chip.active')]
     .map(c => c.dataset.value);
   const selectedRounds = getSelectedRoundTokens();
 
   const params = {
+    stats_page: 'cards',
     is_mw: isMW,
     maps: selectedMaps,
     completed_only: document.getElementById('endGameToggle').checked ? true : null,

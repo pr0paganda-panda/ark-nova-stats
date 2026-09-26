@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_ID, PAGES } from './page-registry.js?v=20260926-duckdb-gateway1';
+import { DEFAULT_PAGE_ID, PAGES } from './page-registry.js?v=20260926-duckdb-gateway2';
 import { deltaColor, deltaRangeColor, orangeGreenRangeColor, synergyRangeColor } from './color-scales.js?v=20260812-9';
 import { getRoutePageId, isRefreshPath, onRouteChange } from './router.js?v=20260819-1';
 import {
@@ -6,7 +6,7 @@ import {
   preloadDefaultSnapshots,
   prioritizeSnapshotGroup,
   waitForDefaultSnapshotWarmup,
-} from './snapshot-cache.js?v=20260926-duckdb-gateway1';
+} from './snapshot-cache.js?v=20260926-duckdb-gateway2';
 import {
   closeSidebarIfOpen,
   renderShell,

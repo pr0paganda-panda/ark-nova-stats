@@ -1,6 +1,6 @@
 import { deltaRangeColor, divergingRangeColor } from '../color-scales.js?v=20260711-2';
 import { formatSignedDeltaAdaptive, mapTooltipLabel } from '../table-cells.js?v=20260712-5';
-import { fetchStats, loadSnapshot, loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
+import { fetchStats, loadSnapshot, loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway2';
 import { setFilterButtonDisabled } from '../layout.js?v=20260801-2';
 import { renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
 
