@@ -6,7 +6,7 @@ import {
   playrateColor,
   relativeEloColor,
 } from '../color-scales.js?v=20260707-1';
-import { loadStats } from '../snapshot-cache.js?v=20260908-arena-bootstrap1';
+import { loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
 import { formatSignedDeltaAdaptive } from '../table-cells.js?v=20260712-4';
 import { ALL_MAPS, DEFAULT_MAPS, mapGroupNames, renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
 
@@ -16,9 +16,9 @@ export const mainHtml = "<!--\n      Main table controls.\n      Desktop/tablet:
 export const sidebarHtml = "<div class=\"sidebar-header\">\n      <span class=\"sidebar-title\">Filters</span>\n      <div style=\"display:flex;align-items:center;gap:6px;\">\n        <button class=\"reset-btn\" onclick=\"resetFilters()\">Reset</button>\n        <button class=\"sidebar-close-btn\" onclick=\"toggleSidebar()\" title=\"Close filters\">x</button>\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Player ELO -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Player ELO</span>\n      <div class=\"range-row\">\n        <input class=\"range-input\" type=\"number\" id=\"playerEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" />\n        <input class=\"range-input\" type=\"number\" id=\"playerEloMax\" placeholder=\"Max\" min=\"0\" />\n      </div>\n    </div>\n\n    <!-- Opponent ELO -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Opponent ELO</span>\n      <div class=\"range-row\">\n        <input class=\"range-input\" type=\"number\" id=\"opponentEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" />\n        <input class=\"range-input\" type=\"number\" id=\"opponentEloMax\" placeholder=\"Max\" min=\"0\" />\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Maps -->\n    <div class=\"filter-group\">\n      <div style=\"display:flex;align-items:baseline;gap:6px;margin-bottom:8px;\">\n        <span class=\"filter-label\" style=\"margin-bottom:0\">Maps</span>\n        <span class=\"map-select-all-none\">\n          (<span class=\"map-toggle-link\" onclick=\"selectAllMaps()\">all</span> / <span class=\"map-toggle-link\" onclick=\"selectNoneMaps()\">none</span>)\n        </span>\n      </div>\n      <div class=\"chip-grid\" id=\"mapChips\"></div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Date range -->\n    <div class=\"filter-group\">\n      <span class=\"filter-label\">Date Range</span>\n      <input class=\"date-input\" type=\"text\" inputmode=\"numeric\" pattern=\"\\d{4}-\\d{2}-\\d{2}\" placeholder=\"yyyy-mm-dd\" id=\"dateFrom\" value=\"2025-01-01\" />\n      <input class=\"date-input\" type=\"text\" inputmode=\"numeric\" pattern=\"\\d{4}-\\d{2}-\\d{2}\" placeholder=\"yyyy-mm-dd\" id=\"dateTo\" />\n    </div>\n\n    <hr class=\"divider\" />\n\n    <!-- Completed games only: true means no table concession -->\n    <div class=\"filter-group\">\n      <div class=\"toggle-row\">\n        <span class=\"toggle-label\">Completed games only</span>\n        <label class=\"toggle\">\n          <input type=\"checkbox\" id=\"endGameToggle\" onchange=\"onEndGameChange()\" />\n          <span class=\"toggle-track\"></span>\n        </label>\n      </div>\n    </div>\n\n    <hr class=\"divider\" />\n\n    <div class=\"filter-action-stack\">\n      <button class=\"apply-btn\" id=\"applyBtn\" onclick=\"applyFiltersFromSidebar()\">Apply filters</button>\n    </div>";
 
 // Config
-// API_URL points to the deployed Google Cloud Function. The frontend sends POST JSON
-// with filters; the backend queries BigQuery and returns already-aggregated card stats.
-const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
+// API_URL points to the deployed read-only DuckDB gateway. The frontend sends
+// POST JSON filters and receives the page's current response contract.
+const API_URL = 'https://duckdb-gateway-ioetmehoha-ew.a.run.app/v1/query';
 const STATS_PAGE = 'opening_hand';
 // Daily default snapshots are static Cloud Storage JSON files, refreshed by
 // Cloud Scheduler. Default MW/Base loads use these directly; advanced Filter
@@ -119,6 +119,8 @@ let apiWarmupLastAt = 0;
 const API_WARMUP_COOLDOWN_MS = 5 * 60 * 1000;
 let isPageMounted = false;
 let mountToken = 0;
+let statsRequestToken = 0;
+let statsAbortController = null;
 
 function isCurrentMount(token) {
   return isPageMounted && token === mountToken;
@@ -392,22 +394,6 @@ function closeSidebarIfOpen() {
 
 async function applyFiltersFromSidebar() {
   const activeMountToken = mountToken;
-  const params = getParams();
-  const defaultSnapshotKey = getDefaultSnapshotKey(params);
-  if (defaultSnapshotKey !== null) {
-    const cachedDefaultSnapshot = defaultSnapshotCache[defaultSnapshotKey];
-    if (!isCurrentMount(activeMountToken)) return;
-    if (cachedDefaultSnapshot) {
-      roundFilterActive = false;
-      allData = cachedDefaultSnapshot.data;
-      searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
-      updateCardSearchIndicator();
-      applySearch();
-    }
-    closeSidebarIfOpen();
-    return;
-  }
-
   closeSidebarIfOpen();
   await applyFilters(activeMountToken);
 }
@@ -436,11 +422,16 @@ async function applyFilters(activeMountToken = mountToken) {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Apply filters.
   // If no Maps are selected, there is nothing to query: the frontend renders
-  // an empty result immediately and skips the Cloud Function call entirely.
+  // an empty result immediately and skips the backend request entirely.
   if (!isCurrentMount(activeMountToken)) return;
+  const requestToken = ++statsRequestToken;
+  statsAbortController?.abort();
+  statsAbortController = new AbortController();
+  const requestController = statsAbortController;
   const params = getParams();
   const selectedMaps = params.maps || [];
   if (!selectedMaps.length) {
+    statsAbortController = null;
     roundFilterActive = false;
 
     allData = [];
@@ -454,6 +445,7 @@ async function applyFilters(activeMountToken = mountToken) {
   const defaultSnapshotKey = getDefaultSnapshotKey(params);
   const cachedDefaultSnapshot = defaultSnapshotKey === null ? null : defaultSnapshotCache[defaultSnapshotKey];
   if (cachedDefaultSnapshot) {
+    statsAbortController = null;
     roundFilterActive = false;
     allData = cachedDefaultSnapshot.data;
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
@@ -472,9 +464,10 @@ async function applyFilters(activeMountToken = mountToken) {
     json = await loadStats(
       params,
       defaultSnapshotKey === null ? null : DEFAULT_SNAPSHOT_URLS[defaultSnapshotKey],
+      { signal: requestController.signal },
     );
 
-    if (!isCurrentMount(activeMountToken)) return;
+    if (!isCurrentMount(activeMountToken) || requestToken !== statsRequestToken) return;
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
     roundFilterActive = false;
@@ -492,9 +485,11 @@ async function applyFilters(activeMountToken = mountToken) {
     applySearch();
 
   } catch (err) {
+    if (err?.name === 'AbortError') return;
     if (isCurrentMount(activeMountToken)) showError(err.message);
   } finally {
-    if (isCurrentMount(activeMountToken) && btn) {
+    if (statsAbortController === requestController) statsAbortController = null;
+    if (isCurrentMount(activeMountToken) && requestToken === statsRequestToken && btn) {
       btn.disabled = false;
       btn.textContent = 'Apply filters';
     }
@@ -1941,6 +1936,9 @@ export function setDataset(value) {
 export function unmount() {
   isPageMounted = false;
   mountToken += 1;
+  statsRequestToken += 1;
+  statsAbortController?.abort();
+  statsAbortController = null;
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.removeEventListener('input', onSearch);
   const panel = document.getElementById('abilitiesPanel');

@@ -1,4 +1,4 @@
-import { fetchStats, loadSnapshot } from '../snapshot-cache.js?v=20260908-arena-bootstrap1';
+import { fetchStats, loadSnapshot } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
 import { setFilterButtonDisabled, setTopbarDatasetLock } from '../layout.js?v=20260801-2';
 
 export const id = 'arena';

@@ -6,7 +6,7 @@ import {
   playrateColor,
   relativeEloColor,
 } from '../color-scales.js?v=20260707-1';
-import { loadStats } from '../snapshot-cache.js?v=20260908-arena-bootstrap1';
+import { loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
 import { formatSignedDeltaAdaptive } from '../table-cells.js?v=20260712-4';
 import { ALL_MAPS, DEFAULT_MAPS, mapGroupNames, renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
 
@@ -16,9 +16,9 @@ export const mainHtml = "<!--\n      Main table controls.\n      Desktop/tablet:
 export const sidebarHtml = "\u003cdiv class=\"sidebar-header\"\u003e\n      \u003cspan class=\"sidebar-title\"\u003eFilters\u003c/span\u003e\n      \u003cdiv style=\"display:flex;align-items:center;gap:6px;\"\u003e\n        \u003cbutton class=\"reset-btn\" onclick=\"resetFilters()\"\u003eReset\u003c/button\u003e\n        \u003cbutton class=\"sidebar-close-btn\" onclick=\"toggleSidebar()\" title=\"Close filters\"\u003ex\u003c/button\u003e\n      \u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003chr class=\"divider\" /\u003e\n\n    \u003c!-- Player ELO --\u003e\n    \u003cdiv class=\"filter-group\"\u003e\n      \u003cspan class=\"filter-label\"\u003ePlayer ELO\u003c/span\u003e\n      \u003cdiv class=\"range-row\"\u003e\n        \u003cinput class=\"range-input\" type=\"number\" id=\"playerEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" /\u003e\n        \u003cinput class=\"range-input\" type=\"number\" id=\"playerEloMax\" placeholder=\"Max\" min=\"0\" /\u003e\n      \u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003c!-- Opponent ELO --\u003e\n    \u003cdiv class=\"filter-group\"\u003e\n      \u003cspan class=\"filter-label\"\u003eOpponent ELO\u003c/span\u003e\n      \u003cdiv class=\"range-row\"\u003e\n        \u003cinput class=\"range-input\" type=\"number\" id=\"opponentEloMin\" placeholder=\"Min\" value=\"300\" min=\"0\" /\u003e\n        \u003cinput class=\"range-input\" type=\"number\" id=\"opponentEloMax\" placeholder=\"Max\" min=\"0\" /\u003e\n      \u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003chr class=\"divider\" /\u003e\n\n    \u003c!-- Maps --\u003e\n    \u003cdiv class=\"filter-group\"\u003e\n      \u003cdiv style=\"display:flex;align-items:baseline;gap:6px;margin-bottom:8px;\"\u003e\n        \u003cspan class=\"filter-label\" style=\"margin-bottom:0\"\u003eMaps\u003c/span\u003e\n        \u003cspan class=\"map-select-all-none\"\u003e\n          (\u003cspan class=\"map-toggle-link\" onclick=\"selectAllMaps()\"\u003eall\u003c/span\u003e / \u003cspan class=\"map-toggle-link\" onclick=\"selectNoneMaps()\"\u003enone\u003c/span\u003e)\n        \u003c/span\u003e\n      \u003c/div\u003e\n      \u003cdiv class=\"chip-grid\" id=\"mapChips\"\u003e\u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003chr class=\"divider\" /\u003e\n\n    \u003c!-- Round filter\n         All six chips active = default/no round filter.\n         Selecting only some chips re-queries the backend for cards played in those rounds.\n         Selecting no chips is allowed; applyFilters() catches that locally and renders an\n         empty table without calling the backend. This mirrors Maps none behaviour. --\u003e\n    \u003cdiv class=\"filter-group\"\u003e\n      \u003cdiv style=\"display:flex;align-items:baseline;gap:6px;margin-bottom:8px;\"\u003e\n        \u003cspan class=\"filter-label\" style=\"margin-bottom:0\"\u003eRound\u003c/span\u003e\n        \u003cspan class=\"map-select-all-none\"\u003e\n          (\u003cspan class=\"map-toggle-link\" onclick=\"selectAllRounds()\"\u003eall\u003c/span\u003e / \u003cspan class=\"map-toggle-link\" onclick=\"selectNoneRounds()\"\u003enone\u003c/span\u003e)\n        \u003c/span\u003e\n      \u003c/div\u003e\n      \u003cdiv class=\"chip-grid\" id=\"roundChips\"\u003e\u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003chr class=\"divider\" /\u003e\n\n    \u003c!-- Date range --\u003e\n    \u003cdiv class=\"filter-group\"\u003e\n      \u003cspan class=\"filter-label\"\u003eDate Range\u003c/span\u003e\n      \u003cinput class=\"date-input\" type=\"text\" inputmode=\"numeric\" pattern=\"\\d{4}-\\d{2}-\\d{2}\" placeholder=\"yyyy-mm-dd\" id=\"dateFrom\" value=\"2025-01-01\" /\u003e\n      \u003cinput class=\"date-input\" type=\"text\" inputmode=\"numeric\" pattern=\"\\d{4}-\\d{2}-\\d{2}\" placeholder=\"yyyy-mm-dd\" id=\"dateTo\" /\u003e\n    \u003c/div\u003e\n\n    \u003chr class=\"divider\" /\u003e\n\n    \u003c!-- Completed games only: true means no table concession --\u003e\n    \u003cdiv class=\"filter-group\"\u003e\n      \u003cdiv class=\"toggle-row\"\u003e\n        \u003cspan class=\"toggle-label\"\u003eCompleted games only\u003c/span\u003e\n        \u003clabel class=\"toggle\"\u003e\n          \u003cinput type=\"checkbox\" id=\"endGameToggle\" onchange=\"onEndGameChange()\" /\u003e\n          \u003cspan class=\"toggle-track\"\u003e\u003c/span\u003e\n        \u003c/label\u003e\n      \u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003chr class=\"divider\" /\u003e\n\n    \u003cdiv class=\"filter-action-stack\"\u003e\n      \u003cbutton class=\"apply-btn\" id=\"applyBtn\" onclick=\"applyFiltersFromSidebar()\"\u003eApply filters\u003c/button\u003e\n    \u003c/div\u003e";
 
 // Config
-// API_URL points to the deployed Google Cloud Function. The frontend sends POST JSON
-// with filters; the backend queries BigQuery and returns already-aggregated card stats.
-const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
+// API_URL points to the deployed read-only DuckDB gateway. The frontend sends
+// POST JSON filters and receives the page's current response contract.
+const API_URL = 'https://duckdb-gateway-ioetmehoha-ew.a.run.app/v1/query';
 // Daily default snapshots are static Cloud Storage JSON files, refreshed by
 // Cloud Scheduler. Default MW/Base loads use these directly; advanced Filter
 // bar requests still call API_URL because those aggregations are more specific.
@@ -129,6 +129,8 @@ let apiWarmupLastAt = 0;
 const API_WARMUP_COOLDOWN_MS = 5 * 60 * 1000;
 let isPageMounted = false;
 let mountToken = 0;
+let statsRequestToken = 0;
+let statsAbortController = null;
 
 function isCurrentMount(token) {
   return isPageMounted && token === mountToken;
@@ -446,22 +448,6 @@ function closeSidebarIfOpen() {
 
 async function applyFiltersFromSidebar() {
   const activeMountToken = mountToken;
-  const params = getParams();
-  const defaultSnapshotKey = getDefaultSnapshotKey(params);
-  if (defaultSnapshotKey !== null) {
-    const cachedDefaultSnapshot = defaultSnapshotCache[defaultSnapshotKey];
-    if (!isCurrentMount(activeMountToken)) return;
-    if (cachedDefaultSnapshot) {
-      roundFilterActive = Boolean(cachedDefaultSnapshot.round_filter_active);
-      allData = cachedDefaultSnapshot.data;
-      searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
-      updateCardSearchIndicator();
-      applySearch();
-    }
-    closeSidebarIfOpen();
-    return;
-  }
-
   closeSidebarIfOpen();
   await applyFilters(activeMountToken);
 }
@@ -490,13 +476,18 @@ async function applyFilters(activeMountToken = mountToken) {
   // This is the only frontend function that calls the backend API.
   // It runs on page load, MW/Base tab change, Reset, and Apply filters.
   // If no Maps or no Rounds are selected, there is nothing to query: the frontend
-  // renders an empty result immediately and skips the Cloud Function call entirely.
+  // renders an empty result immediately and skips the backend request entirely.
   if (!isCurrentMount(activeMountToken)) return;
+  const requestToken = ++statsRequestToken;
+  statsAbortController?.abort();
+  statsAbortController = new AbortController();
+  const requestController = statsAbortController;
   const params = getParams();
   const selectedMaps = params.maps || [];
   const selectedRounds = getSelectedRoundTokens();
 
   if (!selectedMaps.length || !selectedRounds.length) {
+    statsAbortController = null;
     roundFilterActive = selectedRounds.length < ROUND_FILTERS.length;
 
     // In round-filter mode, these columns are intentionally unavailable. If the
@@ -517,6 +508,7 @@ async function applyFilters(activeMountToken = mountToken) {
   const defaultSnapshotKey = getDefaultSnapshotKey(params);
   const cachedDefaultSnapshot = defaultSnapshotKey === null ? null : defaultSnapshotCache[defaultSnapshotKey];
   if (cachedDefaultSnapshot) {
+    statsAbortController = null;
     roundFilterActive = Boolean(cachedDefaultSnapshot.round_filter_active);
     allData = cachedDefaultSnapshot.data;
     searchQuery = normalizeSearchText(document.getElementById('searchInput').value);
@@ -538,9 +530,10 @@ async function applyFilters(activeMountToken = mountToken) {
     json = await loadStats(
       params,
       defaultSnapshotKey === null ? null : DEFAULT_SNAPSHOT_URLS[defaultSnapshotKey],
+      { signal: requestController.signal },
     );
 
-    if (!isCurrentMount(activeMountToken)) return;
+    if (!isCurrentMount(activeMountToken) || requestToken !== statsRequestToken) return;
     if (json.status !== 'ok') throw new Error(json.message || 'Unknown error');
 
     roundFilterActive = Boolean(json.round_filter_active && (params.rounds !== undefined));
@@ -565,11 +558,13 @@ async function applyFilters(activeMountToken = mountToken) {
     applySearch();
 
   } catch (err) {
+    if (err?.name === 'AbortError') return;
     if (isCurrentMount(activeMountToken) && !preserve) showError(err.message);
     else console.error('Could not update card statistics', err);
   } finally {
-    if (isCurrentMount(activeMountToken)) tableWrap?.classList.remove('stats-updating');
-    if (isCurrentMount(activeMountToken) && btn) {
+    if (statsAbortController === requestController) statsAbortController = null;
+    if (isCurrentMount(activeMountToken) && requestToken === statsRequestToken) tableWrap?.classList.remove('stats-updating');
+    if (isCurrentMount(activeMountToken) && requestToken === statsRequestToken && btn) {
       btn.disabled = false;
       btn.textContent = 'Apply filters';
     }
@@ -2017,6 +2012,9 @@ export function setDataset(value) {
 export function unmount() {
   isPageMounted = false;
   mountToken += 1;
+  statsRequestToken += 1;
+  statsAbortController?.abort();
+  statsAbortController = null;
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.removeEventListener('input', onSearch);
   const panel = document.getElementById('abilitiesPanel');

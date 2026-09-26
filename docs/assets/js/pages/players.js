@@ -1,6 +1,6 @@
 import { deltaRangeColor, divergingRangeColor } from '../color-scales.js?v=20260711-2';
 import { formatSignedDeltaAdaptive, mapTooltipLabel } from '../table-cells.js?v=20260712-5';
-import { fetchStats, loadSnapshot, loadStats } from '../snapshot-cache.js?v=20260908-arena-bootstrap1';
+import { fetchStats, loadSnapshot, loadStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
 import { setFilterButtonDisabled } from '../layout.js?v=20260801-2';
 import { renderMapFilterChips } from '../map-catalog.js?v=20260908-map-option-b6';
 
@@ -9,7 +9,7 @@ export const title = 'Players';
 export const navLabel = 'Players';
 
 const API_ROOT = 'https://storage.googleapis.com/ark-nova-stats-dashboard-cache/card-stats/players';
-const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
+const API_URL = 'https://duckdb-gateway-ioetmehoha-ew.a.run.app/v1/query';
 const INDEX_URL = dataset => `${API_ROOT}/index/default-${dataset ? 'mw' : 'base'}.json`;
 const SNAPSHOT_URL = dataset => `${API_ROOT}/general/default-${dataset ? 'mw' : 'base'}.json`;
 // The manifest is updated independently of the static frontend. Keep a small
@@ -411,7 +411,9 @@ function params() {
       ? Boolean(document.getElementById('playersCompletedOnly')?.checked)
       : false,
     players_arena_only: selectedArenaSeasons.length > 0,
-    players_arena_seasons: selectedArenaSeasons.length > 0 ? [...selectedArenaSeasons] : [],
+    // Omit the optional field when unrestricted. The backend rejects an
+    // explicitly empty restrictive list instead of silently broadening it.
+    players_arena_seasons: selectedArenaSeasons.length > 0 ? [...selectedArenaSeasons] : undefined,
   };
 }
 

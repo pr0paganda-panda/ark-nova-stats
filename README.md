@@ -1,5 +1,28 @@
-# ark-nova-stats
-Comprehensive statistics for the boardgame Ark Nova, calculated from online play on Boardgamearena: https://pr0paganda-panda.github.io/ark-nova-stats/
+# Ark Nova Statistics — public preview
 
-As I am dumber than an inbred protozoan born from radioactive primordial soup, I am obviously barely literate, let alone capable of writing a single line of code. Therefore, this webpage as been fully vibecoded with the help of my surrogate brain Claude while I was cheerleading in front of the keyboard. In order to make this project become reality, many litres of water were unnecessarily consumed by a behemothic data centre in suburban Virginia. You be the judge whether this was worth it. 
+This repository publishes the limited public dashboard at
+https://pr0paganda-panda.github.io/ark-nova-stats/.
+
+The preview intentionally exposes six pages, in this order:
+
+1. Cards
+2. Opening Hand
+3. MW Action Cards
+4. Maps
+5. Players
+6. Arena
+
+Cards is the default route. The disabled `More coming soon ;-)` navigation item
+is a placeholder, not a route. The frontend reuses the production Cloud Storage
+snapshot pack and the read-only DuckDB gateway; this repository has no separate
+analytical backend or refresh pipeline.
+
+Preview-specific differences from the full dashboard are intentional:
+
+- Cards and Opening Hand do not link card names to detail pages.
+- MW Action Cards / By map has no graph view.
+- Maps / Tournament H2H has no Filter sidebar.
+
+Filtered requests are sent to the allow-listed DuckDB gateway. Default views
+load from the same atomically published snapshots as the full dashboard.
 

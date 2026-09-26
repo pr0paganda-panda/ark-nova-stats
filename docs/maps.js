@@ -9,7 +9,7 @@ import {
   orangeGreenRangeColor,
 } from '../color-scales.js?v=20260711-1';
 import { formatSignedDeltaAdaptive, mapTooltipLabel } from '../table-cells.js?v=20260712-4';
-import { loadSnapshot, fetchStats } from '../snapshot-cache.js?v=20260908-arena-bootstrap1';
+import { loadSnapshot, fetchStats } from '../snapshot-cache.js?v=20260926-duckdb-gateway1';
 import { setFilterButtonDisabled } from '../layout.js?v=20260819-4';
 
 export const title = 'Maps';
@@ -97,7 +97,7 @@ export const sidebarHtml = `
     <button class="apply-btn" id="applyBtn" onclick="applyFiltersFromSidebar()">Apply filters</button>
   </div>`;
 
-const API_URL = 'https://europe-west1-ark-nova-stats-dashboard.cloudfunctions.net/get-card-stats';
+const API_URL = 'https://duckdb-gateway-ioetmehoha-ew.a.run.app/v1/query';
 const DEFAULT_SNAPSHOT_URLS = {
   metrics: {
     1: 'https://storage.googleapis.com/ark-nova-stats-dashboard-cache/card-stats/maps/metrics/default-mw.json',
