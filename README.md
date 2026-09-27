@@ -26,3 +26,8 @@ Preview-specific differences from the full dashboard are intentional:
 Filtered requests are sent to the allow-listed DuckDB gateway. Default views
 load from the same atomically published snapshots as the full dashboard.
 
+Player autocomplete in General, Comparison, and Performance by map searches
+the already-loaded dataset-specific player index in the browser after three
+typed characters. Statistics requests remain authoritative for merged player
+identities and reject selecting two aliases belonging to the same person.
+

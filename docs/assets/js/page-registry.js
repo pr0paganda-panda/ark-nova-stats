@@ -32,7 +32,7 @@ export const PAGES = {
     id: 'players',
     title: 'Players',
     navLabel: 'Players',
-    load: () => import('./pages/players.js?v=20260926-duckdb-gateway2'),
+    load: () => import('./pages/players.js?v=20260927-player-search-repair'),
   },
   arena: {
     id: 'arena',
